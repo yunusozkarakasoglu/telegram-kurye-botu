@@ -1,0 +1,61 @@
+test_callback_answers_are_prioritized (test_durability.DurabilityTests.test_callback_answers_are_prioritized) ... ok
+test_concurrent_claims_cannot_exceed_courier_limit (test_durability.DurabilityTests.test_concurrent_claims_cannot_exceed_courier_limit) ... ok
+test_permanent_telegram_errors_are_dropped (test_durability.DurabilityTests.test_permanent_telegram_errors_are_dropped) ... WARNING:root:Telegram iletisi gönderilemedi. İşlem sendMessage, kod 403
+ok
+test_rate_limit_preserves_queue_for_retry (test_durability.DurabilityTests.test_rate_limit_preserves_queue_for_retry) ... ok
+test_reset_confirmation_expiry_and_cancel (test_durability.DurabilityTests.test_reset_confirmation_expiry_and_cancel) ... ok
+test_reset_preserves_accounts_settings_and_ids_are_not_reused (test_durability.DurabilityTests.test_reset_preserves_accounts_settings_and_ids_are_not_reused) ... ok
+test_restart_preserves_online_lock_tariff_and_pending_distance (test_durability.DurabilityTests.test_restart_preserves_online_lock_tariff_and_pending_distance) ... ok
+test_twenty_couriers_two_hundred_packages_local_simulation (test_durability.DurabilityTests.test_twenty_couriers_two_hundred_packages_local_simulation) ... 
+LOCAL_SIMULATION {"couriers": 20, "packages": 200, "delivered": 200, "initial_cards": 4000, "mock_api_calls": 10700, "network_calls": 0, "telegram_rate_limits_simulated": false, "cards_retained_after_delivery": 4000, "sqlite_bytes": 1720320}
+ok
+test_two_connections_cannot_claim_the_same_package (test_durability.DurabilityTests.test_two_connections_cannot_claim_the_same_package) ... ok
+test_admin_courier_summary_includes_offline_active_courier (test_operations.OperationTests.test_admin_courier_summary_includes_offline_active_courier) ... ok
+test_cancel_and_stale_draft_buttons (test_operations.OperationTests.test_cancel_and_stale_draft_buttons) ... ok
+test_delivery_requires_pickup_and_is_idempotent (test_operations.OperationTests.test_delivery_requires_pickup_and_is_idempotent) ... ok
+test_duplicate_update_does_not_duplicate_order (test_operations.OperationTests.test_duplicate_update_does_not_duplicate_order) ... ok
+test_form_rejects_wrong_order_and_quantity (test_operations.OperationTests.test_form_rejects_wrong_order_and_quantity) ... ok
+test_full_lifecycle_and_notifications (test_operations.OperationTests.test_full_lifecycle_and_notifications) ... ok
+test_invalid_distance_and_cancel_pending_entry (test_operations.OperationTests.test_invalid_distance_and_cancel_pending_entry) ... ok
+test_invalid_limits_leave_settings_unchanged (test_operations.OperationTests.test_invalid_limits_leave_settings_unchanged) ... ok
+test_invalid_tariff_leaves_old_values (test_operations.OperationTests.test_invalid_tariff_leaves_old_values) ... ok
+test_limit_locks_until_every_package_delivered (test_operations.OperationTests.test_limit_locks_until_every_package_delivered) ... ok
+test_limit_lowering_and_raising_preserves_lock (test_operations.OperationTests.test_limit_lowering_and_raising_preserves_lock) ... ok
+test_locked_courier_gets_no_new_package_notifications (test_operations.OperationTests.test_locked_courier_gets_no_new_package_notifications) ... ok
+test_manual_assignment_only_to_available_courier (test_operations.OperationTests.test_manual_assignment_only_to_available_courier) ... ok
+test_offline_blocks_new_work_but_allows_existing_delivery (test_operations.OperationTests.test_offline_blocks_new_work_but_allows_existing_delivery) ... ok
+test_one_pending_distance_at_a_time (test_operations.OperationTests.test_one_pending_distance_at_a_time) ... ok
+test_reports_period_filter_and_pagination (test_operations.OperationTests.test_reports_period_filter_and_pagination) ... ok
+test_restaurant_analysis_counts (test_operations.OperationTests.test_restaurant_analysis_counts) ... ok
+test_tariff_boundaries_and_decimal_inputs (test_operations.OperationTests.test_tariff_boundaries_and_decimal_inputs) ... ok
+test_tariff_change_does_not_change_recorded_fee (test_operations.OperationTests.test_tariff_change_does_not_change_recorded_fee) ... ok
+test_ten_package_form_regions_payments_and_duplicate_submit (test_operations.OperationTests.test_ten_package_form_regions_payments_and_duplicate_submit) ... ok
+test_unknown_dates_appear_only_in_all_time_report (test_operations.OperationTests.test_unknown_dates_appear_only_in_all_time_report) ... ok
+test_DEFECT_card_records_survive_delivery_and_repeat_views_multiply_edits (test_reproductions.ConfirmedDefectReproductions.test_DEFECT_card_records_survive_delivery_and_repeat_views_multiply_edits) ... ok
+test_DEFECT_oversized_page_callback_raises_uncaught_overflow (test_reproductions.ConfirmedDefectReproductions.test_DEFECT_oversized_page_callback_raises_uncaught_overflow) ... ok
+test_DEFECT_persistent_rate_limit_blocks_incoming_update_polling (test_reproductions.ConfirmedDefectReproductions.test_DEFECT_persistent_rate_limit_blocks_incoming_update_polling) ... WARNING:root:Telegram HTTP/API 429. Yeniden deneniyor.
+WARNING:root:Telegram HTTP/API 429. Yeniden deneniyor.
+WARNING:root:Telegram HTTP/API 429. Yeniden deneniyor.
+ok
+test_DEFECT_reset_leaves_stale_lock_notification_due_to_id_reuse (test_reproductions.ConfirmedDefectReproductions.test_DEFECT_reset_leaves_stale_lock_notification_due_to_id_reuse) ... ok
+test_DEFECT_successful_send_followed_by_crash_is_resent (test_reproductions.ConfirmedDefectReproductions.test_DEFECT_successful_send_followed_by_crash_is_resent) ... ok
+test_DEFECT_unicode_digit_callback_raises_uncaught_value_error (test_reproductions.ConfirmedDefectReproductions.test_DEFECT_unicode_digit_callback_raises_uncaught_value_error) ... ok
+test_admin_bootstrap_and_single_admin (test_roles.RoleTests.test_admin_bootstrap_and_single_admin) ... ok
+test_courier_cannot_assign_or_make_restaurant_draft (test_roles.RoleTests.test_courier_cannot_assign_or_make_restaurant_draft) ... ok
+test_expired_invite_rejected (test_roles.RoleTests.test_expired_invite_rejected) ... ok
+test_groups_ignored (test_roles.RoleTests.test_groups_ignored) ... ok
+test_invite_is_single_use (test_roles.RoleTests.test_invite_is_single_use) ... ok
+test_nonadmin_cannot_view_global_pages (test_roles.RoleTests.test_nonadmin_cannot_view_global_pages) ... ok
+test_nonadmins_cannot_change_settings_or_invite (test_roles.RoleTests.test_nonadmins_cannot_change_settings_or_invite) ... ok
+test_other_courier_cannot_pickup_or_deliver (test_roles.RoleTests.test_other_courier_cannot_pickup_or_deliver) ... ok
+test_reports_and_lists_are_scoped (test_roles.RoleTests.test_reports_and_lists_are_scoped) ... ok
+test_restaurant_cannot_claim_or_assign (test_roles.RoleTests.test_restaurant_cannot_claim_or_assign) ... ok
+test_restaurant_cannot_use_another_draft (test_roles.RoleTests.test_restaurant_cannot_use_another_draft) ... ok
+test_role_cannot_be_changed_by_invite (test_roles.RoleTests.test_role_cannot_be_changed_by_invite) ... ok
+test_unregistered_callbacks_rejected (test_roles.RoleTests.test_unregistered_callbacks_rejected) ... ok
+test_wrong_admin_code_rejected (test_roles.RoleTests.test_wrong_admin_code_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 50 tests in 12.518s
+
+OK
