@@ -32,7 +32,7 @@ class FormsMixin:
                  ("+", f"count:{nonce}:{min(MAX_PACKAGES, quantity + 1)}")]]
         if field:
             index, kind = field
-            options = self.config["regions"] if kind == "region" else PAYMENTS
+            options = self.region_list() if kind == "region" else PAYMENTS
             choices = [(label, f"{kind}:{nonce}:{index}:{n}") for n, label in enumerate(options)]
             choices.append((UNSPECIFIED, f"{kind}:{nonce}:{index}:skip"))
             rows += [choices[i:i + 2] for i in range(0, len(choices), 2)]
@@ -88,7 +88,7 @@ class FormsMixin:
             index = int(args[1])
             if index >= draft["quantity"]:
                 return "Bu seçim artık etkin değil."
-            options = self.config["regions"] if action == "region" else PAYMENTS
+            options = self.region_list() if action == "region" else PAYMENTS
             if args[2] == "skip":
                 value = None
             elif number(args[2]) and int(args[2]) < len(options):

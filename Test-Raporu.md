@@ -2,7 +2,7 @@
 
 ## Sonuç
 
-Onaylanan plan uygulandı. **150 otomatik test kaynakta ve dağıtım ZIP'inden çıkarılan kod üzerinde geçti.** Ruff lint ve Python derleme kontrolleri başarılı. Kabul/öncelik test grubu üç ek koşuda da geçti.
+Onaylanan plan uygulandı. **271 otomatik test kaynakta ve dağıtım ZIP'inden çıkarılan kod üzerinde geçti.** Ruff lint ve Python derleme kontrolleri başarılı. Kabul/öncelik test grubu üç ek koşuda da geçti.
 
 Bu sonuç izole testler içindir; gerçek Telegram hesabı, telefon arayüzü veya Cloudflare yayını test edilmedi. Çalışma sırasında token kullanılmadı, harici ağa Telegram isteği yapılmadı; sanal sunucu/Telegram uygulaması kurulmadı.
 
@@ -48,9 +48,12 @@ Gönderimlerde toplam ve sohbet başına hız sınırlama var; testlerde bunun m
 | Medya/dosya yok sayma ve uyarı freni | 8 |
 | Aktarım (havuz/kurye, kabul, süre, kilit) | 14 |
 | Restoran profili (yetkili/telefon/konum), harita ve arama düğmesi | 12 |
+| Konum girişi: harita bağlantısı/koordinat ayrıştırma | 6 |
+| Komut menüsü ve restoran sipariş filtresi (tümü/bekleyen/teslim + tarih) | 24 |
+| Tarife düzenleyici (açıklama, taban/kademe, doğrulama) | 11 |
 | Eski kusur regresyonları ve belgelenmiş gönderim sınırı | 7 |
 | Roller, davetler, yetki ve veri kapsamı | 15 |
-| **Toplam** | **150** |
+| **Toplam** | **271** |
 
 Kritik eşzamanlılık senaryoları:
 - 10 bağlantı aynı 10 paketli talepte toplu kabul: atamalar 3+3+3+1, çift atama/limit aşımı yok.
@@ -76,7 +79,7 @@ SQLite bütünlük ve yabancı anahtar kontrolleri geçti. Yeni uygulama/test mo
 
 ## Bilinen ve açıkça korunan sınır
 
-**İlk `sendMessage` Telegram tarafından kabul edildikten sonra, yerel kayıt tamamlanmadan süreç çökerse bildirim tekrar gidebilir.** Telegram ile SQLite arasında ortak atomik işlem yoktur; mutlak tam-bir-kez gönderim garantisi verilmez. Bu sınır testte açıkça doğrulanıp belgelenmiştir; 150 testin biri bu davranışın sınır testidir, düzeltilmiş davranış iddiası değildir.
+**İlk `sendMessage` Telegram tarafından kabul edildikten sonra, yerel kayıt tamamlanmadan süreç çökerse bildirim tekrar gidebilir.** Telegram ile SQLite arasında ortak atomik işlem yoktur; mutlak tam-bir-kez gönderim garantisi verilmez. Bu sınır testte açıkça doğrulanıp belgelenmiştir; 271 testin biri bu davranışın sınır testidir, düzeltilmiş davranış iddiası değildir.
 
 Bilinen mesaj kimliğiyle yapılan güncellemeler çökme sonrası aynı mesajı hedefler ve yeni kart oluşturmaz. Ayrıca reset anında zaten başlamış bir HTTP isteği geri alınamaz; test, silinen yerel sipariş/kart kayıtlarının yeniden oluşmadığını doğrular, uzaktaki mesajı geri çekme garantisi vermez.
 
@@ -90,8 +93,8 @@ python3 tools/package.py
 python3 tools/verify_package.py
 ```
 
-- `tests/results/unittest.log`: kaynak üzerinde 150 test.
-- `tests/results/package.log`: dağıtım ZIP'i kaynaklarıyla 150 test ve CLI/derleme kontrolü.
+- `tests/results/unittest.log`: kaynak üzerinde 271 test.
+- `tests/results/package.log`: dağıtım ZIP'i kaynaklarıyla 271 test ve CLI/derleme kontrolü.
 - `tests/results/concurrency-repeat.log`: 19 kabul testinin üç ek koşusu.
 - `tests/results/unittest-legacy.log`: eski 50 test ve başlangıç ölçümleri.
 - Eski `bot.py` SHA-256: `86ec28ad9faa65686b79ccfa143dd863d5749deb3e7f65ae77ae6be641a6ab70` (değişmedi).

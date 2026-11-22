@@ -133,12 +133,19 @@ class TransferMixin:
         if self.active_count(user["id"]):
             return "Önce üzerinizdeki paketleri teslim edin."
         moved = []
+        now = self.now()
         for offer in offers:
+            before = self.db.execute("SELECT accepted_at FROM packages WHERE id=? AND courier=? AND delivered_at IS NULL",
+                                     (offer["package"], offer["from_courier"])).fetchone()
             changed = self.db.execute(
-                "UPDATE packages SET courier=? WHERE id=? AND courier=? AND delivered_at IS NULL",
-                (user["id"], offer["package"], offer["from_courier"])).rowcount
+                "UPDATE packages SET courier=?,accepted_at=? WHERE id=? AND courier=? AND delivered_at IS NULL",
+                (user["id"], int(now), offer["package"], offer["from_courier"])).rowcount
             if changed:
                 moved.append(offer["package"])
+                self.db.execute("INSERT INTO transfer_log(package,from_courier,to_courier,at,original_accepted_at) "
+                                "VALUES (?,?,?,?,?)",
+                                (offer["package"], offer["from_courier"], user["id"], now,
+                                 before["accepted_at"] if before else None))
         self.db.execute("DELETE FROM transfer_offers WHERE token=?", (token,))
         if not moved:
             return "Paketler başka işlem görmüş; teklif kapandı."

@@ -129,4 +129,38 @@ Kullanıcının onayladığı kurallarla eklendi: **Aktar** → **Tümünü / Ya
 - 12 profil testiyle birlikte **150 izole test** ve ZIP doğrulaması geçti. Canlı servis `phase-3.backup-20261122-153525.sqlite3` yedeğiyle güncellendi; havuzdaki paket korundu.
 - Telefonda profil girme, Haritada Aç ve Ara henüz denenmedi.
 
+### Aşama 5 — yönetici profili, harita ve arama
+
+- Kullanıcı isteğiyle yeni aşama: `yunusozkar` = **yönetici**, `neriman` = **kurye**, ek olarak **yerel fikstür restoran** (id 0) ve 3 paketli fikstür talep `#5000001`. Amaç gerçek yönetici ekranından restoran profili girip kurye kartında **Haritada Aç / Ara** düğmelerini doğrulamak.
+- Aşama 3'te havuzdaki paket kabulü veritabanına geçmemişti (havuzda 1 paket kaldı); aynı akış aşama 5'te yeniden denenecek.
+- Önceki 7 paket phase-3 dosyasında korunuyor; gönderim kuyruğu boş.
+
+### Aşama 5 — profil kaydı doğrulandı
+
+- Yönetici gerçek Telegram ekranından **Ali Usta / 05510098529 / konum** girdi. SQLite: `contact_name=Ali Usta`, `phone=05510098529`, `latitude=40.908985`, `longitude=29.25965`; bekleyen profil adımı yok.
+- Konum için iki giriş yolu eklendi: `Konum Gönder` ve harita bağlantısı/koordinat ayrıştırma (6 test).
+- Havuzdaki 3 fikstür paket hâlâ atanmamış; sıradaki adım kurye kartında **Haritada Aç** ve **Ara** düğmelerini görmek ve toplu kabul sonrası düğmelerin kalmasını doğrulamak.
+
+### Aşama 5 kapanış ve aşama 4 (kurye–kurye)
+
+- Havuza aktarma canlıda çalıştı; tek kurye olduğu için “Kuryeye Aktar” doğru şekilde “uygun kurye yok, havuza aktarabilirsiniz” dedi.
+- Yeni aşama: iki hesap da **kurye**, restoran yerel fikstür; **10 paket** havuzda, limit **6**. Amaç: 10/6/4 dağılımı, kurye–kurye aktarım teklifi/kabulü ve iki kuryenin havuzdan alması.
+- Önceki aşamaların dosyaları korunuyor; gönderim kuyruğu boş.
+
+### Aşama 5'te eklenenlerin canlı doğrulama durumu
+
+| Özellik | Canlı durum |
+|---|---|
+| Bölgeler (ekle/sil) | Henüz denenmedi |
+| Yönetici numaraları + Yöneticiyi Ara | Henüz denenmedi |
+| Paket-Limit adı ve düğmesi | Düğme görüldü (önceki ekran); yeni ad telefonda denenmedi |
+| Ücret tarifesi editörü | Henüz denenmedi |
+| Restoran sipariş filtresi (/siparisler) | Henüz denenmedi |
+| Durum etiketleri / başlıklı kart | Henüz denenmedi |
+| Mesafe Güncelle | Henüz denenmedi |
+| Kişinin kendi kaydı (isimsiz davet) | Henüz denenmedi |
+| Kuryeyi Ara / Kurye Durumu telefonu | Henüz denenmedi |
+
+Not: phase-5 veritabanı 3 paket + restoran profili ile korunuyor; phase-4 (10 paket, limit 6) ayrı dosyada bekliyor.
+
 **Pilot tamamlanmadı.** Otomatik izole testlerin raporu ayrı: `Test-Raporu.md`. Buradaki kayıt yalnız gerçekten gözlenen canlı adımları belirtir.

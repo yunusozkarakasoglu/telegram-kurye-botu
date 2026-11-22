@@ -25,7 +25,10 @@ class BatchViewsMixin:
             if p["id"] in reservations:
                 r = reservations[p["id"]]
                 status = "Seçim önceliğiniz" if r["courier"] == chat else "Başka kuryede seçim önceliği"
-            lines.append(f"#{batch}-{p['number']} {p['region'] or UNSPECIFIED} · {p['payment'] or UNSPECIFIED} · {status}")
+            courier = self.db.execute("SELECT name FROM accounts WHERE id=?", (p["courier"],)).fetchone() \
+                if p["courier"] else None
+            lines.append(f"#{batch}-{p['number']} {p['region'] or UNSPECIFIED} · {p['payment'] or UNSPECIFIED}")
+            lines.append(f"   Durum : {status} · Kurye : {courier['name'] if courier else '—'}")
         own_holds = [r["expires"] for r in reservations.values() if r["courier"] == chat]
         if own_holds:
             deadline = datetime.fromtimestamp(min(own_holds), TURKIYE).strftime("%H:%M:%S")
@@ -78,6 +81,26 @@ class BatchViewsMixin:
         if user["role"] != "kurye":
             return "Bu işlem kullanılamıyor."
         self.show_packages(user, "p.courier=? AND p.delivered_at IS NULL", (user["id"],), page, "active")
+
+    def active_summary(self, user):
+        rows = sorted(self.active_packages(user["id"]), key=lambda row: (row["batch"], row["number"]))
+        if not rows:
+            return
+        ready = [row for row in rows if row["picked_up_at"]]
+        lines = [
+            f"Aktif paket sayınız: {len(rows)}",
+            f"Kuryede / Yolda: {len(ready)} · Km bekleyen: {len(rows) - len(ready)}",
+            "",
+        ]
+        for index, row in enumerate(rows[:20], 1):
+            distance = f"{row['distance_km'].replace('.', ',')} km" if row["distance_km"] else "—"
+            fee = f"{row['courier_fee']} TL" if row["courier_fee"] is not None else "—"
+            state = self.status(row) if row["picked_up_at"] else "Kabul edildi · Km bekliyor"
+            lines.append(f"Paket {index} : Talep #{row['batch']}-{row['number']} · "
+                         f"{row['region'] or 'Belirtilmedi'} · {distance} · {fee} · {state}")
+        if len(rows) > 20:
+            lines.append(f"… ve {len(rows) - 20} paket daha")
+        self.send(user["id"], "\n".join(lines))
 
     def show_open(self, user, page, force_new=False):
         if user["role"] == "kurye" and not user["online"]:

@@ -38,7 +38,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(24))"
 ```
 
 - `token` alanına BotFather anahtarını, `admin_code` alanına terminalin ürettiği yönetici kodunu yapıştırın.
-- `regions` listesine teslimat bölgelerinizi yazın. Bot 1–50 bölge kabul eder.
+- `regions` listesi yalnız **ilk kurulumda** başlangıç listesidir; sonrasında yönetici **Bölgeler** ekranından düzenlenir (veritabanında saklanır, 1–50 bölge).
 - Türkçe karakterler için dosyayı UTF-8 olarak kaydedin. Windows’ta dosya adının `ayarlar.json.txt` olmadığını kontrol edin.
 - Mevcut bir kurulum güncelleniyorsa botu durdurun, `ayarlar.json` ve `kurye.sqlite3` dosyalarınızı yedekleyin. Yeni kodu ayrı klasöre çıkarıp bu dosyaların kopyalarıyla deneyin. Şema otomatik güncellenir; hesaplar, siparişler ve ayarlar korunur, eski gönderilmemiş form taslakları sıfırlanır. Eski sürüme dönüş için yükseltme öncesi veritabanı yedeği gerekir.
 
@@ -63,7 +63,8 @@ Yönetici hesabınızla botun özel sohbetinde her kişi veya işletme için ayr
 | Restoran | `/davet restoran Ertaş Döner` |
 | Kurye | `/davet kurye Ahmet Yılmaz` |
 
-1. **Restoran bilgileri (hepsi isteğe bağlı):** `/davet restoran ...` sonrası bot sırayla **yetkili adı**, **telefon** ve **konum** ister. Telefonu yazabilir veya **Rehberden Gönder** ile kişi kartı paylaşabilirsiniz; konum için **Konum Gönder** kullanılır. Her adımda **Atla** var. Mevcut restoranı güncellemek için `/bilgi` yazıp restoranı seçin. Bu bilgiler kurye paket kartında **Haritada Aç** ve **Ara** düğmeleri olarak görünür.
+1. **Davet:** `/davet kurye` veya `/davet restoran` (isim yazmadan) → tek kullanımlık bağlantı. Bağlantıyı açan kişi **kendi ad soyad ve telefonunu** girer; **konum yalnız restoranda** sorulur (kuryeden istenmez). İsim vermek isterseniz `/davet kurye Ahmet Yılmaz` da çalışır.
+1b. **Yönetici tarafı restoran bilgileri (isteğe bağlı):** isim vererek davet ettiyseniz bot sırayla **yetkili adı**, **telefon** ve **konum** ister. Telefonu **boşluksuz tek parça** yazın (`+905321112233` veya `05321112233`) ya da **Rehberden Gönder** ile kişi kartı paylaşın; boşluklu/parantezli yazım Telegram’da arama bağlantısı oluşturmaz; konum için **Konum Gönder** (mevcut konum) veya **Google Maps bağlantısı yapıştırma** kullanılır. Her adımda **Atla** var. Mevcut restoranı güncellemek için `/bilgi` yazıp restoranı seçin. Bu bilgiler kurye paket kartında **Haritada Aç** ve **Ara** düğmeleri olarak görünür.
 2. Botun ürettiği davet bağlantısını ilgili restoran veya kuryeye özelden iletin.
 2. Davet alan kişi, iş için kullanacağı Telegram hesabıyla bağlantıyı açıp **Başlat**’a bassın.
 4. Bot hesabı kaydedip ilgili rolün menüsünü açar. Davet tek kullanımlıktır ve 24 saat geçerlidir. Süresi dolarsa yeni davet oluşturun.
@@ -75,7 +76,7 @@ Aynı telefonda yönetici ve kurye olarak test etmek için, ayrı bir numaraya b
 
 1. **Restoran:** **Kurye Çağır** ile tek kart açılır. Gönderimden sonra her paket kendi numarasını alır: `Talep #3000001-1`, `#3000001-2`; talep grubu ortak kalır. `−/+` ile 1–10 paket seçin; paketlerin bölge ve ödeme bilgisini aynı kartta düzenleyin. Bu alanlar isteğe bağlıdır; boş bırakılabilir veya **Belirtilmedi** seçilebilir. **Talebi Gönder** ile onaylayın.
 2. **Kurye:** **Çevrimiçi Ol** → talep kartında **Tümünü Al (N Paket)** veya bir paketin **N. Paketi Al** düğmesi. Kapasite yetmiyorsa toplu düğme **Kapasite Kadar Al (N Paket)** olur. Toplu kabul boş kapasite kadar en eski uygun paketi tek işlemde alır. Tekli kabulde aynı talebin uygun kalan paketlerinde 10 saniye seçim önceliği verilir; kapasite üstü paketler diğer kuryelere açık kalır. Öncelik kartında bitiş saati ve **Öncelikten Vazgeç** görünür. Süre tekrar tıklamayla uzamaz; **Havuz** kartları yeniler.
-3. **Kurye:** **Açık Paketler** yalnız üzerinizdeki teslim edilmemiş paketleri gösterir; kilitli veya çevrimdışıyken de açılır. Pakette **Restorandan Aldım** → örneğin `4,5` km girin → hesaplanan ücreti görün → **Teslim Ettim**.
+3. **Kurye:** **Açık Paketler** (ve **Paketlerim → Aktif Paketler**) yalnız üzerinizdeki teslim edilmemiş paketleri gösterir; kartların altında **özet** gelir: aktif paket sayısı, teslim edilmeye hazır/km bekleyen sayısı ve satırlar; her satır **`Paket N : Talep #X-Y · bölge · km · ücret · durum`** biçiminde ve en eski paket üstte. Alımdan sonra **Haritada Aç** kalkar (zaten restorandasınız), **Restoranı Ara** kalır. Birden fazla paket varsa `/mesafe` hangi paket için km girileceğini sorar; kayıtta “Talep #X-Y · 4,5 km · 190 TL” onayı gelir. Km beklenirken başka komut/düğme çalıştırılırsa işlem durur ve “Önce kilometre girin…” uyarısı gelir; yalnız km yazma, `/mesafe`, `/mesafeiptal` ve **Restoranı Ara** serbesttir. kilitli veya çevrimdışıyken de açılır. Pakette **Restorandan Aldım** → örneğin `4,5` km girin → hesaplanan ücreti görün → **Teslim Ettim**.
 4. **Aktarım (arıza/kaza):** Kurye **Açık Paketler** kartında **Aktar** düğmesine basar. **Tümünü Aktar** veya **Yalnız Bu Paketi Aktar** seçilir; sonra **Havuza Aktar** (onay ister) veya **Kuryeye Aktar** (yalnız üzerinde paketi olmayan çevrimiçi kuryeler) seçilir. Kuryeye aktarımda hedef kurye bildirim alır ve **Kabul Et**’e basarsa paketler ona geçer; reddederse, süre dolarsa veya çevrimdışıysa paketler **havuza** düşer. Aktarımda alım saati, mesafe ve ücret korunur. Tüm paketler aktarılınca kuryenin teslim kilidi açılır.
 5. **Havuz:** Henüz kimsenin almadığı paketleri gösterir. Kilitli kurye havuzu açamaz; tüm aktif paketler teslim edilince **Havuz** düğmesiyle yeni iş alınabilir.
 6. **Restoran:** Kabul ve teslim bildirimlerini kontrol edin. Kilometre kaydında ücret bildirimi gönderilmez. Ücret, restoranın kendi **Raporlar** ekranında görünür.
@@ -87,13 +88,22 @@ Aynı telefonda yönetici ve kurye olarak test etmek için, ayrı bir numaraya b
 | İşlem | Kullanım |
 |---|---|
 | Menü tekrar açma | `/start` |
-| Restoran bilgileri (yetkili/telefon/konum) | `/bilgi` → restoranı seç. Adım adım düzenlenir, **Atla** ile geçilebilir. Kurye kartında **Haritada Aç** (Google Maps) ve **Ara** (rehber kartı) düğmeleri çıkar. |
+| Tüm komutları düğme olarak görme | **Komutlar** (role göre iki sütunlu liste; yöneticide `/davet /paket-limit /tarife /bilgi /bolgeler /yonetici-numara /sohbeti-temizle /rapor /start`) |
+| Kurye komut kısayolları | `/havuz`, `/acik`, `/paketlerim`, `/mesafe`, `/mesafe-guncelle`, `/yoneticiyi-ara`, `/sohbeti-temizle`, `/rapor`, `/start` |
+| Girilmiş km’yi düzeltme | Kurye `/mesafe-guncelle` → km’si girilmiş paketler satır numarasıyla listelenir → paketi seç → yeni km yaz. Ücret güncellenir, kart yenilenir. `/mesafeiptal` menüde yok; yalnız yanlışlıkla “Restorandan Aldım”a basıldığında bekleyen girişi iptal eder. |
+| Restoran komut kısayolları | `/cagir`, `/paketlerim`, `/analiz`, `/siparisler`, `/rapor`, `/start` |
+| Restoran sipariş filtresi | `/siparisler` → **Tümü**, **Bekleyen**, **Teslim Edilen**. Tümü ve teslim edilen için tarih aralığı: Bugün, 7, 30 gün, Tüm Zamanlar. |
+| Yönetici numaraları | **Yönetici Numarası** veya `/yonetici-numara` → **Numara Ekle** (ad + telefon, en fazla 5). Kurye/restoran menüsündeki **Yöneticiyi Ara** numaraları tek mesajda ad + tıklanabilir telefon olarak listeler; numaraya dokununca arama açılır (Telegram inline düğmede `tel:` desteklemediği için doğrudan arama düğmesi yapılamaz). |
+| Sohbet geçmişini temizleme | `/sohbeti-temizle` yalnız yolu gösterir. Telegram botlarının toplu sohbet silme yetkisi yoktur; sohbet başlığı → Menü → **Sohbeti Temizle** kullanılır. |
+| Bölge listesi | **Bölgeler** veya `/bolgeler` → **Bölge Ekle** / **Sil**. Liste restoranın bölge seçim ekranını besler (1–50 bölge). |
+| Kurye telefonu | Kurye davetinde (`/davet kurye ...`) yönetici **yalnız telefon** girer (boşluksuz). Paket restorana atanınca restoran **Paketlerim** kartında **Kuryeyi Ara** düğmesini görür; numaraya dokununca arama açılır. |
+| Restoran bilgileri (yetkili/telefon/konum) | `/bilgi` → restoranı seç. Konumda iki seçenek: **Konum Gönder** veya harita bağlantısı yapıştırma. **Atla** ile geçilebilir. Kurye kartında **Haritada Aç** (Google Maps) ve **Restoranı Ara** düğmeleri çıkar. **Restoranı Ara**, mesajda **Restoran : ad**, varsa **Yetkili : ad soyad** ve numarayı `+905510098529` gibi tek parça (E.164) olarak gönderir; numaraya dokununca telefon uygulaması aramayı açar (Telegram rehber kartı “kişiyi ekle” açtığı için kullanılmaz). |
 | Havuzdaki paketi elle atama | **Havuz → Kurye Seç**. Çevrimiçi ve yeni işe müsait kuryeler listelenir. |
-| Kurye sayıları ve aktif işler | **Kurye Durumu** |
-| Tüm kuryeler için ortak limit | **Paket Limiti** veya `/limit`. Örneğin `/limit 5`. |
-| Kilometre ücretlerini değiştirme | **Ücret Tarifesi** veya `/tarife`. Ekrandaki komutta taban ücreti ve sekiz kademe farkını düzenleyin. |
+| Kurye sayıları, adları, telefonları ve aktif işler | **Kurye Durumu**: `Ad · durum · N aktif paket · ☎ numara` (numara kayıtlıysa) |
+| Tüm kuryeler için ortak limit | **Paket-Limit** veya `/paket-limit`. Örneğin `/paket-limit 5`; eğik çizgisiz `paket-limit 5` de kabul edilir, eski `/limit` de çalışır. Bu, **her kuryenin üzerinde taşıyabileceği en fazla aktif paket** sayısıdır. `/acik` bu ayar değildir; `/acik` yalnız kuryenin kendi açık paketlerini listeler. |
+| Kilometre ücretlerini değiştirme | **Ücret Tarifesi** veya `/tarife` → **Taban Ücreti Değiştir** ya da **Kademe Farkı Değiştir** → tutarı yazın. Tek satırda `/tarife 120 30 40 50 60 70 80 90 100` de kullanılabilir (ilk sayı taban, sonraki 8 kademe farkı). |
 | Sipariş raporları | **Raporlar** veya `/rapor`. Yönetici tüm paketleri, restoran ve kurye yalnızca kendi kapsamındaki paketleri görür. |
-| Kurye kilometre girişini iptal etme | `/mesafeiptal`. Ardından paket kartından tekrar kilometre girişi açılabilir. |
+| Km girişini iptal etme | `/mesafeiptal` (menüde gizli). Yalnız kaydedilmemiş bekleyen girişi siler; kaydedilmiş km için `/mesafe-guncelle` kullanılır. |
 | Pilot siparişlerini silme | **Sipariş Verilerini Temizle → Siparişleri Sil**. Aktif ve tamamlanmış siparişler silinir. Hesaplar, davetler, tarife ve limit korunur. |
 
 ## 7. Sürekli çalıştırma, yedekleme ve sorun giderme

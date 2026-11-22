@@ -71,6 +71,6 @@ class MediaTests(BotCase):
 
     def test_admin_text_commands_still_work_after_media(self):
         self.send_media("photo")
-        self.message(ADMIN, "Paket Limiti")
+        self.message(ADMIN, "Paket-Limit")
         self.flush()
-        self.assertIn("Genel paket limiti · 3", self.texts(ADMIN))
+        self.assertIn("Genel paket limiti · 3 paket", self.texts(ADMIN))

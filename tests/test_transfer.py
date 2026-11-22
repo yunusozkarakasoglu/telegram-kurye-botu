@@ -201,3 +201,56 @@ class TransferTests(BotCase):
         self.click(COURIER, f"trg:{token}:{third}")
         self.assertIn("üzerinde paket var", self.last_answer())
         self.assertEqual(self.db.execute("SELECT count(*) FROM transfer_offers").fetchone()[0], 0)
+
+class TransferHistoryTests(BotCase):
+    def setUp(self):
+        super().setUp()
+        self.onboard()
+        self.third = 40
+        self.invite(self.third, "kurye", "DEVIR_ALAN")
+        self.message(self.third, "Çevrimiçi Ol")
+        ids = self.batch(count=1)
+        self.pid = ids[0]
+        self.click(COURIER, f"claim:{self.pid}")
+        self.pickup(self.pid, distance="4,5")
+        self.clear_messages()
+        self.click(COURIER, f"tr:{self.pid}")
+        self.click(COURIER, f"trone:{self.pid}")
+        self.click(COURIER, f"trcour:{self.scope()['token']}")
+        self.click(COURIER, f"trg:{self.scope()['token']}:{self.third}")
+        self.token = self.db.execute("SELECT token FROM transfer_offers").fetchone()[0]
+
+    def scope(self):
+        return self.db.execute("SELECT * FROM transfer_scope").fetchone()
+
+    def test_acceptance_updates_accept_time_and_logs_history(self):
+        old_accept = self.package(self.pid)["accepted_at"]
+        self.click(self.third, f"trma:{self.token}")
+        row = self.package(self.pid)
+        self.assertGreaterEqual(row["accepted_at"], old_accept)
+        self.assertEqual(row["courier"], self.third)
+        log = self.db.execute("SELECT * FROM transfer_log WHERE package=?", (self.pid,)).fetchone()
+        self.assertEqual(log["from_courier"], COURIER)
+        self.assertEqual(log["to_courier"], self.third)
+        self.assertEqual(log["original_accepted_at"], old_accept)
+
+    def test_card_shows_transfer_note_and_first_acceptance(self):
+        self.click(self.third, f"trma:{self.token}")
+        self.flush()
+        text = self.texts(self.third)
+        self.assertIn("İlk kabul :", text)
+        self.assertIn("· COURIER_A", text)
+        self.assertIn("Alım :", text)
+        self.assertIn("· ilk kurye", text)
+        self.assertIn("Aktarma bilgisi : Kurye COURIER_A tarafından aktarma", text)
+        self.assertIn("kabul edildi.", text)
+        self.assertIn("Paket ücreti : 190 TL", text)
+
+    def test_no_transfer_note_without_history(self):
+        ids = self.batch(count=1)
+        self.click(COURIER, f"claim:{ids[0]}")
+        self.flush()
+        text = self.texts(COURIER)
+        self.assertNotIn("İlk kabul", text)
+        self.assertNotIn("Aktarma bilgisi", text)
+        self.assertNotIn("· ilk kurye", text)

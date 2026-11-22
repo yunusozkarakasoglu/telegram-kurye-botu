@@ -19,7 +19,7 @@ class ReportsMixin:
         """, params).fetchone()
         self.send(user["id"], (
             f"{PERIODS[days]} · {start:%d.%m.%Y} itibarıyla oluşturulan paketler\n"
-            f"Toplam {counts['total']} · Bekliyor {counts['waiting']} · "
+            f"Toplam {counts['total']} · Havuzda bekliyor {counts['waiting']} · "
             f"Kurye üzerinde {counts['active']} · Teslim edildi {counts['delivered']}"
         ))
         self.show_packages(user, "b.owner=? AND b.created_at>=?", params, page, f"analysis:{days}")

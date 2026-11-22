@@ -148,10 +148,10 @@ class NavigationTests(BotCase):
 
     def test_limit_menu_label_shows_current_value(self):
         self.clear_messages()
-        self.message(ADMIN, "Paket Limiti")
+        self.message(ADMIN, "Paket-Limit")
         self.flush()
         text = self.texts(ADMIN)
-        self.assertIn("Genel paket limiti · 3", text)
+        self.assertIn("Genel paket limiti · 3 paket", text)
         self.assertNotIn("1 ile 99 arasında", text)
 
     def test_tariff_menu_label_shows_current_tariff(self):

@@ -20,12 +20,7 @@ class DeliveryMixin:
         if action == "pickup":
             if package["picked_up_at"]:
                 return "Paket zaten restorandan alındı."
-            pending = self.db.execute("SELECT package FROM pending_distance WHERE courier=?", (courier,)).fetchone()
-            if pending and pending["package"] != package_id:
-                return "Önce diğer paketin kilometresini girin veya /mesafeiptal yazın."
-            self.db.execute("INSERT OR IGNORE INTO pending_distance VALUES (?,?)", (courier, package_id))
-            self.send(courier, f"{self.label(package)}\nRestorandan teslimat noktasına mesafeyi km olarak girin. Örnek: 4,5")
-            return "Kilometre bekleniyor."
+            return self.start_km(courier, package_id)
         else:
             if not package["picked_up_at"]:
                 return "Önce paketi restorandan aldığınızı işaretleyin."

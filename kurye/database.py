@@ -97,6 +97,32 @@ def connect(path):
                 batch INTEGER NOT NULL REFERENCES batches, chat INTEGER NOT NULL,
                 message INTEGER NOT NULL, PRIMARY KEY(batch,chat)
             );
+            CREATE TABLE IF NOT EXISTS transfer_log (
+                id INTEGER PRIMARY KEY, package INTEGER NOT NULL, from_courier INTEGER NOT NULL,
+                to_courier INTEGER NOT NULL, at REAL NOT NULL, original_accepted_at REAL
+            );
+            CREATE TABLE IF NOT EXISTS km_edit (
+                courier INTEGER PRIMARY KEY REFERENCES accounts,
+                package INTEGER NOT NULL REFERENCES packages, expires REAL NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS admin_phones (
+                position INTEGER PRIMARY KEY, name TEXT NOT NULL, phone TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS admin_phone_edit (
+                admin INTEGER PRIMARY KEY REFERENCES accounts, stage TEXT NOT NULL,
+                name TEXT, phone TEXT, expires REAL NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS regions (
+                position INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE
+            );
+            CREATE TABLE IF NOT EXISTS region_edit (
+                admin INTEGER PRIMARY KEY REFERENCES accounts, action TEXT NOT NULL,
+                expires REAL NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS tariff_edit (
+                admin INTEGER PRIMARY KEY REFERENCES accounts, position INTEGER NOT NULL,
+                expires REAL NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS profile_setup (
                 admin INTEGER PRIMARY KEY REFERENCES accounts, kind TEXT NOT NULL,
                 ref INTEGER NOT NULL, step TEXT NOT NULL, contact TEXT, phone TEXT,

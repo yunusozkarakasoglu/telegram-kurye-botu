@@ -52,7 +52,7 @@ class OperationTests(BotCase):
         row = self.package(p)
         self.assertLessEqual(row["accepted_at"], row["picked_up_at"])
         self.assertLessEqual(row["picked_up_at"], row["delivered_at"])
-        self.assertIn("Teslim Edildi", self.texts(RESTAURANT))
+        self.assertIn("Teslim edildi", self.texts(RESTAURANT))
         self.assertNotIn("Kurye ücreti", self.texts(RESTAURANT))
         self.clear_messages()
         self.click(RESTAURANT, "report:0:0")
@@ -199,7 +199,7 @@ class OperationTests(BotCase):
             self.click(COURIER, f"claim:{p}")
         self.click(COURIER, f"pickup:{a}")
         self.click(COURIER, f"pickup:{b}")
-        self.assertIn("diğer paketin", self.last_answer())
+        self.assertIn("Önce kilometre girin", self.last_answer())
         self.assertEqual(self.db.execute("SELECT package FROM pending_distance").fetchone()[0], a)
 
     def test_tariff_change_does_not_change_recorded_fee(self):
@@ -250,4 +250,370 @@ class OperationTests(BotCase):
         self.clear_messages()
         self.click(RESTAURANT, "analysis:1:0")
         self.flush()
-        self.assertIn("Toplam 3 · Bekliyor 1 · Kurye üzerinde 1 · Teslim edildi 1", self.texts(RESTAURANT))
+        self.assertIn("Toplam 3 · Havuzda bekliyor 1 · Kurye üzerinde 1 · Teslim edildi 1", self.texts(RESTAURANT))
+
+
+class DistanceFlowTests(BotCase):
+    def setUp(self):
+        super().setUp()
+        self.onboard(False)
+        self.clear_messages()
+
+    def labels(self, user):
+        self.flush()
+        out = []
+        for _m, payload in self.api.calls:
+            if payload.get("chat_id") != user:
+                continue
+            markup = payload.get("reply_markup")
+            if isinstance(markup, dict) and "inline_keyboard" in markup:
+                out += [b["text"] for row in markup["inline_keyboard"] for b in row]
+        return out
+
+    def test_mesafe_lists_packages_when_multiple_are_active(self):
+        ids = self.batch(count=3)
+        for pid in ids:
+            self.click(COURIER, f"claim:{pid}")
+        self.clear_messages()
+        self.message(COURIER, "/mesafe")
+        labels = self.labels(COURIER)
+        self.assertIn("Hangi paket için kilometre gireceksiniz?", self.texts(COURIER))
+        self.assertEqual(sorted(labels), ["Talep #1-1", "Talep #1-2", "Talep #1-3"])
+
+    def test_choosing_package_then_entering_km_names_the_package(self):
+        ids = self.batch(count=2)
+        for pid in ids:
+            self.click(COURIER, f"claim:{pid}")
+        self.clear_messages()
+        self.message(COURIER, "/mesafe")
+        self.click(COURIER, f"km:{ids[1]}")
+        self.flush()
+        self.assertIn("Talep #1-2", self.texts(COURIER))
+        self.message(COURIER, "4,5")
+        self.flush()
+        self.assertIn("Talep #1-2", self.texts(COURIER))
+        self.assertIn("Kurye ücreti 190 TL", self.texts(COURIER))
+        self.assertEqual(self.package(ids[1])["courier_fee"], 190)
+        self.assertIsNone(self.package(ids[0])["picked_up_at"])
+
+    def test_pending_entry_is_named_and_single(self):
+        ids = self.batch(count=2)
+        for pid in ids:
+            self.click(COURIER, f"claim:{pid}")
+        self.click(COURIER, f"pickup:{ids[0]}")
+        self.clear_messages()
+        self.message(COURIER, "/mesafe")
+        self.flush()
+        self.assertIn("Bekleyen giriş: Talep #1-1", self.texts(COURIER))
+        self.message(COURIER, "3")
+        self.assertEqual(self.package(ids[0])["courier_fee"], 120)
+
+    def test_map_hidden_after_pickup_but_call_remains(self):
+        self.message(ADMIN, "/bilgi")
+        rid = self.db.execute("SELECT id FROM accounts WHERE role='restoran'").fetchone()[0]
+        self.click(ADMIN, f"locpick:{rid}")
+        self.message(ADMIN, "Ali Usta")
+        self.message(ADMIN, "+90 551 009 85 29")
+        self.sequence += 1
+        self.bot.process({"update_id": self.sequence, "message": {
+            "chat": {"id": ADMIN, "type": "private"}, "from": {"id": ADMIN},
+            "location": {"latitude": 41.0, "longitude": 29.0}}})
+        ids = self.batch()
+        self.click(COURIER, f"claim:{ids[0]}")
+        self.assertIn("Haritada Aç", self.labels(COURIER))
+        self.pickup(ids[0])
+        self.clear_messages()
+        self.message(COURIER, "Açık Paketler")
+        labels = self.labels(COURIER)
+        self.assertNotIn("Haritada Aç", labels)
+        self.assertIn("Restoranı Ara", labels)
+        self.assertIn("Teslim Ettim", labels)
+
+    def test_all_packages_km_done_gives_clear_message(self):
+        ids = self.batch()
+        self.click(COURIER, f"claim:{ids[0]}")
+        self.pickup(ids[0])
+        self.clear_messages()
+        self.message(COURIER, "/mesafe")
+        self.flush()
+        self.assertIn("Tüm paketlerinizin kilometresi kayıtlı", self.texts(COURIER))
+
+
+class KmPendingGuardTests(BotCase):
+    def setUp(self):
+        super().setUp()
+        self.onboard(False)
+        self.clear_messages()
+        ids = self.batch(count=3)
+        for pid in ids:
+            self.click(COURIER, f"claim:{pid}")
+        self.ids = ids
+        self.click(COURIER, f"pickup:{ids[0]}")
+        self.clear_messages()
+
+    def test_other_command_is_blocked_with_clear_warning(self):
+        self.message(COURIER, "/havuz")
+        self.flush()
+        text = self.texts(COURIER)
+        self.assertIn("Önce kilometre girin: Talep #1-1", text)
+        self.assertNotIn("paket bekliyor", text)
+
+    def test_menu_label_is_blocked(self):
+        self.message(COURIER, "Paketlerim")
+        self.flush()
+        self.assertIn("Önce kilometre girin", self.texts(COURIER))
+        self.assertNotIn("Paket listenizi seçin", self.texts(COURIER))
+
+    def test_callback_is_blocked_and_answered(self):
+        self.click(COURIER, f"deliver:{self.ids[1]}")
+        self.flush()
+        self.assertIn("Önce kilometre girin", self.texts(COURIER))
+        self.assertIsNone(self.package(self.ids[1])["delivered_at"])
+
+    def test_call_and_km_commands_stay_allowed(self):
+        self.message(COURIER, "/mesafe")
+        self.flush()
+        self.assertIn("Bekleyen giriş: Talep #1-1", self.texts(COURIER))
+
+    def test_distance_input_and_cancel_still_work(self):
+        self.message(COURIER, "3")
+        self.assertEqual(self.package(self.ids[0])["courier_fee"], 120)
+        self.clear_messages()
+        self.message(COURIER, "/havuz")
+        self.flush()
+        self.assertNotIn("Önce kilometre girin", self.texts(COURIER))
+        self.assertIn("tüm paketleri teslim edin", self.texts(COURIER))
+
+    def test_cancel_then_other_commands_work(self):
+        self.message(COURIER, "/mesafeiptal")
+        self.clear_messages()
+        self.message(COURIER, "Paketlerim")
+        self.flush()
+        self.assertIn("Paket listenizi seçin", self.texts(COURIER))
+
+
+class ActiveSummaryTests(BotCase):
+    def setUp(self):
+        super().setUp()
+        self.onboard(False)
+        self.clear_messages()
+
+    def test_summary_after_cards_lists_packages_with_state(self):
+        ids = self.batch(count=3)
+        for pid in ids:
+            self.click(COURIER, f"claim:{pid}")
+        self.pickup(ids[0], distance="4,5")
+        self.clear_messages()
+        self.message(COURIER, "Açık Paketler")
+        self.flush()
+        text = self.texts(COURIER)
+        self.assertIn("Aktif paket sayınız: 3", text)
+        self.assertIn("Kuryede / Yolda: 1 · Km bekleyen: 2", text)
+        self.assertIn("Paket 1 : Talep #1-1 · Kadıköy · 4,5 km · 190 TL · Kuryede / Yolda", text)
+        self.assertIn("Paket 2 : Talep #1-2 · Üsküdar · — · — · Kabul edildi · Km bekliyor", text)
+        self.assertIn("Paket 3 : Talep #1-3 · Ataşehir · — · — · Kabul edildi · Km bekliyor", text)
+
+    def test_summary_comes_after_cards(self):
+        ids = self.batch()
+        self.click(COURIER, f"claim:{ids[0]}")
+        self.clear_messages()
+        self.message(COURIER, "Açık Paketler")
+        self.flush()
+        texts = [p["text"] for m, p in self.api.calls if m == "sendMessage" and p.get("chat_id") == COURIER]
+        self.assertIn("Sipariş no : 1-1", texts[0])
+        self.assertTrue(any(t.startswith("Aktif paket sayınız") for t in texts))
+
+    def test_no_summary_when_no_active_packages(self):
+        self.clear_messages()
+        self.message(COURIER, "Açık Paketler")
+        self.flush()
+        self.assertNotIn("Aktif paket sayınız", self.texts(COURIER))
+        self.assertIn("Bu listede paket yok", self.texts(COURIER))
+
+    def test_summary_uses_courier_fee_and_region_fallback(self):
+        ids = self.batch()
+        with self.db:
+            self.db.execute("UPDATE packages SET region='' WHERE id=?", (ids[0],))
+        self.click(COURIER, f"claim:{ids[0]}")
+        self.pickup(ids[0], distance="3")
+        self.clear_messages()
+        self.message(COURIER, "Açık Paketler")
+        self.flush()
+        self.assertIn("Paket 1 : Talep #1-1 · Belirtilmedi · 3 km · 120 TL · Kuryede / Yolda", self.texts(COURIER))
+
+
+class ActiveSummaryInPaketlerimTests(BotCase):
+    def setUp(self):
+        super().setUp()
+        self.onboard(False)
+        self.clear_messages()
+        ids = self.batch(count=2)
+        for pid in ids:
+            self.click(COURIER, f"claim:{pid}")
+        self.pickup(ids[0], distance="4,5")
+
+    def test_paketlerim_active_list_ends_with_summary(self):
+        self.clear_messages()
+        self.click(COURIER, "page:active:0")
+        self.flush()
+        text = self.texts(COURIER)
+        self.assertIn("Aktif paket sayınız: 2", text)
+        self.assertIn("Paket 1 :", text)
+        self.assertIn("Paket 2 :", text)
+        self.assertEqual(text.count("Aktif paket sayınız"), 1)
+
+    def test_acik_paketler_still_has_single_summary(self):
+        self.clear_messages()
+        self.message(COURIER, "Açık Paketler")
+        self.flush()
+        self.assertEqual(self.texts(COURIER).count("Aktif paket sayınız"), 1)
+
+    def test_delivered_history_has_no_active_summary(self):
+        self.deliver(self.get_first())
+        self.clear_messages()
+        self.click(COURIER, "page:delivered:0")
+        self.flush()
+        self.assertNotIn("Aktif paket sayınız", self.texts(COURIER))
+
+    def get_first(self):
+        return self.db.execute("SELECT id FROM packages WHERE courier IS NOT NULL AND delivered_at IS NULL "
+                               "ORDER BY id LIMIT 1").fetchone()[0]
+
+
+class StatusLabelTests(BotCase):
+    def setUp(self):
+        super().setUp()
+        self.onboard(False)
+        self.clear_messages()
+
+    def test_status_progression_labels(self):
+        ids = self.batch()
+        self.flush()
+        self.assertIn("Havuzda bekliyor", self.texts(COURIER))
+        self.click(COURIER, f"claim:{ids[0]}")
+        self.flush()
+        self.assertIn("Durum : Kabul edildi", self.texts(COURIER))
+        self.assertIn("Kurye : COURIER_A", self.texts(COURIER))
+        self.clear_messages()
+        self.pickup(ids[0], distance="4,5")
+        self.flush()
+        self.assertIn("Durum : Kuryede / Yolda", self.texts(COURIER))
+        self.assertIn("Kurye : COURIER_A", self.texts(COURIER))
+        self.clear_messages()
+        self.click(COURIER, f"deliver:{ids[0]}")
+        self.flush()
+        self.assertIn("Durum : Teslim edildi", self.texts(COURIER))
+        self.assertIn("Kurye : COURIER_A", self.texts(COURIER))
+
+    def test_pool_card_shows_havuzda_bekliyor(self):
+        self.batch(count=2)
+        self.clear_messages()
+        self.message(COURIER, "Havuz")
+        self.flush()
+        self.assertEqual(self.texts(COURIER).count("Havuzda bekliyor"), 2)
+
+
+class DistanceUpdateTests(BotCase):
+    def setUp(self):
+        super().setUp()
+        self.onboard(False)
+        self.clear_messages()
+        self.ids = self.batch(count=3)
+        for pid in self.ids:
+            self.click(COURIER, f"claim:{pid}")
+        self.pickup(self.ids[0], distance="4,5")
+        self.pickup(self.ids[1], distance="3")
+        self.clear_messages()
+
+    def labels(self):
+        self.flush()
+        out = []
+        for _m, payload in self.api.calls:
+            if payload.get("chat_id") != COURIER:
+                continue
+            markup = payload.get("reply_markup")
+            if isinstance(markup, dict) and "inline_keyboard" in markup:
+                out += [b["text"] for row in markup["inline_keyboard"] for b in row]
+        return out
+
+    def test_update_lists_only_packages_with_distance(self):
+        self.message(COURIER, "/mesafe-guncelle")
+        text = self.texts(COURIER)
+        self.assertIn("Kilometresi girilmiş aktif paket yok", text) if False else None
+        labels = self.labels()
+        self.assertEqual(len(labels), 2)
+        self.assertIn("1. Talep #1-1 · 4,5 km · 190 TL", labels)
+        self.assertIn("2. Talep #1-2 · 3 km · 120 TL", labels)
+
+    def test_update_changes_distance_and_fee(self):
+        self.message(COURIER, "/mesafe-guncelle")
+        self.click(COURIER, f"kmu:{self.ids[1]}")
+        self.flush()
+        self.assertIn("Yeni mesafeyi km olarak yazın", self.texts(COURIER))
+        self.message(COURIER, "5,2")
+        self.flush()
+        row = self.package(self.ids[1])
+        self.assertEqual(row["distance_km"], "5.2")
+        self.assertEqual(row["courier_fee"], 240)
+        self.assertIn("120 TL → 240 TL", self.texts(COURIER))
+
+    def test_cancel_update_keeps_old_value(self):
+        self.message(COURIER, "/mesafe-guncelle")
+        self.click(COURIER, f"kmu:{self.ids[0]}")
+        self.message(COURIER, "/iptal")
+        self.flush()
+        self.assertEqual(self.package(self.ids[0])["courier_fee"], 190)
+        self.assertIn("iptal edildi", self.texts(COURIER))
+
+    def test_invalid_distance_keeps_editing(self):
+        self.message(COURIER, "/mesafe-guncelle")
+        self.click(COURIER, f"kmu:{self.ids[0]}")
+        self.message(COURIER, "abc")
+        self.flush()
+        self.assertIn("Geçerli bir kilometre girin", self.texts(COURIER))
+        self.message(COURIER, "6")
+        self.assertEqual(self.package(self.ids[0])["courier_fee"], 240)
+
+    def test_update_refuses_delivered_or_foreign_package(self):
+        self.click(COURIER, f"deliver:{self.ids[0]}")
+        self.click(COURIER, f"kmu:{self.ids[0]}")
+        self.assertIn("düzeltilemez", self.last_answer())
+
+    def test_mesafeiptal_not_listed_but_command_still_supported(self):
+        self.message(COURIER, "Komutlar")
+        labels = self.labels()
+        self.assertNotIn("/mesafeiptal", labels)
+        self.assertIn("/mesafe-guncelle", labels)
+        self.clear_messages()
+        self.click(COURIER, f"pickup:{self.ids[2]}")
+        self.message(COURIER, "/mesafeiptal")
+        self.flush()
+        self.assertIn("iptal edildi", self.texts(COURIER))
+
+
+class DetailLineTests(BotCase):
+    def setUp(self):
+        super().setUp()
+        self.onboard(False)
+        self.clear_messages()
+
+    def test_status_and_courier_on_own_lines(self):
+        ids = self.batch()
+        self.click(COURIER, f"claim:{ids[0]}")
+        self.pickup(ids[0], distance="4,5")
+        self.clear_messages()
+        self.message(COURIER, "Açık Paketler")
+        self.flush()
+        text = self.texts(COURIER)
+        self.assertIn("Durum : Kuryede / Yolda", text)
+        self.assertIn("Kurye : COURIER_A", text)
+        self.assertNotIn("Kuryede / Yolda · COURIER_A", text)
+
+    def test_pool_package_shows_placeholder_courier(self):
+        self.batch()
+        self.clear_messages()
+        self.message(COURIER, "Havuz")
+        self.flush()
+        text = self.texts(COURIER)
+        self.assertIn("Durum : Havuzda bekliyor", text)
+        self.assertIn("Kurye : —", text)

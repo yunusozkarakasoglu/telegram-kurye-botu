@@ -4,7 +4,9 @@
 - Çalışan kaynak `bot.py` + `kurye/`; eski ZIP yalnız göç/test fikstürüdür, değiştirilmez.
 - Modül ≤300 satır; UI/operasyon ayrı dosyalarda; ek çalışma zamanı bağımlılığı yok.
 - Atama, rezervasyon ve aktarım yalnız kısa `BEGIN IMMEDIATE` işlemi içinde; Telegram ağı işlem dışında.
-- Onaylı operasyon kararları (10 sn öncelik, limit kilidi, aktarım kuralları, medya yok sayma, harita/arama) kullanıcıya sormadan değiştirilmez.
+- Onaylı operasyon kararları (10 sn öncelik, limit kilidi, aktarım kuralları, medya yok sayma, harita/arama, durum etiketleri) kullanıcıya sormadan değiştirilmez.
+- Telefon gösterimi: numara `+90…` tek parça (E.164) gönderilir; `tel:` inline düğmede desteklenmez, `sendContact` "kişiyi ekle" açar.
+- Aynı anda tek yönetici düzenleme akışı: profil/tarife/bölge/telefon başlatılırken `reset_admin_edits` çağrılır.
 - Her değişiklikte kalite kapısı: ruff + compileall + tüm testler; dağıtım değiştiyse `tools/package.py` ve `tools/verify_package.py`.
 - Canlı pilot servisi güncellenirken önce veritabanı yedeği alınır; `~/.local/share/telegram-kurye-pilot/` içeriği asla commit edilmez.
 - Token, yönetici kodu, telefon/konum gibi gerçek kişisel veriler depoya, rapora veya loga yazılmaz.

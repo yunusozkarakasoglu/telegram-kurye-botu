@@ -1,4 +1,5 @@
 from .constants import PERIODS, REPORT_PERIODS
+from .orders import FILTERS
 from .validation import number, page_number
 
 
@@ -30,6 +31,55 @@ class RoutingMixin:
             return handlers[action](user, args[0])
         if action == "trg" and role == "kurye" and len(args) == 2 and number(args[1]):
             return self.offer_transfer(user, args[0], int(args[1]))
+        if action == "osip" and role == "restoran" and len(args) == 3:
+            mode, days, page = args[0], args[1], args[2]
+            if mode in FILTERS and number(days) and page_number(page):
+                if mode == "pending":
+                    self.order_list(user, mode, 0, int(page))
+                    return
+                self.order_period_choice(user, mode)
+                return
+        if action == "osipp" and role == "restoran" and len(args) == 3:
+            mode, days, page = args[0], args[1], args[2]
+            if mode in ("all", "delivered") and number(days) and page_number(page):
+                self.order_list(user, mode, int(days), int(page))
+                return
+        if action == "callc" and role in ("restoran", "yonetici") and len(args) == 1 and number(args[0]):
+            return self.send_courier_contact(chat, int(args[0]))
+        if action == "calladm" and role in ("kurye", "restoran") and len(args) == 1 and number(args[0]):
+            return self.send_admin_number(chat, int(args[0]))
+        if action == "adphone" and role == "yonetici":
+            if len(args) == 1 and args[0] == "add":
+                return self.start_admin_phone_add(user)
+            if len(args) == 1 and args[0] == "x":
+                self.cancel_admin_phone(user)
+                return "İptal edildi."
+            if len(args) == 2 and args[0] == "del" and number(args[1]):
+                return self.confirm_admin_phone_delete(user, int(args[1]))
+            if len(args) == 2 and args[0] == "dely" and number(args[1]):
+                return self.delete_admin_phone(user, int(args[1]))
+        if action in ("regadd", "regx") and role == "yonetici":
+            if action == "regadd":
+                self.start_region_add(user)
+            else:
+                self.cancel_region_edit(user)
+            return
+        if action in ("regdel", "regdely") and role == "yonetici" and len(args) == 1 and number(args[0]):
+            if action == "regdel":
+                return self.confirm_region_delete(user, int(args[0]))
+            return self.delete_region(user, int(args[0]))
+        if action == "tar" and role == "yonetici" and len(args) in (1, 2):
+            if args[0] == "base" and len(args) == 1:
+                self.start_tariff_edit(chat, 0)
+                return
+            if args[0] == "list" and len(args) == 1:
+                self.tariff_kademeler(chat)
+                return
+            if args[0] == "pos" and len(args) == 2 and number(args[1]):
+                self.start_tariff_edit(chat, int(args[1]))
+                return
+        if action == "cmd" and len(args) == 1:
+            return self.run_command(user, args[0])
         if action == "couriers" and role == "yonetici" and len(args) == 1 and page_number(args[0]):
             self.show_courier_status(chat, int(args[0]))
             return
@@ -62,6 +112,10 @@ class RoutingMixin:
             if days in PERIODS:
                 self.analysis(user, days, page)
                 return
+        if action == "kmu" and role == "kurye" and len(args) == 1 and number(args[0]):
+            return self.start_km_update(chat, int(args[0]))
+        if action == "km" and role == "kurye" and len(args) == 1 and number(args[0]):
+            return self.start_km(chat, int(args[0]))
         if action in ("pickup", "deliver") and role == "kurye" and len(args) == 1 and numeric:
             return self.advance(int(args[0]), chat, action)
         if action == "claim" and role == "kurye" and len(args) == 1 and numeric:

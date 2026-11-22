@@ -1,13 +1,14 @@
 # Görevler
 
 ## Açık
-- [ ] Canlı pilotu bitir: phase-3'te havuzdan paket kabulü, `Aktar` (havuz) ve `/bilgi` + `Haritada Aç`/`Ara` adımlarını telefonda doğrula.
-- [ ] Kurye–kurye aktarım ve 10 paket/6 kabul/4 bekleyen senaryosu için phase-4 (iki hesap da kurye + yerel restoran fikstürü) aşamasını kur.
-- [ ] Pilot sonrası Cloudflare Workers (webhook) + D1 uyarlama planı ve ücretsiz kota ölçümü.
+- [ ] Canlı pilotu bitir (phase-5): havuzdan kabul, `Aktar` havuz/kurye, harita + Restoranı Ara, kurye durumunda telefon, bölge/telefon ekleme, `paket-limit`, `mesafe-guncelle` adımlarını telefonda doğrula.
+- [ ] Phase-4 (iki hesap kurye, 10 paket, limit 6) ile kurye–kurye aktarım ve 10/6/4 senaryosunu tamamla; dosya korunuyor.
+- [ ] Pilot bitince Cloudflare Workers (webhook) + D1 uyarlama planı ve ücretsiz kota ölçümü.
 
 ## Son tamamlananlar
-- [x] Restoran profili: yetkili adı, telefon (rehber kartı), konum; kurye kartında Haritada Aç + Ara. 12 test.
-- [x] Aktarım: havuza/kuryeye, kabul şartı, 5 dk süre, ret→havuz, veri taşıma, kilit açma. 14 test.
-- [x] Dosya gönderimini yok say + 10 dakikalık uyarı freni. 8 test.
-- [x] Havuz / Açık Paketler menü ayrımı, kart yenileme, paket numarası `Talep #X-Y`. 16 test.
-- [x] v2 modüler kaynak + 150 test + sürümlü ZIP + canlı servis güncellemeleri.
+- [x] Kişinin kendi kaydı: `/davet kurye` (isimsiz) → ad soyad + telefon; restoranda ayrıca konum. 6 test.
+- [x] Kurye telefonu + `Kuryeyi Ara` (restoran) ve `Kurye Durumu`nda telefon. 4 test.
+- [x] Durum etiketleri (Havuzda bekliyor → Kabul edildi → Kuryede / Yolda → Teslim edildi), başlıklı kart, aktarma geçmişi satırları. 11 test.
+- [x] `Mesafe Güncelle` (`/mesafe-guncelle`), km beklerken işlem kilidi, `mesafeiptal` menüden kaldırıldı. 9 test.
+- [x] Bölge listesi, yönetici numaraları + `Yöneticiyi Ara`, komut menüleri (rol bazlı), tarife editörü, restoran sipariş filtresi. 60+ test.
+- [x] Modüler kaynak, 271 test, sürümlü ZIP, sürekli canlı servis güncellemesi.

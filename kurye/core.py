@@ -7,12 +7,16 @@ from contextlib import contextmanager
 from .acceptance import AcceptanceMixin
 from .admin import AdminMixin
 from .batch_views import BatchViewsMixin
+from .commands import ALIASES, CommandsMixin
 from .constants import MEDIA_KEYS, MEDIA_NOTICE_SECONDS, MEDIA_NOTICE_TEXT, MENUS, PERIODS, REPORT_PERIODS
+from .contacts import ContactsMixin
 from .delivery import DeliveryMixin
 from .forms import FormsMixin
+from .orders import OrdersMixin
 from .outbox import OutboxMixin
 from .pricing import PricingMixin
 from .profile import ProfileMixin
+from .regions import RegionsMixin
 from .reports import ReportsMixin
 from .routing import RoutingMixin
 from .transfer import TransferMixin
@@ -21,12 +25,14 @@ from .validation import callback_valid
 from .views import ViewsMixin
 
 
-class Bot(AcceptanceMixin, AdminMixin, BatchViewsMixin, DeliveryMixin, FormsMixin,
-          OutboxMixin, ProfileMixin, PricingMixin, ReportsMixin, RoutingMixin, TransferMixin, ViewsMixin):
+class Bot(AcceptanceMixin, AdminMixin, BatchViewsMixin, CommandsMixin, ContactsMixin, DeliveryMixin, FormsMixin,
+          OrdersMixin, OutboxMixin, ProfileMixin, PricingMixin, RegionsMixin, ReportsMixin, RoutingMixin,
+          TransferMixin, ViewsMixin):
     def __init__(self, db, api, config, username="test_bot", rate_limit=True):
         self.db, self.api, self.config, self.username = db, api, config, username
         self._order_context = False
         self.rate_limit = rate_limit
+        self.seed_regions(config.get("regions", []))
 
     def now(self):
         return time.time()
@@ -40,14 +46,30 @@ class Bot(AcceptanceMixin, AdminMixin, BatchViewsMixin, DeliveryMixin, FormsMixi
         finally:
             self._order_context = previous
 
+    def reset_admin_edits(self, chat, keep=None):
+        """Aynı anda tek düzenleme akışı çalışsın (profil, tarife, bölge, telefon)."""
+        for table in ("profile_setup", "tariff_edit", "region_edit", "admin_phone_edit"):
+            if table != keep and self.db.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)).fetchone():
+                self.db.execute(f"DELETE FROM {table} WHERE admin=?", (chat,))
+
     def menu(self, user, text):
         labels = [*MENUS[user["role"]], "Raporlar"]
         if user["role"] == "kurye":
             labels.append("Çevrimdışı Ol" if user["online"] else "Çevrimiçi Ol")
-        self.send(user["id"], text, {
-            "keyboard": [[{"text": label} for label in labels[i:i + 2]] for i in range(0, len(labels), 2)],
-            "resize_keyboard": True,
-        })
+        solo = {"Yöneticiyi Ara", "Yönetici Numarası"}
+        rows, pair = [], []
+        for label in labels:
+            if label in solo:
+                rows.append([{"text": label}])
+                continue
+            pair.append({"text": label})
+            if len(pair) == 2:
+                rows.append(pair)
+                pair = []
+        if pair:
+            rows.append(pair)
+        self.send(user["id"], text, {"keyboard": rows, "resize_keyboard": True})
 
     def process(self, update):
         callback = update.get("callback_query")
@@ -65,6 +87,15 @@ class Bot(AcceptanceMixin, AdminMixin, BatchViewsMixin, DeliveryMixin, FormsMixi
                 user = self.db.execute("SELECT * FROM accounts WHERE id=?", (sender,)).fetchone()
                 if callback:
                     data = callback.get("data", "")
+                    warn = self.km_guard(user, action=data)
+                    if warn:
+                        self.send(sender, warn)
+                        self.queue("answerCallbackQuery", {
+                            "callback_query_id": callback["id"], "text": warn,
+                        })
+                        self.db.execute("UPDATE checkpoint SET offset=? WHERE id=1",
+                                        (update["update_id"] + 1,))
+                        return
                     # Only store message IDs for a draft owned by this sender.
                     if user and user["role"] == "restoran" and message.get("message_id"):
                         parts = data.split(":") if isinstance(data, str) else []
@@ -91,15 +122,32 @@ class Bot(AcceptanceMixin, AdminMixin, BatchViewsMixin, DeliveryMixin, FormsMixi
                     self.notify_media_ignored(sender)
                 elif isinstance(message.get("text"), str):
                     text = message["text"].strip()
+                    warn = self.km_guard(user, text=text)
+                    if warn:
+                        self.send(sender, warn)
+                        self.db.execute("UPDATE checkpoint SET offset=? WHERE id=1",
+                                        (update["update_id"] + 1,))
+                        return
+                    command_like = text.startswith("/") or bool(re.match(r"^paket-limit\b", text, re.IGNORECASE))
                     reserved = {label for labels in MENUS.values() for label in labels}
                     reserved |= {"Raporlar", "Çevrimiçi Ol", "Çevrimdışı Ol"}
-                    profile_handled = (user and user["role"] == "yonetici"
-                                       and not text.startswith("/") and text not in reserved
+                    tariff_handled = (user and user["role"] == "yonetici" and not command_like
+                                      and text not in reserved and self.save_tariff_edit(sender, text))
+                    profile_handled = (user and not command_like and text not in reserved
+                                       and (user["role"] == "yonetici" or self.setup(sender))
                                        and self.profile_text(sender, text))
-                    if not profile_handled:
+                    region_handled = (user and user["role"] == "yonetici" and not command_like
+                                      and self.save_region_text(user, text))
+                    phone_handled = (user and user["role"] == "yonetici" and not command_like
+                                     and self.admin_phone_text(user, text))
+                    km_edit_handled = (user and user["role"] == "kurye"
+                                       and (not command_like or text.strip().lower() == "/iptal")
+                                       and self.save_km_update(user["id"], text))
+                    if not (tariff_handled or profile_handled or region_handled or phone_handled
+                            or km_edit_handled):
                         command = text.split(" ", 1)[0]
                         related = (text in ("Kurye Çağır", "Havuz", "Açık Paketler", "Paketlerim", "Raporlar",
-                                            "Analiz", "Son Talepler")
+                                            "Analiz", "Son Talepler", "Komutlar", "Yöneticiyi Ara")
                                    or command in ("/rapor", "/mesafe", "/mesafeiptal")
                                    or re.match(r"^[0-9+.,-]", text))
                         if related:
@@ -117,6 +165,8 @@ class Bot(AcceptanceMixin, AdminMixin, BatchViewsMixin, DeliveryMixin, FormsMixi
         self.send(chat, MEDIA_NOTICE_TEXT)
 
     def message(self, chat, user, text):
+        if user and user["role"] == "yonetici" and re.match(r"^paket-limit\b", text, re.IGNORECASE):
+            text = "/paket-limit" + text[len("paket-limit"):]
         command, _, args = text.partition(" ")
         if not user:
             if (command == "/yonetici" and args and
@@ -132,16 +182,26 @@ class Bot(AcceptanceMixin, AdminMixin, BatchViewsMixin, DeliveryMixin, FormsMixi
                         VALUES (?,?,?,?,?,?,?)""",
                                     (chat, invite["role"], invite["name"], invite["latitude"], invite["longitude"],
                                      invite["contact_name"], invite["phone"]))
+                    if not invite["name"]:
+                        # İsim yazılmamış davet: kişi kendi bilgilerini girer.
+                        self.start_profile(chat, "register", chat, step="contact")
             user = self.db.execute("SELECT * FROM accounts WHERE id=?", (chat,)).fetchone()
             if not user:
                 self.send(chat, "Kayıt için yöneticinizden geçerli bir davet bağlantısı isteyin.")
                 return
         if command in ("/start", "/yonetici"):
             self.menu(user, f"Hoş geldiniz, {user['name']}.")
-        elif user["role"] == "yonetici" and (text == "Paket Limiti" or command == "/limit"):
-            self.configure_limit(chat, args.strip() if command == "/limit" else "")
+        elif user["role"] == "yonetici" and (text in ("Paket-Limit", "Paket Limiti")
+                                             or command in ("/paket-limit", "/limit")):
+            self.configure_limit(chat, args.strip() if command in ("/paket-limit", "/limit") else "")
         elif user["role"] == "yonetici" and (text == "Ücret Tarifesi" or command == "/tarife"):
             self.configure_tariff(chat, args if command == "/tarife" else "")
+        elif command in ("/sohbeti-temizle", "/temizle"):
+            self.send(chat, "Sohbeti temizlemek için: sohbet başlığına dokunun → Menü → **Sohbeti Temizle**. "
+                            "Telegram botlarının toplu sohbet silme yetkisi yoktur.")
+        elif text == command and command in ALIASES:
+            with self.order_messages():
+                self.run_command(user, ALIASES[command])
         elif user["role"] == "kurye" and (command == "/mesafe" or re.match(r"^[0-9+.,-]", text)):
             self.record_distance(chat, args if command == "/mesafe" else text)
         elif user["role"] == "kurye" and command == "/mesafeiptal":
@@ -151,20 +211,39 @@ class Bot(AcceptanceMixin, AdminMixin, BatchViewsMixin, DeliveryMixin, FormsMixi
             self.profile_targets(chat)
         elif command == "/davet" and user["role"] == "yonetici":
             role, _, name = args.strip().partition(" ")
-            name = name.strip()
-            if role not in ("restoran", "kurye") or not 1 <= len(name) <= 80:
-                self.send(chat, "Kullanım\n/davet restoran Ertaş Döner\n/davet kurye Ahmet Yılmaz")
+            role, name = role.strip(), name.strip()
+            if role not in ("restoran", "kurye") or len(name) > 80:
+                self.send(chat, (
+                    "Kullanım\n/davet kurye\n/davet restoran\n\n"
+                    "İsim yazmazsanız davetli kişi bağlantıyı açınca kendi adını, "
+                    "telefonunu (restoranda ayrıca konumunu) girer.\n"
+                    "İsterseniz /davet kurye Ahmet Yılmaz gibi isim de verebilirsiniz."))
                 return
             code = secrets.token_urlsafe(24)
             self.db.execute("INSERT INTO invites(code,role,name,expires,admin) VALUES (?,?,?,?,?)",
                             (code, role, name, int(self.now()) + 86400, chat))
-            self.send(chat, f"{name} için davet\nhttps://t.me/{self.username}?start={code}")
-            if role == "restoran":
+            label = name or ("Kurye" if role == "kurye" else "Restoran")
+            lines = [f"{label} için davet", f"https://t.me/{self.username}?start={code}"]
+            if not name:
+                lines.append("\nBağlantıyı açan kişi ad soyad ve telefon girecek"
+                             + (", ardından konum." if role == "restoran" else "."))
+            self.send(chat, "\n".join(lines))
+            if name and role == "restoran":
                 self.start_profile(chat, "invite", code)
+            elif name:
+                self.start_profile(chat, "invite_courier", code, step="phone")
         elif text == "Kurye Çağır" and user["role"] == "restoran":
             self.start_form(chat)
         elif user["role"] == "kurye" and text in ("Çevrimiçi Ol", "Çevrimdışı Ol"):
             self.set_courier_status(chat, text == "Çevrimiçi Ol")
+        elif text == "Yöneticiyi Ara" and user["role"] in ("kurye", "restoran"):
+            self.call_admin_menu(user)
+        elif text == "Yönetici Numarası" and user["role"] == "yonetici":
+            self.show_admin_phones(user)
+        elif text == "Bölgeler" and user["role"] == "yonetici":
+            self.show_regions(user)
+        elif text == "Komutlar":
+            self.show_commands(user)
         elif text == "Kurye Durumu" and user["role"] == "yonetici":
             self.show_courier_status(chat, 0)
         elif text == "Havuz" and user["role"] in ("kurye", "yonetici"):

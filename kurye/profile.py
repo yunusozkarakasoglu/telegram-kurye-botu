@@ -1,6 +1,7 @@
 import re
 
 from .constants import (
+    CALL_HINT,
     LOCATION_PROMPT,
     LOCATION_SCOPE_SECONDS,
     MAP_URL,
@@ -10,7 +11,7 @@ from .constants import (
     UNSPECIFIED,
 )
 from .ui import keyboard
-from .validation import valid_coordinates
+from .validation import call_number, dial_number, parse_location, valid_coordinates
 
 STEPS = ("contact", "phone", "location")
 PHONE_RE = re.compile(r"^\+?[0-9][0-9 ()\-]{5,19}$")
@@ -24,6 +25,7 @@ class ProfileMixin:
     """Restoran yetkilisi, telefonu ve konumu: davet sırasında veya sonradan."""
 
     def start_profile(self, chat, kind, ref, step="contact"):
+        self.reset_admin_edits(chat, keep='profile_setup')
         self.db.execute("INSERT OR REPLACE INTO profile_setup VALUES (?,?,?,?,?,?,?)",
                         (chat, kind, ref, step, None, None, self.now() + LOCATION_SCOPE_SECONDS))
         self.ask_step(chat)
@@ -37,7 +39,9 @@ class ProfileMixin:
         if not row:
             return
         if row["step"] == "contact":
-            self.send(chat, PROFILE_CONTACT_PROMPT, {
+            prompt = ("Adınızı ve soyadınızı yazın. Örnek: Ahmet Yılmaz"
+                      if row["kind"] == "register" else PROFILE_CONTACT_PROMPT)
+            self.send(chat, prompt, {
                 "keyboard": [[{"text": "Atla"}]], "resize_keyboard": True})
         elif row["step"] == "phone":
             self.send(chat, PROFILE_PHONE_PROMPT, {
@@ -59,9 +63,17 @@ class ProfileMixin:
             if not 1 <= len(name) <= 80:
                 self.send(chat, "Yetkili adı 1–80 karakter olmalı.")
                 return "Geçersiz ad."
+            if row["kind"] == "register":
+                self.db.execute("UPDATE accounts SET name=? WHERE id=?", (name, row["ref"]))
             self.db.execute("UPDATE profile_setup SET contact=?,step='phone' WHERE admin=?", (name, chat))
             self.ask_step(chat)
             return "Telefon bekleniyor."
+        if row["step"] == "location":
+            coords = parse_location(text)
+            if coords:
+                return self.save_location(chat, *coords)
+            self.send(chat, "Konum bulunamadı. Konum Gönder düğmesini kullanın veya Google Maps bağlantısını yapıştırın.")
+            return "Konum bulunamadı."
         if row["step"] == "phone":
             if text == "Atla":
                 return self.skip_step(chat)
@@ -82,8 +94,16 @@ class ProfileMixin:
         if not PHONE_RE.fullmatch(phone.strip()):
             self.send(chat, "Telefon numarası geçersiz.")
             return "Geçersiz telefon."
-        self.db.execute("UPDATE profile_setup SET phone=?,step='location' WHERE admin=?", (phone.strip(), chat))
         self.write_field(row, "phone", phone.strip())
+        if row["kind"] == "invite_courier":
+            self.finish(chat)
+            return PROFILE_SAVED
+        if row["kind"] == "register":
+            role = self.db.execute("SELECT role FROM accounts WHERE id=?", (row["ref"],)).fetchone()["role"]
+            if role == "kurye":
+                self.finish(chat)
+                return PROFILE_SAVED
+        self.db.execute("UPDATE profile_setup SET phone=?,step='location' WHERE admin=?", (phone.strip(), chat))
         self.ask_step(chat)
         return "Konum bekleniyor."
 
@@ -103,7 +123,7 @@ class ProfileMixin:
         if not row:
             return None
         index = STEPS.index(row["step"])
-        if index == len(STEPS) - 1:
+        if row["kind"] == "invite_courier" or index == len(STEPS) - 1:
             self.finish(chat)
             return "Bilgiler kaydedildi (boş alanlar atlandı)."
         self.db.execute("UPDATE profile_setup SET step=? WHERE admin=?", (STEPS[index + 1], chat))
@@ -111,15 +131,22 @@ class ProfileMixin:
         return "Adım atlandı."
 
     def finish(self, chat):
+        row = self.setup(chat)
         self.db.execute("DELETE FROM profile_setup WHERE admin=?", (chat,))
         user = self.db.execute("SELECT * FROM accounts WHERE id=?", (chat,)).fetchone()
-        if user:
+        if not user:
+            return
+        if row and row["kind"] == "register":
+            self.menu(user, f"Hoş geldiniz, {user['name']}.")
+        else:
             self.menu(user, PROFILE_SAVED)
 
     def write_field(self, row, field, value):
-        table = "invites" if row["kind"] == "invite" else "accounts"
+        table = "invites" if row["kind"].startswith("invite") else "accounts"
         column = "code" if table == "invites" else "id"
-        if field == "phone":
+        if field == "phone" and row["kind"] == "register":
+            self.db.execute("UPDATE accounts SET phone=? WHERE id=?", (normalize_phone(value), row["ref"]))
+        elif field == "phone":
             self.db.execute(f"UPDATE {table} SET contact_name=?, phone=? WHERE {column}=?",
                             (row["contact"], normalize_phone(value), row["ref"]))
         else:
@@ -140,15 +167,31 @@ class ProfileMixin:
         return MAP_URL.format(lat=f"{latitude:.6f}", lng=f"{longitude:.6f}")
 
     def contact_buttons(self, package):
-        rows = self.location_buttons(package)
+        # Paket alındıktan sonra restorana yol tarifi anlamsız; telefon kalır.
+        rows = [] if package["picked_up_at"] else self.location_buttons(package)
         if package["restaurant_phone"]:
-            rows.append([("Ara", f"call:{package['id']}")])
+            rows.append([("Restoranı Ara", f"call:{package['id']}")])
         return rows
 
     def location_buttons(self, package):
         if package["restaurant_lat"] is None or package["restaurant_lng"] is None:
             return []
         return [[("Haritada Aç", self.map_url(package["restaurant_lat"], package["restaurant_lng"]))]]
+
+    def send_courier_contact(self, chat, package_id):
+        rows = self.packages("p.id=?", (package_id,))
+        if not rows:
+            return "Paket bulunamadı."
+        package = rows[0]
+        if not package["courier_phone"]:
+            return "Bu kurye için telefon kayıtlı değil."
+        if chat != package["owner"] and self.db.execute(
+                "SELECT role FROM accounts WHERE id=?", (chat,)).fetchone()["role"] != "yonetici":
+            return "Bu paket size ait değil."
+        lines = [f"Sipariş no : {package['batch']}-{package['number']}",
+                 f"Kurye : {package['courier_name']}", dial_number(package["courier_phone"]), "", CALL_HINT]
+        self.send(chat, "\n".join(lines), order_related=True)
+        return f"Aranacak numara: {dial_number(package['courier_phone'])}"
 
     def send_restaurant_contact(self, chat, package_id):
         rows = self.packages("p.id=?", (package_id,))
@@ -157,17 +200,20 @@ class ProfileMixin:
         package = rows[0]
         if package["courier"] not in (None, chat):
             return "Bu paket size ait değil."
-        self.queue("sendContact", {
-            "chat_id": chat, "phone_number": package["restaurant_phone"],
-            "first_name": package["restaurant_contact"] or package["restaurant"][:60],
-            "last_name": f"({package['restaurant']})"[:60],
-        }, order_related=True)
-        return f"Aranacak numara: {package['restaurant_phone']}"
+        number = dial_number(package["restaurant_phone"])
+        lines = [f"Restoran : {package['restaurant']}"]
+        if package["restaurant_contact"]:
+            lines.append(f"Yetkili : {package['restaurant_contact']}")
+        # Telegram rehber kartında dokunma "kişiyi ekle" açar; metindeki numara
+        # otomatik tıklanabilir olup doğrudan telefon uygulamasında arama başlatır.
+        lines += [number, "", CALL_HINT]
+        self.send(chat, "\n".join(lines), order_related=True)
+        return f"Aranacak numara: {number}"
 
     def contact_line(self, package):
         parts = []
         if package["restaurant_contact"]:
             parts.append(package["restaurant_contact"])
         if package["restaurant_phone"]:
-            parts.append(package["restaurant_phone"])
+            parts.append(call_number(package["restaurant_phone"]))
         return f"Yetkili · {' · '.join(parts)}" if parts else f"Yetkili · {UNSPECIFIED}"

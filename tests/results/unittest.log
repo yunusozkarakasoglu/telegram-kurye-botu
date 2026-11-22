@@ -17,6 +17,46 @@ test_take_uses_only_remaining_capacity (test_acceptance.AcceptanceTests.test_tak
 test_ten_connections_same_courier_take_different_batches_obey_global_limit (test_acceptance.AcceptanceTests.test_ten_connections_same_courier_take_different_batches_obey_global_limit) ... ok
 test_ten_connections_take_same_batch_without_duplicate_or_overcapacity (test_acceptance.AcceptanceTests.test_ten_connections_take_same_batch_without_duplicate_or_overcapacity) ... ok
 test_ten_simultaneous_single_claims_preserve_first_couriers_priority (test_acceptance.AcceptanceTests.test_ten_simultaneous_single_claims_preserve_first_couriers_priority) ... ok
+test_admin_menu_has_commands_button (test_commands.CommandMenuTests.test_admin_menu_has_commands_button) ... ok
+test_bilgi_command_button_lists_restaurants (test_commands.CommandMenuTests.test_bilgi_command_button_lists_restaurants) ... ok
+test_command_menu_is_two_columns (test_commands.CommandMenuTests.test_command_menu_is_two_columns) ... ok
+test_invite_command_button_shows_usage (test_commands.CommandMenuTests.test_invite_command_button_shows_usage) ... ok
+test_limit_command_button_shows_current_limit (test_commands.CommandMenuTests.test_limit_command_button_shows_current_limit) ... ok
+test_report_command_button_opens_period_choice (test_commands.CommandMenuTests.test_report_command_button_opens_period_choice) ... ok
+test_start_command_button_restores_menu (test_commands.CommandMenuTests.test_start_command_button_restores_menu) ... ok
+test_tariff_command_button_shows_tariff (test_commands.CommandMenuTests.test_tariff_command_button_shows_tariff) ... ok
+test_unknown_command_is_rejected (test_commands.CommandMenuTests.test_unknown_command_is_rejected) ... ok
+test_all_filter_asks_for_date_range (test_commands.RestaurantOrderFilterTests.test_all_filter_asks_for_date_range) ... ok
+test_all_time_filter_includes_old_records (test_commands.RestaurantOrderFilterTests.test_all_time_filter_includes_old_records) ... ok
+test_courier_cannot_use_order_filters (test_commands.RestaurantOrderFilterTests.test_courier_cannot_use_order_filters) ... ok
+test_delivered_filter_asks_for_date_range_then_lists (test_commands.RestaurantOrderFilterTests.test_delivered_filter_asks_for_date_range_then_lists) ... ok
+test_filter_screen_offers_three_options (test_commands.RestaurantOrderFilterTests.test_filter_screen_offers_three_options) ... ok
+test_other_restaurant_orders_are_not_visible (test_commands.RestaurantOrderFilterTests.test_other_restaurant_orders_are_not_visible) ... ok
+test_pending_filter_lists_only_undelivered (test_commands.RestaurantOrderFilterTests.test_pending_filter_lists_only_undelivered) ... ok
+test_siparisler_command_is_in_restaurant_menu (test_commands.RestaurantOrderFilterTests.test_siparisler_command_is_in_restaurant_menu) ... ok
+test_courier_havuz_and_acik_shortcuts_work (test_commands.RoleCommandMenuTests.test_courier_havuz_and_acik_shortcuts_work) ... ok
+test_courier_menu_lists_only_courier_commands (test_commands.RoleCommandMenuTests.test_courier_menu_lists_only_courier_commands) ... ok
+test_courier_paketlerim_and_mesafeiptal (test_commands.RoleCommandMenuTests.test_courier_paketlerim_and_mesafeiptal) ... ok
+test_foreign_role_command_is_not_executed (test_commands.RoleCommandMenuTests.test_foreign_role_command_is_not_executed) ... ok
+test_mesafe_with_argument_still_records_distance (test_commands.RoleCommandMenuTests.test_mesafe_with_argument_still_records_distance) ... ok
+test_restaurant_menu_lists_only_restaurant_commands (test_commands.RoleCommandMenuTests.test_restaurant_menu_lists_only_restaurant_commands) ... ok
+test_restaurant_shortcuts_work (test_commands.RoleCommandMenuTests.test_restaurant_shortcuts_work) ... ok
+test_add_multiple_admin_numbers (test_contacts.AdminPhoneTests.test_add_multiple_admin_numbers) ... ok
+test_admin_menu_has_phone_section (test_contacts.AdminPhoneTests.test_admin_menu_has_phone_section) ... ok
+test_courier_menu_has_single_row_call_button (test_contacts.AdminPhoneTests.test_courier_menu_has_single_row_call_button) ... ok
+test_delete_requires_confirmation (test_contacts.AdminPhoneTests.test_delete_requires_confirmation) ... ok
+test_invalid_phone_rejected (test_contacts.AdminPhoneTests.test_invalid_phone_rejected) ... ok
+test_max_five_numbers (test_contacts.AdminPhoneTests.test_max_five_numbers) ... ok
+test_multiple_numbers_listed_with_tappable_numbers (test_contacts.AdminPhoneTests.test_multiple_numbers_listed_with_tappable_numbers) ... ok
+test_no_numbers_gives_clear_message (test_contacts.AdminPhoneTests.test_no_numbers_gives_clear_message) ... ok
+test_single_number_is_sent_directly (test_contacts.AdminPhoneTests.test_single_number_is_sent_directly) ... ok
+test_temizle_command_explains_telegram_limit (test_contacts.AdminPhoneTests.test_temizle_command_explains_telegram_limit) ... ok
+test_call_courier_sends_tappable_number_to_restaurant (test_contacts.CourierPhoneTests.test_call_courier_sends_tappable_number_to_restaurant) ... ok
+test_courier_invite_asks_only_for_phone (test_contacts.CourierPhoneTests.test_courier_invite_asks_only_for_phone) ... ok
+test_no_call_button_without_courier_phone (test_contacts.CourierPhoneTests.test_no_call_button_without_courier_phone) ... ok
+test_restaurant_sees_call_button_for_assigned_courier (test_contacts.CourierPhoneTests.test_restaurant_sees_call_button_for_assigned_courier) ... ok
+test_courier_status_shows_name_and_phone (test_contacts.CourierStatusPhoneTests.test_courier_status_shows_name_and_phone) ... ok
+test_courier_without_phone_still_listed_by_name (test_contacts.CourierStatusPhoneTests.test_courier_without_phone_still_listed_by_name) ... ok
 test_callback_answers_are_prioritized (test_durability.DurabilityTests.test_callback_answers_are_prioritized) ... ok
 test_concurrent_claims_cannot_exceed_courier_limit (test_durability.DurabilityTests.test_concurrent_claims_cannot_exceed_courier_limit) ... ok
 test_permanent_telegram_errors_are_dropped (test_durability.DurabilityTests.test_permanent_telegram_errors_are_dropped) ... Telegram iletisi işlenemedi: sendMessage 403 (açıklama yok)
@@ -27,7 +67,7 @@ test_reset_confirmation_expiry_and_cancel (test_durability.DurabilityTests.test_
 test_reset_preserves_accounts_settings_and_ids_are_not_reused (test_durability.DurabilityTests.test_reset_preserves_accounts_settings_and_ids_are_not_reused) ... ok
 test_restart_preserves_online_lock_tariff_and_pending_distance (test_durability.DurabilityTests.test_restart_preserves_online_lock_tariff_and_pending_distance) ... ok
 test_twenty_couriers_two_hundred_packages_local_simulation (test_durability.DurabilityTests.test_twenty_couriers_two_hundred_packages_local_simulation) ... 
-LOCAL_SIMULATION {"couriers": 20, "packages": 200, "delivered": 200, "initial_batch_cards": 400, "mock_api_calls": 4710, "network_calls": 0, "telegram_rate_limits_simulated": false, "cards_retained_after_delivery": 0, "batch_cards_retained_after_delivery": 0, "sqlite_bytes": 1085440}
+LOCAL_SIMULATION {"couriers": 20, "packages": 200, "delivered": 200, "initial_batch_cards": 400, "mock_api_calls": 4910, "network_calls": 0, "telegram_rate_limits_simulated": false, "cards_retained_after_delivery": 0, "batch_cards_retained_after_delivery": 0, "sqlite_bytes": 1130496}
 ok
 test_two_connections_cannot_claim_the_same_package (test_durability.DurabilityTests.test_two_connections_cannot_claim_the_same_package) ... ok
 test_all_form_changes_edit_same_message (test_forms.FormTests.test_all_form_changes_edit_same_message) ... ok
@@ -69,6 +109,32 @@ test_pool_contains_only_unassigned_packages (test_navigation.NavigationTests.tes
 test_refresh_callback_still_edits_same_card (test_navigation.NavigationTests.test_refresh_callback_still_edits_same_card) ... ok
 test_report_shows_unspecified_region (test_navigation.NavigationTests.test_report_shows_unspecified_region) ... ok
 test_tariff_menu_label_shows_current_tariff (test_navigation.NavigationTests.test_tariff_menu_label_shows_current_tariff) ... ok
+test_acik_paketler_still_has_single_summary (test_operations.ActiveSummaryInPaketlerimTests.test_acik_paketler_still_has_single_summary) ... ok
+test_delivered_history_has_no_active_summary (test_operations.ActiveSummaryInPaketlerimTests.test_delivered_history_has_no_active_summary) ... ok
+test_paketlerim_active_list_ends_with_summary (test_operations.ActiveSummaryInPaketlerimTests.test_paketlerim_active_list_ends_with_summary) ... ok
+test_no_summary_when_no_active_packages (test_operations.ActiveSummaryTests.test_no_summary_when_no_active_packages) ... ok
+test_summary_after_cards_lists_packages_with_state (test_operations.ActiveSummaryTests.test_summary_after_cards_lists_packages_with_state) ... ok
+test_summary_comes_after_cards (test_operations.ActiveSummaryTests.test_summary_comes_after_cards) ... ok
+test_summary_uses_courier_fee_and_region_fallback (test_operations.ActiveSummaryTests.test_summary_uses_courier_fee_and_region_fallback) ... ok
+test_pool_package_shows_placeholder_courier (test_operations.DetailLineTests.test_pool_package_shows_placeholder_courier) ... ok
+test_status_and_courier_on_own_lines (test_operations.DetailLineTests.test_status_and_courier_on_own_lines) ... ok
+test_all_packages_km_done_gives_clear_message (test_operations.DistanceFlowTests.test_all_packages_km_done_gives_clear_message) ... ok
+test_choosing_package_then_entering_km_names_the_package (test_operations.DistanceFlowTests.test_choosing_package_then_entering_km_names_the_package) ... ok
+test_map_hidden_after_pickup_but_call_remains (test_operations.DistanceFlowTests.test_map_hidden_after_pickup_but_call_remains) ... ok
+test_mesafe_lists_packages_when_multiple_are_active (test_operations.DistanceFlowTests.test_mesafe_lists_packages_when_multiple_are_active) ... ok
+test_pending_entry_is_named_and_single (test_operations.DistanceFlowTests.test_pending_entry_is_named_and_single) ... ok
+test_cancel_update_keeps_old_value (test_operations.DistanceUpdateTests.test_cancel_update_keeps_old_value) ... ok
+test_invalid_distance_keeps_editing (test_operations.DistanceUpdateTests.test_invalid_distance_keeps_editing) ... ok
+test_mesafeiptal_not_listed_but_command_still_supported (test_operations.DistanceUpdateTests.test_mesafeiptal_not_listed_but_command_still_supported) ... ok
+test_update_changes_distance_and_fee (test_operations.DistanceUpdateTests.test_update_changes_distance_and_fee) ... ok
+test_update_lists_only_packages_with_distance (test_operations.DistanceUpdateTests.test_update_lists_only_packages_with_distance) ... ok
+test_update_refuses_delivered_or_foreign_package (test_operations.DistanceUpdateTests.test_update_refuses_delivered_or_foreign_package) ... ok
+test_call_and_km_commands_stay_allowed (test_operations.KmPendingGuardTests.test_call_and_km_commands_stay_allowed) ... ok
+test_callback_is_blocked_and_answered (test_operations.KmPendingGuardTests.test_callback_is_blocked_and_answered) ... ok
+test_cancel_then_other_commands_work (test_operations.KmPendingGuardTests.test_cancel_then_other_commands_work) ... ok
+test_distance_input_and_cancel_still_work (test_operations.KmPendingGuardTests.test_distance_input_and_cancel_still_work) ... ok
+test_menu_label_is_blocked (test_operations.KmPendingGuardTests.test_menu_label_is_blocked) ... ok
+test_other_command_is_blocked_with_clear_warning (test_operations.KmPendingGuardTests.test_other_command_is_blocked_with_clear_warning) ... ok
 test_admin_courier_summary_includes_offline_active_courier (test_operations.OperationTests.test_admin_courier_summary_includes_offline_active_courier) ... ok
 test_cancel_and_stale_draft_buttons (test_operations.OperationTests.test_cancel_and_stale_draft_buttons) ... ok
 test_delivery_requires_pickup_and_is_idempotent (test_operations.OperationTests.test_delivery_requires_pickup_and_is_idempotent) ... ok
@@ -90,10 +156,23 @@ test_tariff_boundaries_and_decimal_inputs (test_operations.OperationTests.test_t
 test_tariff_change_does_not_change_recorded_fee (test_operations.OperationTests.test_tariff_change_does_not_change_recorded_fee) ... ok
 test_ten_package_form_regions_payments_and_duplicate_submit (test_operations.OperationTests.test_ten_package_form_regions_payments_and_duplicate_submit) ... ok
 test_unknown_dates_appear_only_in_all_time_report (test_operations.OperationTests.test_unknown_dates_appear_only_in_all_time_report) ... ok
+test_pool_card_shows_havuzda_bekliyor (test_operations.StatusLabelTests.test_pool_card_shows_havuzda_bekliyor) ... ok
+test_status_progression_labels (test_operations.StatusLabelTests.test_status_progression_labels) ... ok
+test_turkish_phone_formats_are_normalized_for_dialing (test_profile.CallNumberTests.test_turkish_phone_formats_are_normalized_for_dialing) ... ok
+test_unusual_numbers_keep_some_dialable_form (test_profile.CallNumberTests.test_unusual_numbers_keep_some_dialable_form) ... ok
+test_call_message_line_is_contiguous_for_telegram_link (test_profile.DialNumberTests.test_call_message_line_is_contiguous_for_telegram_link) ... ok
+test_dial_number_is_single_token_e164 (test_profile.DialNumberTests.test_dial_number_is_single_token_e164) ... ok
+test_google_maps_place_link_with_at_is_parsed (test_profile.LocationInputTests.test_google_maps_place_link_with_at_is_parsed) ... ok
+test_google_maps_query_link_is_parsed (test_profile.LocationInputTests.test_google_maps_query_link_is_parsed) ... ok
+test_out_of_range_link_is_rejected (test_profile.LocationInputTests.test_out_of_range_link_is_rejected) ... ok
+test_plain_coordinates_are_accepted (test_profile.LocationInputTests.test_plain_coordinates_are_accepted) ... ok
+test_share_url_with_ll_is_parsed (test_profile.LocationInputTests.test_share_url_with_ll_is_parsed) ... ok
+test_unrelated_text_at_location_step_is_rejected (test_profile.LocationInputTests.test_unrelated_text_at_location_step_is_rejected) ... ok
+test_phone_prompt_warns_about_spaces_and_shows_example (test_profile.PhonePromptTests.test_phone_prompt_warns_about_spaces_and_shows_example) ... ok
 test_admin_updates_existing_restaurant (test_profile.ProfileTests.test_admin_updates_existing_restaurant) ... ok
 test_after_pickup_assigned_card_still_has_call_button (test_profile.ProfileTests.test_after_pickup_assigned_card_still_has_call_button) ... ok
 test_all_steps_can_be_skipped (test_profile.ProfileTests.test_all_steps_can_be_skipped) ... ok
-test_call_button_sends_restaurant_contact_card (test_profile.ProfileTests.test_call_button_sends_restaurant_contact_card) ... ok
+test_call_button_sends_tappable_number_not_contact_card (test_profile.ProfileTests.test_call_button_sends_tappable_number_not_contact_card) ... ok
 test_commands_are_not_swallowed_by_profile_step (test_profile.ProfileTests.test_commands_are_not_swallowed_by_profile_step) ... ok
 test_courier_cannot_edit_profile_or_call_from_foreign_package (test_profile.ProfileTests.test_courier_cannot_edit_profile_or_call_from_foreign_package) ... ok
 test_courier_card_has_map_and_call_and_contact_line (test_profile.ProfileTests.test_courier_card_has_map_and_call_and_contact_line) ... ok
@@ -102,6 +181,8 @@ test_new_restaurant_profile_is_collected_and_copied (test_profile.ProfileTests.t
 test_no_call_button_without_phone (test_profile.ProfileTests.test_no_call_button_without_phone) ... ok
 test_phone_can_come_from_contact_card (test_profile.ProfileTests.test_phone_can_come_from_contact_card) ... ok
 test_pool_card_shows_call_and_map_for_new_courier (test_profile.ProfileTests.test_pool_card_shows_call_and_map_for_new_courier) ... ok
+test_call_message_includes_restaurant_name_and_contact (test_profile.RestaurantCallMessageTests.test_call_message_includes_restaurant_name_and_contact) ... ok
+test_call_message_without_contact_still_shows_restaurant (test_profile.RestaurantCallMessageTests.test_call_message_without_contact_still_shows_restaurant) ... ok
 test_closed_card_reference_is_released_even_if_telegram_forbids_edit (test_queue.QueueTests.test_closed_card_reference_is_released_even_if_telegram_forbids_edit) ... Telegram iletisi işlenemedi: answerCallbackQuery 403 (açıklama yok)
 Telegram iletisi işlenemedi: sendMessage 403 (açıklama yok)
 Telegram iletisi işlenemedi: sendMessage 403 (açıklama yok)
@@ -125,14 +206,23 @@ ok
 test_unchanged_edit_is_success_not_an_infinite_retry (test_queue.QueueTests.test_unchanged_edit_is_success_not_an_infinite_retry) ... Telegram iletisi işlenemedi: answerCallbackQuery 400 (Bad Request: message is not modified)
 Telegram iletisi işlenemedi: editMessageText 400 (Bad Request: message is not modified)
 ok
+test_add_region_updates_list (test_regions.RegionAdminTests.test_add_region_updates_list) ... ok
+test_admin_sees_list_with_add_and_delete_buttons (test_regions.RegionAdminTests.test_admin_sees_list_with_add_and_delete_buttons) ... ok
+test_command_menu_lists_bolgeler (test_regions.RegionAdminTests.test_command_menu_lists_bolgeler) ... ok
+test_courier_cannot_open_region_admin (test_regions.RegionAdminTests.test_courier_cannot_open_region_admin) ... ok
+test_delete_requires_confirmation (test_regions.RegionAdminTests.test_delete_requires_confirmation) ... ok
+test_duplicate_and_blank_names_are_rejected (test_regions.RegionAdminTests.test_duplicate_and_blank_names_are_rejected) ... ok
+test_max_region_limit (test_regions.RegionAdminTests.test_max_region_limit) ... ok
+test_region_list_drives_restaurant_form (test_regions.RegionAdminTests.test_region_list_drives_restaurant_form) ... ok
+test_regions_seeded_from_settings (test_regions.RegionAdminTests.test_regions_seeded_from_settings) ... ok
 test_DOCUMENTED_LIMIT_first_send_can_repeat_after_remote_success_and_crash (test_reproductions.FixedDefectRegressions.test_DOCUMENTED_LIMIT_first_send_can_repeat_after_remote_success_and_crash) ... ok
 test_known_message_edit_retry_after_crash_has_same_target (test_reproductions.FixedDefectRegressions.test_known_message_edit_retry_after_crash_has_same_target) ... ok
 test_malformed_callbacks_are_rejected_and_checkpoint_advances (test_reproductions.FixedDefectRegressions.test_malformed_callbacks_are_rejected_and_checkpoint_advances) ... ok
 test_one_chat_rate_limit_does_not_block_other_chat (test_reproductions.FixedDefectRegressions.test_one_chat_rate_limit_does_not_block_other_chat) ... Telegram gönderimi ertelendi: Telegram HTTP/API 429
 ok
 test_persistent_rate_limit_does_not_block_main_update_polling (test_reproductions.FixedDefectRegressions.test_persistent_rate_limit_does_not_block_main_update_polling) ... INFO @test_bot çalışıyor.
-INFO Bot durduruldu.
 WARNING Telegram gönderimi ertelendi: Telegram HTTP/API 429
+INFO Bot durduruldu.
 ok
 test_repeated_open_views_update_one_card_and_release_references_on_claim (test_reproductions.FixedDefectRegressions.test_repeated_open_views_update_one_card_and_release_references_on_claim) ... ok
 test_reset_removes_all_stale_order_notifications_even_after_id_reuse (test_reproductions.FixedDefectRegressions.test_reset_removes_all_stale_order_notifications_even_after_id_reuse) ... ok
@@ -151,6 +241,37 @@ test_restaurant_cannot_use_another_draft (test_roles.RoleTests.test_restaurant_c
 test_role_cannot_be_changed_by_invite (test_roles.RoleTests.test_role_cannot_be_changed_by_invite) ... ok
 test_unregistered_callbacks_rejected (test_roles.RoleTests.test_unregistered_callbacks_rejected) ... ok
 test_wrong_admin_code_rejected (test_roles.RoleTests.test_wrong_admin_code_rejected) ... ok
+test_courier_contact_card_can_supply_phone (test_self_registration.SelfRegistrationTests.test_courier_contact_card_can_supply_phone) ... ok
+test_courier_enters_own_name_and_phone (test_self_registration.SelfRegistrationTests.test_courier_enters_own_name_and_phone) ... ok
+test_invalid_invite_role_shows_usage (test_self_registration.SelfRegistrationTests.test_invalid_invite_role_shows_usage) ... ok
+test_invite_with_name_keeps_old_behaviour (test_self_registration.SelfRegistrationTests.test_invite_with_name_keeps_old_behaviour) ... ok
+test_invite_without_name_creates_empty_named_invite (test_self_registration.SelfRegistrationTests.test_invite_without_name_creates_empty_named_invite) ... ok
+test_restaurant_flow_asks_name_phone_location (test_self_registration.SelfRegistrationTests.test_restaurant_flow_asks_name_phone_location) ... ok
+test_admin_command_menu_lists_every_admin_command (test_tariff.AdminCommandMenuCoverageTests.test_admin_command_menu_lists_every_admin_command) ... ok
+test_bolgeler_button_opens_region_screen (test_tariff.AdminCommandMenuCoverageTests.test_bolgeler_button_opens_region_screen) ... ok
+test_sohbeti_temizle_button_explains_path (test_tariff.AdminCommandMenuCoverageTests.test_sohbeti_temizle_button_explains_path) ... ok
+test_yonetici_numara_button_opens_phone_screen (test_tariff.AdminCommandMenuCoverageTests.test_yonetici_numara_button_opens_phone_screen) ... ok
+test_admin_command_menu_lists_paket_limit (test_tariff.LimitCommandTests.test_admin_command_menu_lists_paket_limit) ... ok
+test_menu_label_shows_paket_limit (test_tariff.LimitCommandTests.test_menu_label_shows_paket_limit) ... ok
+test_old_limit_command_still_works (test_tariff.LimitCommandTests.test_old_limit_command_still_works) ... ok
+test_paket_limit_command_sets_and_reports (test_tariff.LimitCommandTests.test_paket_limit_command_sets_and_reports) ... ok
+test_courier_cannot_use_paket_limit_even_without_slash (test_tariff.LimitInputToleranceTests.test_courier_cannot_use_paket_limit_even_without_slash) ... ok
+test_paket_limit_without_slash_and_value_shows_current (test_tariff.LimitInputToleranceTests.test_paket_limit_without_slash_and_value_shows_current) ... ok
+test_paket_limit_without_slash_is_accepted (test_tariff.LimitInputToleranceTests.test_paket_limit_without_slash_is_accepted) ... ok
+test_base_fee_can_be_changed_with_buttons (test_tariff.TariffEditorTests.test_base_fee_can_be_changed_with_buttons) ... ok
+test_cli_style_command_still_works (test_tariff.TariffEditorTests.test_cli_style_command_still_works) ... ok
+test_command_menu_tarife_button_opens_editor (test_tariff.TariffEditorTests.test_command_menu_tarife_button_opens_editor) ... ok
+test_courier_cannot_edit_tariff (test_tariff.TariffEditorTests.test_courier_cannot_edit_tariff) ... ok
+test_expired_edit_is_ignored (test_tariff.TariffEditorTests.test_expired_edit_is_ignored) ... ok
+test_invalid_amount_keeps_old_value_and_waits (test_tariff.TariffEditorTests.test_invalid_amount_keeps_old_value_and_waits) ... ok
+test_kademe_list_shows_all_eight_steps (test_tariff.TariffEditorTests.test_kademe_list_shows_all_eight_steps) ... ok
+test_menu_button_is_not_swallowed_by_edit (test_tariff.TariffEditorTests.test_menu_button_is_not_swallowed_by_edit) ... ok
+test_recorded_fee_uses_edited_tariff (test_tariff.TariffEditorTests.test_recorded_fee_uses_edited_tariff) ... ok
+test_single_kademe_change_updates_totals (test_tariff.TariffEditorTests.test_single_kademe_change_updates_totals) ... ok
+test_tariff_screen_explains_how_it_works (test_tariff.TariffEditorTests.test_tariff_screen_explains_how_it_works) ... ok
+test_acceptance_updates_accept_time_and_logs_history (test_transfer.TransferHistoryTests.test_acceptance_updates_accept_time_and_logs_history) ... ok
+test_card_shows_transfer_note_and_first_acceptance (test_transfer.TransferHistoryTests.test_card_shows_transfer_note_and_first_acceptance) ... ok
+test_no_transfer_note_without_history (test_transfer.TransferHistoryTests.test_no_transfer_note_without_history) ... ok
 test_all_to_pool_needs_confirmation_then_clears_courier (test_transfer.TransferTests.test_all_to_pool_needs_confirmation_then_clears_courier) ... ok
 test_courier_sees_transfer_option_under_delivery_button (test_transfer.TransferTests.test_courier_sees_transfer_option_under_delivery_button) ... ok
 test_decline_sends_packages_to_pool (test_transfer.TransferTests.test_decline_sends_packages_to_pool) ... ok
@@ -167,6 +288,6 @@ test_target_with_packages_cannot_be_offered (test_transfer.TransferTests.test_ta
 test_transferring_all_unlocks_courier_immediately (test_transfer.TransferTests.test_transferring_all_unlocks_courier_immediately) ... ok
 
 ----------------------------------------------------------------------
-Ran 150 tests in 12.708s
+Ran 271 tests in 13.199s
 
 OK

@@ -9,11 +9,24 @@ Restoranlardan gelen tekli/çoklu paket taleplerini kuryelere dağıtan Telegram
 - Kurye başına yönetici limitiyle sınırlı, atomik tekli/toplu kabul.
 - İlk tekli kabulde aynı talepte kapasite kadar pakete 10 saniye seçim önceliği. Tekrar tıklama süreyi uzatmaz; vazgeçme ve çevrimdışına geçiş önceliği bırakır.
 - Dosya (fotoğraf/video/PDF) mesajları indirilmez, işlenmez; 10 dakikada en fazla bir kısa uyarı gönderilir. Dosya trafiği bot sunucusundan geçmez.
+- Kurye kapasitesi **Paket-Limit** / `/paket-limit` ile belirlenir (ör. `/paket-limit 5`; eski `/limit` de çalışır); `/acik` yalnız kuryenin kendi açık paketlerini listeler.
+- `/tarife` ekranı tarifeyi açıklar ve **Taban Ücreti / Kademe Farkı** düğmeleriyle adım adım düzenleme sunar (ilk sayı taban, sonraki 8 kademe farkı).
+- Restoran `/siparisler` ile kendi siparişlerini **Tümü / Bekleyen / Teslim Edilen** ve tarih aralığına göre filtreler.
+- Kurye davetinde telefon girilirse restoran, atanmış paketin kartında **Kuryeyi Ara** görür.
+- Kurye/restoran menüsünde tek satır **Yöneticiyi Ara**; yönetici en fazla 5 numara tanımlar (`/yonetici-numara`).
+- Yönetici **Bölgeler** (`/bolgeler`) ekranından restoran bölge listesini ekler/siler; restoranın bölge seçimi bu listeden beslenir.
+- **Komutlar** düğmesi her rolde var; yalnız o role ait komutları iki sütunlu düğme listesi olarak açar (yönetici + kurye/restoran kısayolları).
 - Çoklu talepte her paket kendi numarasını taşır (`Talep #3000001-2`); grup numarası ortak kalır, toplu kabul aynı grupta çalışır.
 - Kurye menüsü ayrıdır: **Havuz** atanmamış işleri, **Açık Paketler** yalnız kuryenin üzerindeki işleri gösterir; ikincisi kilitli/çevrimdışıyken de açılır.
-- Yönetici restoran eklerken yetkili adı, telefon ve konum girebilir (`/bilgi` ile güncellenir). Kurye kartında **Haritada Aç** (Google Maps) ve **Ara** (rehber kartı, tek dokunuşla arama) düğmeleri çıkar. Alanlar isteğe bağlıdır.
+- Davet iki modda: isim vermeden (`/davet kurye`) → kişi kendi ad/telefonunu girer (restoran ayrıca konum); isim vererek → yönetici bilgileri girer. Yönetici restoran eklerken yetkili adı, telefon ve konum girebilir; konum **mevcut konum** veya **Google Maps bağlantısı** ile verilir (`/bilgi` ile güncellenir). Kurye kartında **Haritada Aç** (Google Maps) ve **Restoranı Ara** (numarayı tıklanabilir mesaj olarak gönderir; dokununca arama açılır) düğmeleri çıkar. Alanlar isteğe bağlıdır.
+- Aktarımda kabul zamanı yeni kuryeye geçer; `İlk kabul`, `Alım · ilk kurye` ve “Aktarma bilgisi” notu geçmişi korur.
 - Kurye, arıza/kaza durumunda paketlerini **Aktar** ile havuza veya kabul şartıyla başka kuryeye devredebilir; reddedilen/süresi dolan teklif havuza düşer ve alan/mesafe/ücret korunur.
 - Limite ulaşınca tüm aktif paketler teslim edilene kadar yeni iş kilidi.
+- **Açık Paketler** ve **Paketlerim → Aktif Paketler** kartlarının altında özet: aktif sayı, hazır/km bekleyen ve `Paket N : Talep #X-Y · bölge · km · ücret · durum` satırları.
+- Km girişi beklerken diğer işlemler uyarıyla durdurulur (km yazma, `/mesafe`, `/mesafeiptal`, Ara serbest).
+- `/mesafe-guncelle` girilmiş km’yi düzeltir (ücret yeniden hesaplanır); `/mesafeiptal` yalnız bekleyen girişi iptal eder ve menüde gizlidir.
+- `/mesafe` çoklu pakette hangi paket için km girileceğini sorar; kayıt paket adıyla onaylanır. Alımdan sonra harita düğmesi gizlenir.
+- Kartlar başlıklı alanlardan oluşur (`Sipariş no / Restoran / Bölge / Ödeme / Yetkili / Kabul / Alım / Teslim / Mesafe / Paket ücreti / Durum / Kurye`); durum etiketleri: **Havuzda bekliyor → Kabul edildi → Kuryede / Yolda → Teslim edildi**; aktarımda yeni kuryenin kabulüne göre güncellenir.
 - Paket bazında kilometre, otomatik ücret, alım/teslim saatleri ve dönem raporları.
 - Talep/sohbet başına tek açık kart; kalıcı, hız sınırlı ve öncelikli gönderim kuyruğu.
 

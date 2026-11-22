@@ -1,6 +1,7 @@
 import secrets
 
 from .ui import keyboard
+from .validation import dial_number
 
 
 class AdminMixin:
@@ -58,10 +59,14 @@ class AdminMixin:
     def configure_limit(self, chat, value):
         current = self.active_limit()
         if not value:
-            self.send(chat, f"Genel paket limiti · {current}\nDeğiştirmek için /limit 5 yazın.")
+            self.send(chat, (
+                f"Genel paket limiti · {current} paket\n"
+                "Bu, her kuryenin aynı anda üzerinde taşıyabileceği en fazla aktif paket sayısıdır.\n"
+                "Değiştirmek için /paket-limit 5 gibi yazın (1–99)."
+            ))
             return
         if not value.isascii() or not value.isdecimal() or len(value) > 2 or not 1 <= int(value) <= 99:
-            self.send(chat, "1 ile 99 arasında bir paket limiti girin. Örnek: /limit 5")
+            self.send(chat, "1 ile 99 arasında bir paket limiti girin. Örnek: /paket-limit 5")
             return
         limit = int(value)
         self.db.execute("UPDATE settings SET value=? WHERE key='active_limit'", (limit,))
@@ -109,7 +114,7 @@ class AdminMixin:
             FROM accounts WHERE role='kurye'
         """).fetchone()
         rows = self.db.execute("""
-            SELECT a.name,a.online,a.locked,
+            SELECT a.name,a.online,a.locked,a.phone,
                    (SELECT count(*) FROM packages WHERE courier=a.id AND delivered_at IS NULL) AS active
             FROM accounts a WHERE a.role='kurye'
             ORDER BY a.online DESC,a.locked,a.name,a.id LIMIT 13 OFFSET ?
@@ -122,7 +127,8 @@ class AdminMixin:
         ]
         for row in rows[:12]:
             state = "Çevrimdışı" if not row["online"] else "Teslim kilidi" if row["locked"] else "Müsait"
-            lines.append(f"{row['name']} · {state} · {row['active']} aktif paket")
+            phone = f" · ☎ {dial_number(row['phone'])}" if row["phone"] else ""
+            lines.append(f"{row['name']} · {state} · {row['active']} aktif paket{phone}")
         if not rows:
             lines.append("Bu sayfada kurye yok.")
         buttons = []
