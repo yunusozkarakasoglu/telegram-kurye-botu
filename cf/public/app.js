@@ -617,6 +617,7 @@
       '<div class="fld"><label>' + (isRest ? 'Restoran adı' : 'Ad Soyad') + '</label>' +
         '<input id="p-name" value="' + esc(u.name || '') + '"></div>' +
       (isRest ? '<div class="fld"><label>Yetkili adı</label><input id="p-contact" value="' + esc(u.contact_name || '') + '"></div>' : '') +
+      (!isRest ? '<div class="ameta" style="margin:6px 0 10px;color:var(--t2)">Kurye paket sınırı: <b>' + (((S.session || {}).settings || {}).limit || '—') + '</b> paket</div>' : '') +
       '<div class="fld"><label>Telefon</label><input id="p-phone" inputmode="tel" value="' + esc(u.phone || '') + '" placeholder="0546 208 99 00"></div>' +
       '<div class="err" id="p-err"></div>' +
       '<button class="p" id="p-save" style="width:100%">Kaydet</button>' +

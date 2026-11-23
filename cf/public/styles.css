@@ -241,3 +241,5 @@ header{position:relative}
 .ghead{display:flex;align-items:center;gap:8px}
 
 .late{color:var(--er)}
+
+.tel.big{font-size:26px;margin-left:auto;line-height:1;text-decoration:none}
