@@ -56,7 +56,8 @@
         '<button class="sm ' + (S.ozetGroup === 'region' ? 'p' : '') + '" data-og="region">Bölgeye göre</button>' +
         '<button class="sm ' + (S.ozetGroup === 'restaurant' ? 'p' : '') + '" data-og="restaurant">Restorana göre</button>' +
         '</div>';
-      panel('<div class="kpis k3">' +
+      panel('<div class="filters" style="margin-bottom:8px"><button class="sm" id="oz-ref">↻ Yenile</button></div>' +
+        '<div class="kpis k3">' +
         kpi('Aktif restoran', d.active_restaurants) +
         kpi('Aktif kurye', d.active_couriers) +
         kpi('Toplam paket (bugün)', d.today_packages) +
@@ -65,6 +66,7 @@
         groupBtns +
         '<div class="card" style="padding:6px 10px">' + list + '</div>' +
         '<p class="note">Bölgeler: ' + esc((d.regions || []).join(', ')) + '</p>');
+      $('oz-ref').onclick = function () { viewOzet(); };
       Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-w]'), function (b) {
         b.onclick = function () { waitingSheet(Number(b.getAttribute('data-w')), waiting); };
       });
@@ -126,10 +128,11 @@
             '<button class="sm p" data-ata="' + p.id + '">Ata</button>' +
             '<button class="sm d" data-iptal="' + p.id + '">İptal</button></div></div>';
         }).join('');
-        panel('<div class="filters"><input id="hq" placeholder="Restoran / bölge / sipariş ara…"></div>' +
+        panel('<div class="filters"><input id="hq" placeholder="Restoran / bölge / sipariş ara…"><button class="sm" id="hv-ref">↻ Yenile</button></div>' +
           '<div class="acards">' + (rows || '<div class="empty">Havuzda paket yok</div>') + '</div>');
         $('hq').value = q;
         $('hq').oninput = function () { q = ($('hq').value || '').toLocaleLowerCase('tr'); draw(); };
+        $('hv-ref').onclick = function () { viewHavuz(); };
         Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-ata]'), function (b) {
           b.onclick = function () {
             var id = b.getAttribute('data-ata');
@@ -353,7 +356,8 @@
         return '<tr><td>#' + b.id + '</td><td>' + esc(b.name) + '</td><td class="num">' + b.n + '</td>' +
           '<td>' + dt(b.created_at) + '</td></tr>';
       }).join('');
-      panel('<table class="tbl"><thead><tr><th>Talep</th><th>Restoran</th><th class="num">Paket</th><th>Tarih</th></tr></thead>' +
+      panel('<div class="filters" style="margin-bottom:8px"><button class="sm" id="st-ref">↻ Yenile</button></div>' +
+        '<table class="tbl"><thead><tr><th>Talep</th><th>Restoran</th><th class="num">Paket</th><th>Tarih</th></tr></thead>' +
         '<tbody>' + (rows || '<tr><td colspan="4">Kayıt yok</td></tr>') + '</tbody></table>');
     }).catch(showError);
   }
@@ -494,7 +498,8 @@
         return '<tr><td>#' + b.id + '</td><td>' + esc(b.name) + '</td><td class="num">' + b.n + '</td>' +
           '<td>' + dt(b.created_at) + '</td></tr>';
       }).join('');
-      panel('<table class="tbl"><thead><tr><th>Talep</th><th>Restoran</th><th class="num">Paket</th><th>Tarih</th></tr></thead>' +
+      panel('<div class="filters" style="margin-bottom:8px"><button class="sm" id="st-ref">↻ Yenile</button></div>' +
+        '<table class="tbl"><thead><tr><th>Talep</th><th>Restoran</th><th class="num">Paket</th><th>Tarih</th></tr></thead>' +
         '<tbody>' + (rows || '<tr><td colspan="4">Kayıt yok</td></tr>') + '</tbody></table>');
     }).catch(showError);
   }

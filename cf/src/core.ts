@@ -320,7 +320,7 @@ export class Bot {
     const body = packages.map((p) => `${p.batch}-${p.number} · ${p.restaurant} · ${p.region || "Belirtilmedi"}`).join("\n");
     await this.send(packages[0].owner, `${body}\n${status}`);
     const lines = packages.map((p) => `#${p.batch}-${p.number} · ${p.restaurant} · ${p.region || "Belirtilmedi"}`);
-    await this.send(courier, `Üzerinize alınan paketler (${packages.length})\n\n${lines.join("\n")}\n\nDetay için paket düğmesine dokunun.`,
+    await this.send(courier, `${manual ? "Size atanan" : "Üzerinize alınan"} paketler (${packages.length})\n\n${lines.join("\n")}\n\nKartı görmek için düğmeye dokunun. Onay/red için uygulamayı açın.`,
       keyboard(packages.slice(0, 10).map((p) => [[`📦 Talep #${p.batch}-${p.number}`, `card:${p.id}`]])), "HTML");
     await pool.refreshBatch(this, batchId);
   }
