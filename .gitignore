@@ -11,3 +11,4 @@ cf/node_modules/
 cf/.wrangler/
 cf/package-lock.json
 .wrangler/
+.dev.vars

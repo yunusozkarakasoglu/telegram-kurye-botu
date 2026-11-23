@@ -255,6 +255,15 @@ export async function transferStep(bot: Bot, user: Account, action: string, toke
   return "Bu işlem kullanılamıyor.";
 }
 
+/** Mini App için: tek paketi onaylı şekilde havuza geri ver (aktarım kapsamı + uygulama). */
+export async function transferToPool(bot: Bot, user: Account, packageId: number): Promise<any> {
+  if (user.role !== "kurye") return "Bu işlem kullanılamıyor.";
+  const rows = await bot.packages("p.id=? AND p.courier=? AND p.delivered_at IS NULL AND p.cancelled_at IS NULL", [packageId, user.id]);
+  if (!rows.length) return "Bu paket size ait değil.";
+  const token = await newScope(bot, user.id, packageId, false);
+  return transferStep(bot, user, "trpy", token);
+}
+
 export async function transferOffer(bot: Bot, user: Account, token: string, targetId: number): Promise<any> {
   const rows = await scopeRows(bot, token, user.id);
   if (!rows) return "Aktarım süresi doldu, tekrar deneyin.";

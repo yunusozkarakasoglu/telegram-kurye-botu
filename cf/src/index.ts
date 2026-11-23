@@ -2,6 +2,7 @@ import { Bot } from "./core";
 import { Db } from "./db";
 import type { Env } from "./types";
 import { MEDIA_NOTICE_SECONDS } from "./constants";
+import { handleApi } from "./api";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -11,6 +12,7 @@ export default {
       const row = await db.first<{ n: number }>("SELECT count(*) AS n FROM accounts");
       return Response.json({ ok: true, accounts: row?.n ?? 0 });
     }
+    if (url.pathname.startsWith("/api/")) return handleApi(request, env);
     if (url.pathname !== "/webhook" || request.method !== "POST") return new Response("not found", { status: 404 });
     const secret = request.headers.get("x-telegram-bot-api-secret-token");
     if (env.WEBHOOK_SECRET && secret !== env.WEBHOOK_SECRET) return new Response("forbidden", { status: 403 });
