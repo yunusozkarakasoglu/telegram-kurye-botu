@@ -235,3 +235,7 @@ header{position:relative}
 .acard .ameta{color:var(--t2);font-size:13px;margin:2px 0;word-break:break-word}
 .acard .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .acard .acts .sm{flex:0 0 auto}
+
+.gsel{margin-left:auto;width:34px;height:34px;border-radius:9px;border:2px solid var(--ac);background:var(--el);color:var(--ac);font-weight:700;cursor:pointer;flex:none}
+.gsel.on{background:var(--ac);color:var(--on)}
+.ghead{display:flex;align-items:center;gap:8px}

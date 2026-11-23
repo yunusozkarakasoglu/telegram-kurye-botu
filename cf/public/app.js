@@ -89,6 +89,14 @@
         '). Aktif paketleriniz teslim edilene kadar yeni iş alamazsınız.</div>';
     }
 
+    function groupHead(title, packages) {
+      var ids = packages.map(function (p) { return p.id; });
+      var all = ids.every(function (id) { return S.sel[id]; });
+      return '<div class="ghead"><span class="gname">' + esc(title) + '</span>' +
+        '<span class="gcount">' + packages.length + ' paket</span>' +
+        '<button class="gsel' + (all ? ' on' : '') + '" data-gsel="' + ids.join(',') + '" title="Tümünü seç">✓</button></div>';
+    }
+
     function row(p) {
       var checked = S.sel[p.id] ? ' checked' : '';
       return '<label class="row"><input type="checkbox" data-i="' + p.id + '"' + checked + '>' +
@@ -105,24 +113,21 @@
       L.forEach(function (p) { (gT[p.batch] = gT[p.batch] || []).push(p); });
       Object.keys(gT).sort(function (a, b) { return Number(b) - Number(a); }).forEach(function (k) {
         var arr = gT[k];
-        h += '<div class="gcard"><div class="ghead"><span class="gname">Talep #' + k + '</span>' +
-          '<span class="gcount">' + arr.length + ' paket</span></div>' + arr.map(row).join('') + '</div>';
+        h += '<div class="gcard">' + groupHead('Talep #' + k, arr) + arr.map(row).join('') + '</div>';
       });
     } else if (S.view === 'restoran') {
       var gR = {};
       L.forEach(function (p) { (gR[p.restaurant] = gR[p.restaurant] || []).push(p); });
       Object.keys(gR).sort().forEach(function (name) {
         var A = gR[name];
-        h += '<div class="gcard"><div class="ghead"><span class="gname">' + esc(name) + '</span>' +
-          '<span class="gcount">' + A.length + ' paket</span></div>' + A.map(row).join('') + '</div>';
+        h += '<div class="gcard">' + groupHead(name, A) + A.map(row).join('') + '</div>';
       });
     } else {
       var k1 = 'region', g = {};
       L.forEach(function (p) { (g[p[k1]] = g[p[k1]] || []).push(p); });
       Object.keys(g).forEach(function (a) {
         var A = g[a];
-        h += '<div class="gcard"><div class="ghead"><span class="gname">' + esc(a) + '</span>' +
-          '<span class="gcount">' + A.length + ' paket</span></div>' + A.map(row).join('') + '</div>';
+        h += '<div class="gcard">' + groupHead(a, A) + A.map(row).join('') + '</div>';
       });
     }
     var perRest = {};
@@ -140,6 +145,14 @@
     main.innerHTML = h;
     Array.prototype.forEach.call(main.querySelectorAll('button[data-g]'), function (b) {
       b.onclick = function () { S.view = b.getAttribute('data-g'); render(); };
+    });
+    Array.prototype.forEach.call(main.querySelectorAll('button[data-gsel]'), function (b) {
+      b.onclick = function () {
+        var ids = b.getAttribute('data-gsel').split(',').map(Number);
+        var all = ids.every(function (id) { return S.sel[id]; });
+        ids.forEach(function (id) { if (all) delete S.sel[id]; else S.sel[id] = 1; });
+        render();
+      };
     });
     Array.prototype.forEach.call(main.querySelectorAll('input[data-i]'), function (i) {
       i.onchange = function () {
