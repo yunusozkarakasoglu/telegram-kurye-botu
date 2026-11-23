@@ -220,3 +220,8 @@ header{position:relative}
 .brow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 4px;border-bottom:1px solid var(--ln);font-size:14px}
 .brow:last-child{border-bottom:0}
 .brow .sm{padding:4px 10px}
+
+.grip{cursor:grab;touch-action:none;user-select:none;font-size:16px;color:var(--t2);margin-right:6px}
+.brow.dragging{opacity:.6;background:var(--el2)}
+.brow{display:flex;align-items:center}
+.brow .bname{flex:1}

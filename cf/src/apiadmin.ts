@@ -147,6 +147,20 @@ export async function adminRoutes(
     return json({ regions: await bot.regionList() });
   }
 
+  if (path === "/yonetim/bolge-sirala" && method === "POST") {
+    const body = await readBody(request);
+    const list: string[] = Array.isArray(body.regions) ? body.regions.map((x: any) => String(x)) : [];
+    const current = await bot.regionList();
+    if (!list.length || list.length !== current.length || [...list].sort().join("|") !== [...current].sort().join("|")) {
+      return fail("Bölge listesi uyuşmuyor; sayfayı yenileyin.", 409, "conflict");
+    }
+    await bot.db.batch(list.map((name, i) =>
+      bot.db.d1.prepare("UPDATE regions SET position=? WHERE name=?").bind(1000 + i, name)));
+    await bot.db.batch(list.map((name, i) =>
+      bot.db.d1.prepare("UPDATE regions SET position=? WHERE name=?").bind(i + 1, name)));
+    return json({ ok: true, regions: list });
+  }
+
   if (path === "/yonetim/bolge" && method === "POST") {
     const body = await readBody(request);
     const action = String(body.action || "add");

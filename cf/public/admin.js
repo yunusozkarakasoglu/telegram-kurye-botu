@@ -194,7 +194,8 @@
     API.yonetim('bolgeler').then(function (d) {
       panel('<div class="filters"><input id="nr" placeholder="Yeni bölge…"><button class="p sm" id="add">Ekle</button></div>' +
         '<div id="blist">' + (d.regions || []).map(function (r, i) {
-          return '<div class="brow"><span><b>' + (i + 1) + '.</b> ' + esc(r) + '</span>' +
+          return '<div class="brow" data-name="' + esc(r) + '"><span class="grip" title="Sürükle">☰</span>' +
+            '<span class="bname"><b>' + (i + 1) + '.</b> ' + esc(r) + '</span>' +
             '<button class="sm d" data-del="' + esc(r) + '" title="Sil">✕ Sil</button></div>';
         }).join('') + '</div>' +
         '<p class="note">Restoranın bölge seçimi bu listeden beslenir.</p>');
@@ -203,6 +204,7 @@
           UI.toast('Bölge eklendi', 'success'); render();
         }).catch(function (e) { UI.toast(e.message || 'Eklenemedi', 'error'); });
       };
+      bindRegionDrag();
       Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-del]'), function (b) {
         b.onclick = function () {
           API.yonetim('bolge', { action: 'del', name: b.getAttribute('data-del') }).then(function () {
@@ -211,6 +213,51 @@
         };
       });
     }).catch(showError);
+  }
+
+  function bindRegionDrag() {
+    var list = $('blist');
+    if (!list) return;
+    var dragging = null;
+    function renumber() {
+      Array.prototype.forEach.call(list.querySelectorAll('.brow'), function (row, i) {
+        row.querySelector('.bname b').textContent = (i + 1) + '.';
+      });
+    }
+    function save() {
+      var order = Array.prototype.map.call(list.querySelectorAll('.brow'), function (r) { return r.getAttribute('data-name'); });
+      API.yonetim('bolgeSirala', { regions: order }).then(function () {
+        UI.toast('Sıralama kaydedildi', 'success');
+      }).catch(function (e) { UI.toast(e.message || 'Kaydedilemedi', 'error'); });
+    }
+    Array.prototype.forEach.call(list.querySelectorAll('.grip'), function (grip) {
+      grip.addEventListener('pointerdown', function (ev) {
+        ev.preventDefault();
+        dragging = grip.closest('.brow');
+        dragging.classList.add('dragging');
+        grip.setPointerCapture(ev.pointerId);
+      });
+      grip.addEventListener('pointermove', function (ev) {
+        if (!dragging) return;
+        var el = document.elementFromPoint(ev.clientX, ev.clientY);
+        var over = el && el.closest ? el.closest('.brow') : null;
+        if (!over || over === dragging || over.parentNode !== list) return;
+        var rect = over.getBoundingClientRect();
+        var after = ev.clientY > rect.top + rect.height / 2;
+        list.insertBefore(dragging, after ? over.nextSibling : over);
+      });
+      grip.addEventListener('pointerup', function () {
+        if (!dragging) return;
+        dragging.classList.remove('dragging');
+        dragging = null;
+        renumber();
+        save();
+      });
+      grip.addEventListener('pointercancel', function () {
+        if (dragging) dragging.classList.remove('dragging');
+        dragging = null;
+      });
+    });
   }
 
   function viewTarife() {

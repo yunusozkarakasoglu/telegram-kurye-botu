@@ -379,6 +379,7 @@
       if (what === 'limit') return req('PUT', '/api/yonetim/limit', arg || {});
       if (what === 'tarifeKaydet') return req('PUT', '/api/yonetim/tarife', arg || {});
       if (what === 'bolge') return req('POST', '/api/yonetim/bolge', arg || {});
+      if (what === 'bolgeSirala') return req('POST', '/api/yonetim/bolge-sirala', arg || {});
       if (what === 'sontalepler') return req('GET', '/api/yonetim/sontalepler');
       if (what === 'temizle') return req('POST', '/api/yonetim/temizle', arg || {});
       return req('GET', '/api/yonetim/' + what);
