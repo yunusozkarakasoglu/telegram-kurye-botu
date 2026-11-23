@@ -13,6 +13,15 @@ export default {
       return Response.json({ ok: true, accounts: row?.n ?? 0 });
     }
     if (url.pathname.startsWith("/api/")) return handleApi(request, env);
+    if (["/", "/index.html", "/admin", "/admin.html"].includes(url.pathname) && env.ASSETS) {
+      const target = url.pathname === "/admin" || url.pathname === "/admin.html" ? "/admin" : "/";
+      const asset = await env.ASSETS.fetch(new Request(new URL(target, url), request));
+      const headers = new Headers(asset.headers);
+      headers.delete("cache-control");
+      headers.delete("etag");
+      headers.set("cache-control", "no-store, max-age=0");
+      return new Response(asset.body, { status: asset.status, headers });
+    }
     if (url.pathname !== "/webhook" || request.method !== "POST") return new Response("not found", { status: 404 });
     const secret = request.headers.get("x-telegram-bot-api-secret-token");
     if (env.WEBHOOK_SECRET && secret !== env.WEBHOOK_SECRET) return new Response("forbidden", { status: 403 });

@@ -7,7 +7,7 @@
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*", "/webhook", "/saglik"]
+    "run_worker_first": ["/api/*", "/webhook", "/saglik", "/", "/index.html", "/admin", "/admin.html"]
   },
   "d1_databases": [
     { "binding": "DB", "database_name": "kurye-db", "database_id": "10d3a231-84d0-48e6-9ac1-50791afc55ab" }

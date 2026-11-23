@@ -1,4 +1,4 @@
-export interface Env { DB: D1Database; BOT_TOKEN: string; BOT_USERNAME?: string; ADMIN_CODE: string; REGIONS?: string; WEBHOOK_SECRET?: string; DEV_AUTH?: string; PANEL_URL?: string }
+export interface Env { DB: D1Database; BOT_TOKEN: string; BOT_USERNAME?: string; ADMIN_CODE: string; REGIONS?: string; WEBHOOK_SECRET?: string; DEV_AUTH?: string; PANEL_URL?: string; ASSETS?: Fetcher }
 export interface Account { id: number; role: string; name: string; locked: number; online: number; latitude: number | null; longitude: number | null; contact_name: string | null; phone: string | null; active: number; deleted: number }
 export interface PackageRow {
   id: number; batch: number; number: number; region: string; courier: number | null; payment: string | null;
