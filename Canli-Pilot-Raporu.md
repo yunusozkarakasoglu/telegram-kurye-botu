@@ -192,6 +192,9 @@ Kullanıcının **Bölgeler** ekranında tanımladığı listeden 4 bölge seçi
 
 ### Yönetici paneli (tamam)
 
+- ☰ menüsünün başında **Anasayfa**; Alt sekmeler: **Özet · Havuz · Son Talepler**. Diğer sayfalar çekmecede.
+- **Kuryeler** kartında **Paketler** → o kuryenin aktif paketleri popup'ta.
+
 - Menü: 3 sütun + mobil hamburger; Kuryeler/Restoranlar kart + arama; telefon 📞 + Düzenle.
 - Bölgeler: satır satır, ▲▼ ile sıralama (kalıcı), ekle/sil.
 - Özet: Aktif restoran / Aktif kurye / Toplam paket (bugün) + **Geciken Siparişler - X Adet**; satıra dokun → boştaki kuryeye ata; bölge/restoran gruplama.

@@ -142,6 +142,12 @@ Bilinen mesaj kimliğiyle yapılan güncellemeler çökme sonrası aynı mesajı
 - Yönetici: 3 sekme + ☰, il/restoran kartları, yenile, bölge sıralama, raporlar, mesaj geçmişi.
 - Kurye: global header ikonları, geçmiş tarih filtresi, kazanç 3 kart, atama popup'ı + 🔔.
 
+### Son doğrulama
+
+- Panel: Anasayfa alt sekmeleri, son sekme hatırlama, çekmece geçişleri.
+- Kurye kartı **Paketler** popup'ı (aktif paket listesi) yerel testte çalıştı.
+- **382/382** Python testi, `ruff` ve `tsc` temiz.
+
 ## Kanıtlar ve tekrar çalıştırma
 
 ```bash
