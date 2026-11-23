@@ -6,6 +6,7 @@ import { json, fail, pkgDto, settings, statesFor } from "./apidto";
 export { json, fail } from "./apidto";
 import * as apiCourier from "./apicourier";
 import * as forms from "./forms";
+import { dialNumber, validPhone } from "./util";
 import { CANCEL_REASONS, PAYMENTS, MAX_PACKAGES, UNSPECIFIED } from "./constants";
 
 /**
@@ -147,6 +148,33 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         total_tl: row?.total ?? 0,
         count: row?.count ?? 0,
         total_km: Math.round((row?.km ?? 0) * 10) / 10,
+      });
+    }
+
+    // ---------- profil ----------
+    if (path === "/profil" && method === "PATCH") {
+      const body = await readBody(request);
+      const name = String(body.name ?? "").trim();
+      const contact = String(body.contact_name ?? "").trim();
+      const phoneRaw = String(body.phone ?? "").trim();
+      if (name.length < 2 || name.length > 80) return fail("Ad en az 2, en fazla 80 karakter olmalı.", 422, "invalid");
+      if (contact && (contact.length < 2 || contact.length > 80)) return fail("Yetkili adı geçersiz.", 422, "invalid");
+      if (!validPhone(phoneRaw)) return fail("Telefon numarası geçersiz. Örnek: 0546 208 99 00", 422, "invalid");
+      const phone = dialNumber(phoneRaw);
+      if (user.role === "kurye") {
+        await bot.db.run("UPDATE accounts SET name=?, phone=? WHERE id=?", name, phone, user.id);
+      } else if (user.role === "restoran") {
+        await bot.db.run("UPDATE accounts SET name=?, contact_name=?, phone=? WHERE id=?", name, contact || null, phone, user.id);
+      } else {
+        return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      }
+      const fresh = (await bot.account(user.id))!;
+      return json({
+        ok: true,
+        user: {
+          id: fresh.id, name: fresh.name, phone: fresh.phone || null,
+          contact_name: fresh.contact_name || null, online: !!fresh.online, locked: !!fresh.locked,
+        },
       });
     }
 

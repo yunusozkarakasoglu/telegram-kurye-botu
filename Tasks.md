@@ -3,6 +3,11 @@
 ## Açık
 - [x] Cloudflare yerel E2E simülasyonu (restoran→kabul→km→teslim→aktarım→iptal) — geçti.
 - [x] Mini App yayını (`e1e02837…`): statik arayüz + `/api/*`, menü düğmesi "Kurye", initData 1 saat.
+- [x] Mini App menü düğmesi geçici olarak kapatıldı (`commands`); botu tam düzenleme turu başladı.
+- [x] Bot: havuz özeti (restoran/paket/kapasite), admin 3 sütun menü + alt satırlar, kabul sonrası kart yerine liste + `card:` düğmesi.
+- [ ] Bot profilleri: kurye ad/telefon, restoran ad/yetkili/telefon düzenleme (bot içi).
+- [ ] Bot `Paketlerim`: liste/kart görünüm seçimi (kurye tercihi saklanır).
+- [ ] Python'a aynı değişikliklerin tam portu (kabul listesi, profiller, görünüm tercihi).
 - [ ] Mini App gerçek Telegram açılışı: kurye/restoran/yönetici ekranları (kullanıcı testi).
 - [ ] Bot menülerini "Uygulamayı Aç" + bildirim modeline indirgemek (tam Mini App geçişi).
 - [x] Bot görünen adı “Kurye Paket”; kullanıcı adı bilinçli olarak eski kalıyor (Telegram self-servis kaldırdı).

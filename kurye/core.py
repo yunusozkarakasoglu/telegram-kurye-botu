@@ -74,17 +74,21 @@ class Bot(AcceptanceMixin, AccountsAdminMixin, CancelMixin, AdminMixin, AutoOffe
             labels.remove("Raporlar")
             tail = ["Yönetici Numarası", "Raporlar"]
         solo = {"Yöneticiyi Ara"}
-        rows, pair = [], []
+        per_row = 3 if user["role"] == "yonetici" else 2
+        rows, group = [], []
         for label in labels:
             if label in solo:
-                rows.append([{"text": label}])
                 continue
-            pair.append({"text": label})
-            if len(pair) == 2:
-                rows.append(pair)
-                pair = []
-        if pair:
-            rows.append(pair)
+            group.append({"text": label})
+            if len(group) == per_row:
+                rows.append(group)
+                group = []
+        if group:
+            rows.append(group)
+        if user["role"] == "yonetici":
+            rows.append([{"text": "Yöneticiyi Ara"}])
+        elif solo:
+            rows.append([{"text": label} for label in solo])
         if tail:
             rows.append([{"text": label} for label in tail])
         self.send(user["id"], text, {"keyboard": rows, "resize_keyboard": True})

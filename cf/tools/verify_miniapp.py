@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Mini App ↔ yerel Worker (D1) uçtan uca doğrulaması."""
-import asyncio, sys, pathlib
+import asyncio
+import pathlib
+import sys
+
 from playwright.async_api import async_playwright
 
 BASE = "http://127.0.0.1:8787"

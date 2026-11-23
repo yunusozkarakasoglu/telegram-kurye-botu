@@ -46,7 +46,7 @@ class PoolTenPackagesTests(BotCase):
         self.flush()
         text = self.texts(COURIER)
         self.assertIn("Bölgeye Göre Grupla", text)
-        self.assertIn("Toplam 10 paket", text)
+        self.assertIn("Toplam havuzda 1 restorandan 10 paket beklemektedir.", text)
         self.assertIn("📍 Kadıköy · 4 paket", text)
         self.assertIn("📍 Üsküdar · 3 paket", text)
         self.assertIn("📍 Ataşehir · 2 paket", text)

@@ -178,14 +178,18 @@ class NavigationTests(BotCase):
         self.assertIn("Bölge · Belirtilmedi", self.texts(ADMIN))
 
 class AdminMenuLayoutTests(BotCase):
-    def test_admin_last_row_pairs_yonetici_numarasi_and_raporlar(self):
+    def test_admin_grid_three_columns_and_bottom_rows(self):
         self.message(ADMIN, "/start")
         self.flush()
         rows = [p["reply_markup"]["keyboard"] for _m, p in self.api.calls
                 if p.get("chat_id") == ADMIN and isinstance(p.get("reply_markup"), dict)
                 and "keyboard" in p["reply_markup"]][-1]
         self.assertEqual([b["text"] for b in rows[-1]], ["Yönetici Numarası", "Raporlar"])
-        self.assertTrue(all(len(row) <= 2 for row in rows))
+        self.assertEqual([b["text"] for b in rows[-2]], ["Yöneticiyi Ara"])
+        grid = rows[:-2]
+        self.assertTrue(all(len(row) == 3 for row in grid[:-1]))
+        self.assertTrue(1 <= len(grid[-1]) <= 3)
         labels = [b["text"] for row in rows for b in row]
         self.assertEqual(labels.count("Raporlar"), 1)
         self.assertEqual(labels.count("Yönetici Numarası"), 1)
+        self.assertEqual(labels.count("Yöneticiyi Ara"), 1)

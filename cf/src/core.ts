@@ -54,15 +54,23 @@ export class Bot {
       if (r >= 0) labels.splice(r, 1);
       tail.push("Yönetici Numarası", "Raporlar");
     }
-    const solo = new Set(["Yöneticiyi Ara"]);
+    const solo = new Set(["Yöneticiyi Ara", "Yönetici Numarası"]);
     const rows: { text: string }[][] = [];
+    const perRow = user.role === "yonetici" ? 3 : 2;
     let pair: { text: string }[] = [];
     for (const label of labels) {
-      if (solo.has(label)) { rows.push([{ text: label }]); continue; }
+      if (solo.has(label)) continue;
       pair.push({ text: label });
-      if (pair.length === 2) { rows.push(pair); pair = []; }
+      if (pair.length === perRow) { rows.push(pair); pair = []; }
     }
     if (pair.length) rows.push(pair);
+    if (user.role === "yonetici") {
+      rows.push([{ text: "Yöneticiyi Ara" }]);
+      rows.push([{ text: "Yönetici Numarası" }]);
+    } else {
+      const soloLabels = labels.filter((l) => solo.has(l));
+      if (soloLabels.length) rows.push(soloLabels.map((text) => ({ text })));
+    }
     if (tail.length) rows.push(tail.map((text) => ({ text })));
     await this.send(user.id, text, { keyboard: rows, resize_keyboard: true });
   }
@@ -189,7 +197,7 @@ export class Bot {
     if (text === "Raporlar" || command === "/rapor") return adminops.reportPeriods(this, user);
     if (text === "Analiz" && user.role === "restoran") return adminops.analysisPeriods(this, user);
     if (text === "Komutlar") return adminops.showCommands(this, user);
-    if (text === "Yöneticiyi Ara" && user.role !== "yonetici") return adminops.callAdminMenu(this, user);
+    if (text === "Yöneticiyi Ara") return adminops.callAdminMenu(this, user);
     if (text === "Çevrimiçi Ol" || text === "Çevrimdışı Ol") return adminops.setOnline(this, user, text === "Çevrimiçi Ol");
     if (command === "/sohbeti-temizle" || command === "/temizle") {
       return this.send(chat, "Sohbeti temizlemek için: sohbet başlığına dokunun → Menü → **Sohbeti Temizle**. Telegram botlarının toplu sohbet silme yetkisi yoktur.");
@@ -262,6 +270,12 @@ export class Bot {
     if (action === "cxl") return ops.showCancelledOrders(this, user, args[0] || "all", Number(args[1] || 0));
     if (action === "coa" || action === "cod") return accept.claimOfferStep(this, user, action, args[0]);
     if (action === "aoa" || action === "aod") return ops.autoOfferStep(this, user, action, Number(args[0]));
+    if (action === "card" && args[0]) {
+      const rows = await this.packages("p.id=?", [Number(args[0])]);
+      if (!rows.length) return "Paket bulunamadı.";
+      await pool.card(this, user.id, rows[0], user.role === "kurye" ? "kurye" : user.role);
+      return null;
+    }
     if (action === "call" && args[0]) return adminops.callRestaurant(this, user, Number(args[0]));
     if (action === "callc" && args[0]) return adminops.callCourier(this, user, Number(args[0]));
     if (action === "calladm" && args[0]) return adminops.callAdmin(this, user, Number(args[0]));
@@ -302,7 +316,9 @@ export class Bot {
     const status = manual ? `${account.name} atandı.` : `${account.name} tarafından kabul edildi.`;
     const body = packages.map((p) => `${p.batch}-${p.number} · ${p.restaurant} · ${p.region || "Belirtilmedi"}`).join("\n");
     await this.send(packages[0].owner, `${body}\n${status}`);
-    for (const p of packages) await pool.card(this, courier, p, "kurye");
+    const lines = packages.map((p) => `#${p.batch}-${p.number} · ${p.restaurant} · ${p.region || "Belirtilmedi"}`);
+    await this.send(courier, `Üzerinize alınan paketler (${packages.length})\n\n${lines.join("\n")}\n\nDetay için paket düğmesine dokunun.`,
+      keyboard(packages.slice(0, 10).map((p) => [[`📦 Talep #${p.batch}-${p.number}`, `card:${p.id}`]])), "HTML");
     await pool.refreshBatch(this, batchId);
   }
 }

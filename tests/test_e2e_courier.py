@@ -45,7 +45,7 @@ class CourierEndToEndTests(BotCase):
         self.clear_messages()
         self.message(COURIER, "Havuz")
         self.flush()
-        self.assertIn("Toplam 2 paket", self.texts(COURIER))
+        self.assertIn("Toplam havuzda 1 restorandan 2 paket beklemektedir.", self.texts(COURIER))
         self.click(COURIER, f"claim:{ids[0]}")
         self.click(COURIER, f"pickup:{ids[0]}")
         self.message(COURIER, "4,5")
@@ -111,7 +111,7 @@ class CourierEndToEndTests(BotCase):
         self.clear_messages()
         self.message(COURIER, "Havuz")
         self.flush()
-        self.assertIn("Toplam 3 paket", self.texts(COURIER))
+        self.assertIn("Toplam havuzda 1 restorandan 3 paket beklemektedir.", self.texts(COURIER))
 
     def test_courier_reports_and_commands(self):
         ids = self.batch(count=1)

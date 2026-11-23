@@ -36,7 +36,7 @@ class PoolRegionViewTests(BotCase):
         self.make_pool()
         text = self.texts(COURIER)
         self.assertIn("Bölgeye Göre Grupla", text)
-        self.assertIn("Toplam 5 paket", text)
+        self.assertIn("Toplam havuzda 1 restorandan 5 paket beklemektedir.", text)
         self.assertIn("Kadıköy · 3 paket", text)
         self.assertIn("Üsküdar · 2 paket", text)
         labels = self.labels()

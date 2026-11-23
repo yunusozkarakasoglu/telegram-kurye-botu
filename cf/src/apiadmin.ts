@@ -102,6 +102,79 @@ export async function adminRoutes(
     return json({ ok: true, message: typeof message === "string" ? message : "Atandı." });
   }
 
+  if (path === "/yonetim/limit" && method === "PUT") {
+    const body = await readBody(request);
+    const limit = Number(body.limit);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 99) return fail("Limit 1–99 arasında olmalı.", 422, "invalid");
+    await bot.db.run("INSERT OR REPLACE INTO settings(key,value) VALUES ('active_limit',?)", limit);
+    return json({ ok: true, limit });
+  }
+
+  if (path === "/yonetim/hesap" && method === "POST") {
+    const body = await readBody(request);
+    const id = Number(body.id);
+    const action = String(body.action || "");
+    if (!id) return fail("Hesap seçilmedi.", 422, "invalid");
+    const row = await bot.db.first<Account>("SELECT * FROM accounts WHERE id=? AND role IN ('kurye','restoran')", id);
+    if (!row) return fail("Hesap bulunamadı.", 404, "not_found");
+    if (action === "toggle") {
+      await bot.db.run("UPDATE accounts SET active=? WHERE id=?", row.active ? 0 : 1, id);
+      return json({ ok: true, active: !row.active });
+    }
+    if (action === "delete") {
+      await bot.db.run("UPDATE accounts SET deleted=1, active=0, online=0 WHERE id=?", id);
+      return json({ ok: true, deleted: true });
+    }
+    return fail("Geçersiz işlem.", 422, "invalid");
+  }
+
+  if (path === "/yonetim/bolge" && method === "POST") {
+    const body = await readBody(request);
+    const action = String(body.action || "add");
+    const name = String(body.name ?? "").trim();
+    if (name.length < 2 || name.length > 40) return fail("Bölge adı 2–40 karakter olmalı.", 422, "invalid");
+    if (action === "add") {
+      const exists = await bot.db.first("SELECT 1 FROM regions WHERE name=?", name);
+      if (exists) return fail("Bu bölge zaten var.", 409, "conflict");
+      const pos = await bot.db.first<{ n: number }>("SELECT coalesce(max(position),0) AS n FROM regions");
+      await bot.db.run("INSERT INTO regions(name,position) VALUES (?,?)", name, (pos?.n ?? 0) + 1);
+    } else if (action === "del") {
+      const used = await bot.db.first<{ n: number }>(
+        "SELECT count(*) AS n FROM packages WHERE region=? AND courier IS NULL AND cancelled_at IS NULL AND delivered_at IS NULL", name);
+      if ((used?.n ?? 0) > 0) return fail("Bu bölgede havuzda paket var; önce onları kapatın.", 409, "conflict");
+      await bot.db.run("DELETE FROM regions WHERE name=?", name);
+    } else return fail("Geçersiz işlem.", 422, "invalid");
+    return json({ ok: true, regions: await bot.regionList() });
+  }
+
+  if (path === "/yonetim/sontalepler" && method === "GET") {
+    const rows = await bot.db.all<{ id: number; owner: number; name: string; created_at: number | null; n: number }>(
+      `SELECT b.id, b.owner, a.name, b.created_at, count(p.id) AS n FROM batches b
+       JOIN accounts a ON a.id=b.owner LEFT JOIN packages p ON p.batch=b.id
+       GROUP BY b.id ORDER BY b.id DESC LIMIT 30`);
+    return json({ batches: rows });
+  }
+
+  if (path === "/yonetim/temizle" && method === "POST") {
+    const body = await readBody(request);
+    if (String(body.confirm || "") !== "TEMIZLE") return fail("Onay metni hatalı.", 422, "invalid");
+    await bot.db.batch([
+      bot.db.d1.prepare("DELETE FROM pending_distance"),
+      bot.db.d1.prepare("DELETE FROM reservations"),
+      bot.db.d1.prepare("DELETE FROM pool_select"),
+      bot.db.d1.prepare("DELETE FROM claim_offers"),
+      bot.db.d1.prepare("DELETE FROM transfer_offers"),
+      bot.db.d1.prepare("DELETE FROM transfer_scope"),
+      bot.db.d1.prepare("DELETE FROM transfer_log"),
+      bot.db.d1.prepare("DELETE FROM auto_offers"),
+      bot.db.d1.prepare("DELETE FROM cancel_flow"),
+      bot.db.d1.prepare("DELETE FROM packages"),
+      bot.db.d1.prepare("DELETE FROM batches"),
+      bot.db.d1.prepare("DELETE FROM drafts"),
+    ]);
+    return json({ ok: true });
+  }
+
   if (path === "/yonetim/davet" && method === "POST") {
     const body = await readBody(request);
     const role = body.role === "restoran" ? "restoran" : "kurye";

@@ -168,6 +168,29 @@ export async function showPoolChooser(bot: Bot, user: Account) {
   ]));
 }
 
+async function summaryText(bot: Bot, courier: number): Promise<string> {
+  const rows = await bot.packages("p.courier IS NULL AND p.delivered_at IS NULL AND p.cancelled_at IS NULL");
+  if (!rows.length) return "Havuzda bekleyen paket yok.";
+  const per = new Map<string, number>();
+  for (const r of rows) per.set(r.restaurant, (per.get(r.restaurant) || 0) + 1);
+  const lines = [
+    `Toplam havuzda ${per.size} restorandan ${rows.length} paket beklemektedir.`,
+    "",
+    ...[...per.entries()].sort((a, b) => b[1] - a[1]).map(([name, n]) => `${name} /${n} paket`),
+    "",
+    `Kapasiteniz: ${await bot.capacity(courier)} paket. Seçim yapmak için sipariş kartlarından seçim yapınız; en fazla ${await bot.activeLimit()} paket alınabilir.`,
+  ];
+  return section(lines.join("\n"));
+}
+
+export async function showPoolSummary(bot: Bot, user: Account) {
+  if (user.role !== "kurye") return "Bu işlem kullanılamıyor.";
+  await bot.send(user.id, await summaryText(bot, user.id), keyboard([
+    [["Havuzu Gör", "pv:regions"]],
+  ]));
+  return null;
+}
+
 export async function showRegionGroups(bot: Bot, user: Account) {
   if (user.role !== "kurye") return "Bu işlem kullanılamıyor.";
   if (!user.online) return bot.send(user.id, "Havuzu görmek için çevrimiçi olun.");
@@ -188,8 +211,10 @@ export async function showRegionGroups(bot: Bot, user: Account) {
     if (capacity) actionRow.push([`Tümünü Al (${Math.min(capacity, packages.length)})`, `pvg:take:${code}`]);
     buttons.push(actionRow);
     buttons.push([["Bölgeler", "pv:regions"], ["Restoranlar", "pv:rests"], ["Talepler", "pv:batch"]]);
+    /* summary follows below */
     await bot.send(user.id, section(`BÖLGEYE GÖRE GRUPLANDIRMA LİSTESİ ${fmtHM(bot.now())}\n📍 ${region.toUpperCase()} · ${packages.length} paket · boş kapasite ${capacity}`), keyboard(buttons));
   }
+  await bot.send(user.id, await summaryText(bot, user.id));
 }
 
 async function regionCode(bot: Bot, region: string): Promise<string> {
@@ -325,6 +350,7 @@ export async function showByTime(bot: Bot, user: Account) {
   buttons.push(actionRow);
   buttons.push([["Bölgeler", "pv:regions"], ["Restoranlar", "pv:rests"]]);
   await bot.send(user.id, section(`SİPARİŞ ZAMANINA GÖRE LİSTE ${fmtHM(bot.now())}\n${rows.length} paket · boş kapasite ${capacity}`), keyboard(buttons));
+  await bot.send(user.id, await summaryText(bot, user.id));
 }
 
 export async function showByRestaurant(bot: Bot, user: Account) {
@@ -350,6 +376,7 @@ export async function showByRestaurant(bot: Bot, user: Account) {
     buttons.push([["Restoranlar", "pv:rests"], ["Bölgeler", "pv:regions"]]);
     await bot.send(user.id, section(`RESTORANA GÖRE GRUPLANDIRMA LİSTESİ ${fmtHM(bot.now())}\n${packages[0].restaurant} · ${packages.length} paket · boş kapasite ${capacity}`), keyboard(buttons));
   }
+  await bot.send(user.id, await summaryText(bot, user.id));
 }
 
 export async function showAssigned(bot: Bot, user: Account, page: number) {

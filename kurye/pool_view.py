@@ -35,8 +35,13 @@ class PoolViewMixin:
             self.send(user["id"], "Havuzda bekleyen paket yok.")
             return
         capacity = self.capacity(user["id"])
-        lines = ["Bölgeye Göre Grupla", f"Toplam {sum(len(v) for v in groups.values())} paket · "
-                                        f"Boş kapasiteniz: {capacity}", ""]
+        all_rows = [row for packages in groups.values() for row in packages]
+        per_restaurant = {}
+        for row in all_rows:
+            per_restaurant[row["restaurant"]] = per_restaurant.get(row["restaurant"], 0) + 1
+        lines = ["Bölgeye Göre Grupla",
+                 f"Toplam havuzda {len(per_restaurant)} restorandan {len(all_rows)} paket beklemektedir.",
+                 f"Boş kapasiteniz: {capacity} · En fazla {self.active_limit()} paket alınabilir.", ""]
         buttons = []
         for region, packages in sorted(groups.items(), key=lambda item: (-len(item[1]), item[0])):
             lines.append(f"📍 {region} · {len(packages)} paket")
@@ -49,6 +54,10 @@ class PoolViewMixin:
                 buttons.append([(f"📍 {region}: Tümünü Al ({min(capacity, len(packages))})",
                                  f"pv:takeall:{code}")])
             buttons.append([(f"📍 {region}: Paket Seç ({len(packages)})", f"pv:sel:{code}")])
+        lines.append("")
+        lines.extend(f"{name} /{count} paket" for name, count in sorted(per_restaurant.items(), key=lambda x: -x[1]))
+        lines.append("")
+        lines.append("Seçim yapmak için sipariş kartlarından seçim yapınız.")
         buttons.append([("Talebe göre göster", "pv:batch")])
         self.send(user["id"], "\n".join(lines), keyboard(buttons))
 
