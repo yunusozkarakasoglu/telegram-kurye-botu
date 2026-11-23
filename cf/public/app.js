@@ -46,7 +46,7 @@
         (c ? '<em>' + c + '</em>' : '') + '</button>';
     }).join('');
     Array.prototype.forEach.call(nv.children, function (b) {
-      b.onclick = function () { S.tab = b.getAttribute('data-p'); UI.closeSheet(); render(); };
+      b.onclick = function () { S.tab = b.getAttribute('data-p'); UI.closeSheet(); render(); refresh(false); };
     });
   }
 
@@ -214,14 +214,36 @@
           if (p && p.map_url) TG.openLink(p.map_url);
           else if (p) TG.map((p.restaurant || '') + ' ' + (p.region || ''));
         } else if (a === 'km') kmSheet(findPkg(id));
-        else if (a === 'teslim') {
-          API.teslim(id).then(function () { UI.toast('Teslim edildi', 'success'); refresh(true); })
-            .catch(function (e) { UI.toast(e.message || 'İşlem başarısız', 'error'); });
-        } else if (a === 'aktar') transferSheet(findPkg(id));
+        else if (a === 'teslim') deliverConfirm(p);
+ else if (a === 'aktar') transferSheet(findPkg(id));
         else if (a === 'iptal') cancelSheet(findPkg(id));
       };
     });
   }
+  function deliverConfirm(p) {
+    if (!p) return;
+    var sh = UI.openSheet(
+      '<h2>Teslim onayı</h2>' +
+      '<p><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) + '</b><br>' +
+      (p.fee_tl == null ? '' : 'Kurye ücreti: <b>' + money(p.fee_tl) + '</b><br>') +
+      'Paketi teslim ettiğinizi onaylıyor musunuz?</p>' +
+      '<button class="p" id="dv-ok">Evet, teslim ettim</button>' +
+      '<button class="d" id="dv-no">Vazgeç</button>');
+    sh.querySelector('#dv-no').onclick = function () { UI.closeSheet(); };
+    sh.querySelector('#dv-ok').onclick = function () {
+      sh.querySelector('#dv-ok').disabled = true;
+      API.teslim(p.id).then(function () {
+        UI.closeSheet();
+        TG.haptic('success');
+        UI.toast('Teslim edildi', 'success');
+        refresh(true);
+      }).catch(function (e) {
+        sh.querySelector('#dv-ok').disabled = false;
+        UI.toast(e.message || 'İşlem başarısız', 'error');
+      });
+    };
+  }
+
   function findPkg(id) {
     var all = (S.pool ? S.pool.packages : []).concat(S.mine ? S.mine.packages : [], S.history ? S.history.items : []);
     return all.filter(function (p) { return String(p.id) === String(id); })[0];
@@ -669,7 +691,7 @@
       return Promise.resolve();
     }
     var jobs = [API.havuz().then(function (r) { S.pool = r; })];
-    if (full) jobs.push(API.aktarimTeklifler().then(function (r) { S.offers = r.offers || []; }).catch(function () {}));
+    jobs.push(API.aktarimTeklifler().then(function (r) { S.offers = r.offers || []; }).catch(function () {}));
     if (full || S.tab === 'paketlerim') jobs.push(API.paketlerim().then(function (r) { S.mine = r; }));
     if (full || S.tab === 'gecmis') jobs.push(API.gecmis().then(function (r) { S.history = r; }));
     if (full || S.tab === 'kazanc') jobs.push(API.kazanc().then(function (r) { S.earnings = r; }));
