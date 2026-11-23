@@ -182,3 +182,9 @@ body.sheet-open #toast{bottom:auto;top:calc(14px + var(--sat));z-index:12}
 .sw input{width:20px;height:20px;accent-color:var(--ok)}
 
 .tel{text-decoration:none;font-size:16px;margin-left:6px;line-height:1}
+
+.gcard{border:2px solid var(--ac);border-radius:16px;background:var(--card);margin:12px 0;overflow:hidden;box-shadow:var(--sh)}
+.ghead{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--ln)}
+.gname{background:var(--ac);color:var(--on);font-weight:700;font-size:14px;padding:5px 12px;border-radius:99px}
+.gcount{background:var(--ok);color:var(--on);font-weight:700;font-size:13px;padding:5px 12px;border-radius:99px}
+.gcard .row{padding:12px}

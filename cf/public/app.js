@@ -95,27 +95,24 @@
       L.forEach(function (p) { (gT[p.batch] = gT[p.batch] || []).push(p); });
       Object.keys(gT).sort(function (a, b) { return Number(b) - Number(a); }).forEach(function (k) {
         var arr = gT[k];
-        h += '<div class="grp b">Talep #' + k + '</div><div class="card"><div class="rest">' +
-          '<em class="lb r">' + esc(arr[0].restaurant) + '</em><span>' + arr.length + ' paket</span></div>' +
-          arr.map(row).join('') + '</div>';
+        h += '<div class="gcard"><div class="ghead"><span class="gname">Talep #' + k + '</span>' +
+          '<span class="gcount">' + arr.length + ' paket</span></div>' + arr.map(row).join('') + '</div>';
       });
     } else if (S.view === 'restoran') {
       var gR = {};
       L.forEach(function (p) { (gR[p.restaurant] = gR[p.restaurant] || []).push(p); });
       Object.keys(gR).sort().forEach(function (name) {
         var A = gR[name];
-        h += '<div class="grp b">' + esc(name) + '</div><div class="card"><div class="rest">' +
-          '<em class="lb r">' + A.length + ' paket</em><span>' + esc(A[0].region || '') + '</span></div>' +
-          A.map(row).join('') + '</div>';
+        h += '<div class="gcard"><div class="ghead"><span class="gname">' + esc(name) + '</span>' +
+          '<span class="gcount">' + A.length + ' paket</span></div>' + A.map(row).join('') + '</div>';
       });
     } else {
       var k1 = 'region', g = {};
       L.forEach(function (p) { (g[p[k1]] = g[p[k1]] || []).push(p); });
       Object.keys(g).forEach(function (a) {
         var A = g[a];
-        h += '<div class="grp b">' + esc(a) + '</div><div class="card"><div class="rest">' +
-          '<em class="lb r">' + A.length + ' paket</em><span>' + esc(A[0].restaurant) + '</span></div>' +
-          A.map(row).join('') + '</div>';
+        h += '<div class="gcard"><div class="ghead"><span class="gname">' + esc(a) + '</span>' +
+          '<span class="gcount">' + A.length + ' paket</span></div>' + A.map(row).join('') + '</div>';
       });
     }
     var perRest = {};
