@@ -134,11 +134,11 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       return json({
         settings: await settings(bot),
         restaurants: restaurants.map((r) => ({
-          name: r.name, contact_name: r.contact_name || null,
+          id: r.id, name: r.name, contact_name: r.contact_name || null,
           phone: r.phone || null,
         })),
         couriers: couriers.map((c) => ({
-          name: c.name, online: !!c.online,
+          id: c.id, name: c.name, online: !!c.online,
           phone: c.phone || null,
         })),
       });

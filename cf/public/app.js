@@ -617,9 +617,10 @@
   function renderSistem() {
     setHeader('Sistem', 'Fiyatlandırma · Restoranlar · Kuryeler');
     var main = $('mn');
-    var seg = '<div class="seg three">' + [['fiyat', 'Fiyatlandırma'], ['restoran', 'Restoranlar'], ['kurye', 'Kuryeler']].map(function (x) {
+    var seg = '<div class="seg three">' + [['fiyat', 'Fiyatlandırma'], ['restoran', 'Restoranlar'], ['kurye', 'Kuryeler'], ['bolge', 'Bölgeler']].map(function (x) {
       return '<button data-st="' + x[0] + '" class="' + (S.sistemTab === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
     }).join('') + '</div>';
+    var admin = S.session && S.session.role === 'yonetici';
     function draw() {
       var d = S.sistem;
       if (!d) { main.innerHTML = seg + '<div class="empty">Yükleniyor…</div>'; return; }
@@ -634,17 +635,56 @@
         body = '<div class="card">' + ((d.restaurants || []).length ? d.restaurants.map(function (r) {
           return '<div class="row" style="cursor:default"><div><b>' + esc(r.name) + '</b><small>' + esc(r.contact_name || '—') +
             (r.phone ? ' · ' + esc(r.phone) : '') + '</small></div>' +
-            (r.phone ? '<a class="tel" href="tel:' + esc(r.phone) + '">📞</a>' : '') + '</div>';
+            '<span class="acts">' + (r.phone ? '<a class="tel" href="tel:' + esc(r.phone) + '">📞</a>' : '') +
+            (admin ? '<button class="sm" data-editr="' + esc(r.name) + '">Düzenle</button>' : '') + '</span></div>';
         }).join('') : '<div class="empty">Restoran yok</div>') + '</div>';
+      } else if (S.sistemTab === 'bolge') {
+        body = '<div class="card">' + ((d.settings && d.settings.regions) || []).map(function (r, i) {
+          return '<div class="row" style="cursor:default"><div><b>' + (i + 1) + '. ' + esc(r) + '</b></div></div>';
+        }).join('') + '</div>';
       } else {
         body = '<div class="card">' + ((d.couriers || []).length ? d.couriers.map(function (c) {
           return '<div class="row" style="cursor:default"><div><b>' + esc(c.name) + '</b><small>' +
             (c.online ? 'Online' : 'Offline') + (c.phone ? ' · ' + esc(c.phone) : '') + '</small></div>' +
-            (c.phone ? '<a class="tel" href="tel:' + esc(c.phone) + '">📞</a>' : '') + '</div>';
+            '<span class="acts">' + (c.phone ? '<a class="tel" href="tel:' + esc(c.phone) + '">📞</a>' : '') +
+            (admin ? '<button class="sm" data-editc="' + esc(c.name) + '">Düzenle</button>' : '') + '</span></div>';
         }).join('') : '<div class="empty">Kurye yok</div>') + '</div>';
       }
       main.innerHTML = seg + body;
       bindSeg();
+      if (admin) {
+        Array.prototype.forEach.call(main.querySelectorAll('[data-editc]'), function (b) {
+          b.onclick = function () {
+            var name = b.getAttribute('data-editc');
+            var c = (d.couriers || []).filter(function (x) { return x.name === name; })[0] || {};
+            var sh = UI.openSheet('<h2>Kurye düzenle</h2>' +
+              '<div class="fld"><label>Ad Soyad</label><input id="ec-name" value="' + esc(c.name || '') + '"></div>' +
+              '<div class="fld"><label>Telefon</label><input id="ec-phone" inputmode="tel" value="' + esc(c.phone || '') + '"></div>' +
+              '<div class="err" id="ec-err"></div><button class="p" id="ec-save">Kaydet</button>', { onClose: function () { render(); } });
+            sh.querySelector('#ec-save').onclick = function () {
+              API.yonetim('hesapGuncelle', { id: c.id, name: sh.querySelector('#ec-name').value.trim(), phone: sh.querySelector('#ec-phone').value.trim() }).then(function () {
+                UI.closeSheet(); UI.toast('Kaydedildi', 'success'); S.sistem = null; render();
+              }).catch(function (e) { sh.querySelector('#ec-err').textContent = e.message || 'Kaydedilemedi'; });
+            };
+          };
+        });
+        Array.prototype.forEach.call(main.querySelectorAll('[data-editr]'), function (b) {
+          b.onclick = function () {
+            var name = b.getAttribute('data-editr');
+            var r = (d.restaurants || []).filter(function (x) { return x.name === name; })[0] || {};
+            var sh = UI.openSheet('<h2>Restoran düzenle</h2>' +
+              '<div class="fld"><label>Restoran adı</label><input id="er-name" value="' + esc(r.name || '') + '"></div>' +
+              '<div class="fld"><label>Yetkili</label><input id="er-contact" value="' + esc(r.contact_name || '') + '"></div>' +
+              '<div class="fld"><label>Telefon</label><input id="er-phone" inputmode="tel" value="' + esc(r.phone || '') + '"></div>' +
+              '<div class="err" id="er-err"></div><button class="p" id="er-save">Kaydet</button>', { onClose: function () { render(); } });
+            sh.querySelector('#er-save').onclick = function () {
+              API.yonetim('hesapGuncelle', { id: r.id, name: sh.querySelector('#er-name').value.trim(), contact_name: sh.querySelector('#er-contact').value.trim(), phone: sh.querySelector('#er-phone').value.trim() }).then(function () {
+                UI.closeSheet(); UI.toast('Kaydedildi', 'success'); S.sistem = null; render();
+              }).catch(function (e) { sh.querySelector('#er-err').textContent = e.message || 'Kaydedilemedi'; });
+            };
+          };
+        });
+      }
     }
     function bindSeg() {
       Array.prototype.forEach.call(main.querySelectorAll('[data-st]'), function (b) {
