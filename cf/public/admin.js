@@ -192,6 +192,7 @@
             '<div class="ameta">' + (c.phone ? '☎ ' + esc(c.phone) : 'Telefon yok') + '</div>' +
             '<div class="acts"><button class="sm" data-edit="' + c.id + '">Düzenle</button>' +
             '<button class="sm" data-acc="' + c.id + '" data-act="toggle">' + (c.active ? 'Pasif Yap' : 'Aktif Yap') + '</button>' +
+            '<button class="sm" data-pk="' + c.id + '">Paketler</button>' +
             '<button class="sm d" data-acc="' + c.id + '" data-act="delete">Sil</button>' +
             (c.phone ? '<a class="tel big" href="tel:' + esc(c.phone) + '" title="Ara">📞</a>' : '') + '</div></div>';
         }).join('');
@@ -255,6 +256,22 @@
         API.yonetim('hesap', { id: id, action: act }).then(function () {
           UI.toast('Kaydedildi', 'success'); render();
         }).catch(function (e) { UI.toast(e.message || 'İşlem başarısız', 'error'); });
+      };
+    });
+    Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-pk]'), function (b) {
+      b.onclick = function () {
+        var id = Number(b.getAttribute('data-pk'));
+        API.yonetim('kuryePaketler', { courier: id }).then(function (r) {
+          var items = r.packages || [];
+          UI.openSheet('<h2>Aktif paketler</h2>' + (items.length ? items.map(function (p) {
+            return '<div class="offeritem"><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) + '</b>' +
+              '<small>' + esc(p.region || '') + ' · ' + esc(p.status) + ' · ' +
+              (p.distance_km == null ? 'km yok' : esc(String(p.distance_km)) + ' km') + ' · ' +
+              (p.fee_tl == null ? 'ücret yok' : money(p.fee_tl)) + '</small></div>';
+          }).join('') : '<div class="empty">Aktif paket yok.</div>') +
+            '<button class="d" id="pk-close" style="width:100%;margin-top:8px">Kapat</button>');
+          $('pk-close').onclick = function () { UI.closeSheet(); };
+        }).catch(function (e) { UI.toast(e.message || 'Alınamadı', 'error'); });
       };
     });
     Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-edit]'), function (b) {

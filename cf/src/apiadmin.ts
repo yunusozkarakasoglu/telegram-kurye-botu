@@ -207,6 +207,14 @@ export async function adminRoutes(
     return json({ ok: true, count: rows.length, delivered });
   }
 
+  if (path === "/yonetim/kurye-paketler" && method === "GET") {
+    const courierId = Number(url.searchParams.get("courier") || 0);
+    if (!courierId) return fail("Kurye seçilmedi.", 422, "invalid");
+    const rows = await bot.packages("p.courier=? AND p.delivered_at IS NULL AND p.cancelled_at IS NULL", [courierId]);
+    const states = await statesFor(bot, rows);
+    return json({ packages: rows.map((p, i) => pkgDto(p, states[i])) });
+  }
+
   if (path === "/yonetim/mesajlar" && method === "GET") {
     try {
       const rows = await bot.db.all<any>(
