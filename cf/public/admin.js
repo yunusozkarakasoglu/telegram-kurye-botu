@@ -478,7 +478,25 @@
         'restoran ayrıca konum ister.</p>' +
         '<div class="filters"><input id="tk" value="' + esc(d.token || '') + '" style="flex:1;min-width:260px"></div>' +
         '<div class="fld" style="max-width:520px"><label>Bağlantı</label><input id="lk" value="' + esc(link) + '" readonly></div>' +
-        '<button class="p" id="sh">Bağlantıyı Paylaş</button>');
+        '<div class="acts" style="gap:8px;flex-wrap:wrap"><button class="p" id="sh">Bağlantıyı Paylaş</button>' +
+        '<button class="sm" id="cp">Kopyala</button></div>');
+      $('cp').onclick = function () {
+        var msg = 'Kurye Paket Bot sistemine kayıt olmak için verilen linkteki bağlantıdan ulaşabilirsiniz.\n' +
+          'Bağlantı Linki : ' + link + '\n\n' +
+          'Sistem sizden ilk kayıt için ad soyad ve telefon bilgileri isteyecektir. ' +
+          'İstenen verileri girerek sisteme kaydolabilirsiniz.';
+        function done() { UI.toast('Metin kopyalandı', 'success'); }
+        function fallback() {
+          var ta = document.createElement('textarea');
+          ta.value = msg; ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta); ta.select();
+          try { document.execCommand('copy'); done(); } catch (e) { UI.toast('Kopyalanamadı', 'error'); }
+          document.body.removeChild(ta);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(msg).then(done).catch(fallback);
+        } else fallback();
+      };
       $('sh').onclick = function () {
         var text = 'Kurye Paket daveti: ' + link;
         if (navigator.share) {

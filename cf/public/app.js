@@ -624,22 +624,18 @@
         (isRest ? '<dt>Yetkili</dt><dd>' + esc(u.contact_name || '—') + '</dd>' : '') +
         '<dt>Telefon</dt><dd>' + esc(u.phone || '—') + '</dd>' +
         '</dl>';
-    main.innerHTML = '<div class="card oc" style="padding:12px">' + fields + '</div>' +
+    var actionRow = editing
+      ? '<div class="acts" style="margin-top:12px;justify-content:flex-end"><button class="p sm" id="p-save">Kaydet</button><button class="sm" id="p-cancel">İptal</button></div>'
+      : '<div class="acts" style="margin-top:12px;justify-content:flex-end"><button class="sm" id="p-edit">Düzenle</button></div>';
+    main.innerHTML = '<div class="card oc" style="padding:12px">' + fields + actionRow + '</div>' +
       (!isRest ? '<p class="note" style="padding:10px 4px">Kurye paket sınırı: <b>' + (((S.session || {}).settings || {}).limit || '—') +
         '</b> paket · Yönetici tarafından belirlenir.</p>' : '');
 
     var hr = $('hdr-right');
     if (hr) {
-      var actions = '';
-      if (editing) {
-        actions += '<button class="sm p" id="p-save">Kaydet</button><button class="sm" id="p-cancel">İptal</button>';
-      } else {
-        actions += '<button class="sm" id="p-edit">Düzenle</button>';
-      }
-      if (!isRest) {
-        actions += '<label class="hdr-sw"><input type="checkbox" id="p-online"' + (u.online ? ' checked' : '') + '><span>' + (u.online ? 'Açık' : 'Kapalı') + '</span></label>';
-      }
-      hr.innerHTML = '<span class="hactions">' + actions + '</span>';
+      hr.innerHTML = !isRest
+        ? '<span class="hactions"><label class="hdr-sw"><input type="checkbox" id="p-online"' + (u.online ? ' checked' : '') + '><span>' + (u.online ? 'Açık' : 'Kapalı') + '</span></label></span>'
+        : '';
       if (editing) {
         $('p-save').onclick = function () {
           var body = { name: $('p-name').value.trim(), phone: $('p-phone').value.trim() };
