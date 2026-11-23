@@ -429,6 +429,7 @@
       };
       if (qs.get('mock') === '1') return Promise.resolve(setMockRole());
       return real.oturum().then(function (s) { mode = 'real'; return s; }).catch(function (e) {
+        if (e && e.status === 403) throw e;
         Api.lastError = (e && e.message) || 'kimlik doğrulanamadı';
         var mockSession = setMockRole();
         mockSession.then(function (s) { s.mock_reason = Api.lastError; });

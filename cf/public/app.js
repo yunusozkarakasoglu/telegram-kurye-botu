@@ -1062,7 +1062,10 @@
         if (!document.hidden) refresh(false);
       });
     }).catch(function (e) {
-      $('mn').innerHTML = '<div class="empty"><b>Bağlantı hatası</b>' + esc(e.message || '') + '</div>';
+      $('hdr-right').innerHTML = '';
+      $('nv').innerHTML = '';
+      $('mn').innerHTML = '<div class="empty"><b>Giriş yapılamadı</b>' + esc(e.message || '') +
+        '<br><br>Yöneticiden yeni bir davet bağlantısı isteyin.</div>';
     });
   }
 
