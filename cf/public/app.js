@@ -834,6 +834,11 @@
       if (API.mode !== 'real' && API.lastError) {
         var w = document.getElementById('authwarn');
         if (w) { w.hidden = false; w.textContent = 'Telegram kimliği alınamadı: ' + API.lastError + ' — Loglar sekmesinden ayrıntıya bakın.'; }
+        if (/süresi doldu/i.test(API.lastError) && !sessionStorage.getItem('authReloaded')) {
+          sessionStorage.setItem('authReloaded', '1');
+          setTimeout(hardReload, 400);
+          return;
+        }
       }
       refresh(true);
       setInterval(function () { refresh(false); }, 5000);
