@@ -193,8 +193,9 @@
     head('Bölgeler', 'Restoran bölge listesi');
     API.yonetim('bolgeler').then(function (d) {
       panel('<div class="filters"><input id="nr" placeholder="Yeni bölge…"><button class="p sm" id="add">Ekle</button></div>' +
-        '<div id="blist">' + (d.regions || []).map(function (r) {
-          return '<span class="tag ac" style="margin:4px;padding:6px 12px">' + esc(r) + ' <b data-del="' + esc(r) + '" style="cursor:pointer">✕</b></span>';
+        '<div id="blist">' + (d.regions || []).map(function (r, i) {
+          return '<div class="brow"><span><b>' + (i + 1) + '.</b> ' + esc(r) + '</span>' +
+            '<button class="sm d" data-del="' + esc(r) + '" title="Sil">✕ Sil</button></div>';
         }).join('') + '</div>' +
         '<p class="note">Restoranın bölge seçimi bu listeden beslenir.</p>');
       $('add').onclick = function () {
