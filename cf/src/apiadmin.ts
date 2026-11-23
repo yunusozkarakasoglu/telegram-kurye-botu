@@ -120,6 +120,20 @@ export async function adminRoutes(
       "SELECT * FROM accounts WHERE id=? AND role='kurye' AND online=1 AND locked=0 AND active=1 AND deleted=0", courierId);
     if (!target) return fail("Bu kurye şu anda paket alamaz.", 409, "conflict");
     const message = await accept.adminGive(bot, user, packageId, courierId);
+    try {
+      await bot.db.run("CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, created_at REAL NOT NULL)");
+      await bot.db.run("CREATE TABLE IF NOT EXISTS notif_targets(notif INTEGER NOT NULL, account INTEGER NOT NULL, PRIMARY KEY(notif,account))");
+      for (const col of ["kind TEXT", "ref INTEGER"]) {
+        try { await bot.db.run(`ALTER TABLE notifications ADD COLUMN ${col}`); } catch {}
+      }
+      const pkg = (await bot.packages("p.id=?", [packageId]))[0];
+      if (pkg && String(message).includes("atandı")) {
+        const text = `Size paket atandı: #${pkg.batch}-${pkg.number} · ${pkg.restaurant} · ${pkg.region || "Belirtilmedi"}`;
+        await bot.db.run("INSERT INTO notifications(text,created_at,kind,ref) VALUES (?,?,'assign',?)", text, bot.nowF(), pkg.id);
+        const last = await bot.db.first<{ id: number }>("SELECT last_insert_rowid() AS id");
+        if (last?.id) await bot.db.run("INSERT OR IGNORE INTO notif_targets(notif,account) VALUES (?,?)", last.id, courierId);
+      }
+    } catch (e) { console.error("assign notify", e); }
     return json({ ok: true, message: typeof message === "string" ? message : "Atandı." });
   }
 

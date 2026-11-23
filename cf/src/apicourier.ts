@@ -156,5 +156,9 @@ export async function transferToCourier(bot: Bot, user: Account, packageId: numb
 export async function transferToPool(bot: Bot, user: Account, packageId: number) {
   const result = await accept.transferToPool(bot, user, packageId);
   const fresh = await packageById(bot, packageId);
+  if (!fresh?.courier) {
+    const admin = await bot.db.first<Account>("SELECT * FROM accounts WHERE role='yonetici' LIMIT 1");
+    if (admin && fresh) await bot.send(admin.id, `${user.name} kuryesi kendisine atanan #${fresh.batch}-${fresh.number} · ${fresh.restaurant} paketini reddetti; paket havuza döndü.`);
+  }
   return { ok: !fresh?.courier, message: typeof result === "string" ? result : "" };
 }

@@ -140,12 +140,15 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       await bot.db.run("CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, created_at REAL NOT NULL)");
       await bot.db.run("CREATE TABLE IF NOT EXISTS notif_targets(notif INTEGER NOT NULL, account INTEGER NOT NULL, PRIMARY KEY(notif,account))");
       await bot.db.run("CREATE TABLE IF NOT EXISTS notif_read(account INTEGER PRIMARY KEY, last_id INTEGER NOT NULL)");
-      const rows = await bot.db.all<{ id: number; text: string; created_at: number }>(
-        `SELECT n.id, n.text, n.created_at FROM notifications n JOIN notif_targets t ON t.notif=n.id
+      for (const col of ["kind TEXT", "ref INTEGER"]) {
+        try { await bot.db.run(`ALTER TABLE notifications ADD COLUMN ${col}`); } catch {}
+      }
+      const rows = await bot.db.all<{ id: number; text: string; created_at: number; kind: string | null; ref: number | null }>(
+        `SELECT n.id, n.text, n.created_at, n.kind, n.ref FROM notifications n JOIN notif_targets t ON t.notif=n.id
          WHERE t.account=? ORDER BY n.id DESC LIMIT 50`, user.id);
       const read = await bot.db.first<{ last_id: number }>("SELECT last_id FROM notif_read WHERE account=?", user.id);
       const lastId = read?.last_id ?? 0;
-      return json({ items: rows, unread: rows.filter((r) => r.id > lastId).length });
+      return json({ items: rows, unread: rows.filter((r) => r.id > lastId).length, last_read: lastId });
     }
 
     if (path === "/bildirimler/okundu" && method === "POST") {

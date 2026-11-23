@@ -857,6 +857,34 @@
     $('hdr-prof').onclick = function () { S.tab = 'profil'; render(); };
   }
 
+  function assignmentPopup(items) {
+    var sh = UI.openSheet('<div class="offerbox"><h2>📦 PAKET ATANDI</h2>' +
+      '<p>Yönetici size paket atadı. Lütfen inceleyiniz.</p>' +
+      items.map(function (n) { return '<div class="offeritem"><b>' + esc(n.text) + '</b></div>'; }).join('') +
+      '<div class="act" style="margin-top:10px"><button class="sm d" id="as-rej">Reddet</button>' +
+      '<button class="sm p" id="as-ok">Kabul Et</button></div></div>');
+    var ovl = document.getElementById('ovl');
+    if (ovl) ovl.onclick = null;
+    function markRead() {
+      var maxId = items.reduce(function (m, n) { return Math.max(m, n.id); }, 0);
+      return API.bildirimOkundu(maxId).then(function () { S.notifs.unread = Math.max(0, (S.notifs.unread || 0) - items.length); }).catch(function () {});
+    }
+    sh.querySelector('#as-ok').onclick = function () {
+      markRead().then(function () { UI.closeSheet(); UI.toast('Paketler kabul edildi', 'success'); refresh(true); });
+    };
+    sh.querySelector('#as-rej').onclick = function () {
+      sh.querySelector('#as-rej').disabled = true;
+      var refs = items.map(function (n) { return n.ref; }).filter(Boolean);
+      Promise.all(refs.map(function (id) {
+        return API.aktar(id, { hedef: 'havuz' }).catch(function () {});
+      })).then(function () {
+        return markRead();
+      }).then(function () {
+        UI.closeSheet(); UI.toast('Paketler reddedildi, havuza döndü', 'success'); refresh(true);
+      });
+    };
+  }
+
   function notifSheet() {
     var items = (S.notifs && S.notifs.items) || [];
     var sh = UI.openSheet('<h2>Bildirimler</h2>' + (items.length ? items.map(function (n) {
@@ -923,6 +951,8 @@
     return Promise.all(jobs).then(function () {
       render();
       if (curRole() === 'kurye' && (S.offers || []).length && !UI.sheetOpen()) offersPopup();
+      var assigns = ((S.notifs && S.notifs.items) || []).filter(function (n) { return n.kind === 'assign' && n.id > ((S.notifs && S.notifs.last_read) || 0); });
+      if (curRole() === 'kurye' && assigns.length && !UI.sheetOpen()) assignmentPopup(assigns);
     }).catch(function () {});
   }
 
