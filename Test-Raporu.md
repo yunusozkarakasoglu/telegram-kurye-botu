@@ -91,6 +91,13 @@ SQLite bütünlük ve yabancı anahtar kontrolleri geçti. Yeni uygulama/test mo
 
 Bilinen mesaj kimliğiyle yapılan güncellemeler çökme sonrası aynı mesajı hedefler ve yeni kart oluşturmaz. Ayrıca reset anında zaten başlamış bir HTTP isteği geri alınamaz; test, silinen yerel sipariş/kart kayıtlarının yeniden oluşmadığını doğrular, uzaktaki mesajı geri çekme garantisi vermez.
 
+## Cloudflare sürümü doğrulaması
+
+- `cf/` TypeScript: `tsc --noEmit` temiz; `npx wrangler deploy` ile yayınlandı (aktif sürüm `df60c6bf…`).
+- D1 şeması 31 tablo ile kuruldu; webhook `pending 0`, hata yok.
+- Canlı doğrulanan: yönetici bağlama, bölge/tarife/limit/davet komutları, kurye kaydı (ad+telefon), havuz grupları ve seçimli kabul.
+- **Not:** Cloudflare tarafı için otomatik test paketi henüz yok; Python 382 testlik paket yalnız yerel sürümü kapsar.
+
 ## Kanıtlar ve tekrar çalıştırma
 
 ```bash

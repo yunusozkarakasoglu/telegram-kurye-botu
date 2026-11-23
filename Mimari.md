@@ -66,7 +66,9 @@ Mantık dosyaları 300 satır altında tutulur. UI metinleri ve tekrar eden say�
 
 - `cf/`: TypeScript Worker, `fetch /webhook` + `scheduled` cron, D1 (`kurye-db`). Şema `cf/src/schema.sql` (Python şemasının birebir portu; `claim_offers`, `cancel_flow`, `pool_*`, `auto_offers` dahil).
 - Yayın akışı: `d1 execute schema` (eklemeli) → `wrangler deploy` → webhook zaten ayarlı. Kullanıcı güncellemesi gerekmez; rollback `wrangler rollback`, yedek `wrangler d1 export`.
-- Farklar: gönderim kuyruğu yerine doğrudan `sendMessage` (429 riski), tek kart yerine paket kartları, bazı komut/rapor detayları Python sürümüne göre eksik.
+- Cloudflare modülleri: `core` (router+menü), `pool` (bölge/restoran/zaman grupları, ✅ seçim, ayraç+saat başlıkları), `accept` (kabul/toplu/aktarım/claim offer), `ops` (teslim, km, km düzeltme, iptal, otomatik teklif yanıtı), `adminops` (komutlar, tarife, bölge, yönetici telefonu, limit, sıfırlama, kurye durumu), `accounts` (filtre/arama/aktif-pasif/sil/ara), `profile` (kayıt, harita+arama düğmeleri), `reports` (filtre/rapor/analiz), `autooffer` (cron: uyarı + teklif), `views` (HTML kart + tip güvenli klavye).
+- Farklar: gönderim kuyruğu yerine doğrudan `sendMessage` (429 riski), tek kart yerine paket kartları.
+- Doğrulama: `tsc --noEmit` + canlı Telegram (yönetici ve kurye kaydı).
 
 ## Tablolar (özet)
 
