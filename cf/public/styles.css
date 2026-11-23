@@ -190,3 +190,4 @@ body.sheet-open #toast{bottom:auto;top:calc(14px + var(--sat));z-index:12}
 .gcard .row{padding:12px}
 .row .acts{margin-left:auto;display:flex;align-items:center;gap:6px;flex:none}
 .row .acts .sm{white-space:nowrap}
+.nv-ref{opacity:.85}

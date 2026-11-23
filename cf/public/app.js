@@ -36,6 +36,12 @@
     return [['talep', '＋', 'Talep Ver'], ['paketlerim', '▤', 'Paketlerim'], ['sistem', '⚙', 'Sistem'], ['profil', '☺', 'Profil']];
   }
 
+  function hardReload() {
+    var q = new URLSearchParams(location.search);
+    q.set('r', String(Date.now()));
+    location.replace(location.pathname + '?' + q.toString() + location.hash);
+  }
+
   function setHeader(title, sub) { $('ttl').textContent = title; $('sub').textContent = sub || ''; }
 
   function nav(items, counts) {
@@ -44,8 +50,12 @@
       var c = counts && counts[x[0]];
       return '<button class="' + (S.tab === x[0] ? 'on' : '') + '" data-p="' + x[0] + '"><i>' + x[1] + '</i>' + x[2] +
         (c ? '<em>' + c + '</em>' : '') + '</button>';
-    }).join('');
+    }).join('') + '<button class="nv-ref" id="nv-ref" title="Yenile"><i>↻</i>Yenile</button>';
     Array.prototype.forEach.call(nv.children, function (b) {
+      if (b.id === 'nv-ref') {
+        b.onclick = function () { hardReload(); };
+        return;
+      }
       b.onclick = function () { S.tab = b.getAttribute('data-p'); UI.closeSheet(); render(); refresh(false); };
     });
   }
