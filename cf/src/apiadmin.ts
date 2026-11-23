@@ -42,7 +42,7 @@ export async function adminRoutes(
     const waitingRows = await bot.db.all<any>(
       `SELECT p.id, p.batch, p.number, p.region, p.courier, r.name AS restaurant, b.created_at
        FROM packages p JOIN batches b ON b.id=p.batch JOIN accounts r ON r.id=b.owner
-       WHERE p.delivered_at IS NULL AND p.cancelled_at IS NULL
+       WHERE p.delivered_at IS NULL AND p.cancelled_at IS NULL AND p.courier IS NULL
        ORDER BY b.created_at ASC LIMIT 100`);
     const nowSec = bot.now();
     const waiting = waitingRows

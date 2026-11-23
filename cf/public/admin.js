@@ -84,7 +84,7 @@
     if (!w) return;
     API.yonetim('kuryeler').then(function (d) {
       var free = (d.couriers || []).filter(function (c) { return c.online && c.active && !c.locked && (c.active_packages || 0) === 0; });
-      var opts = free.map(function (c) { return '<option value="' + c.id + '">' + esc(c.name) + '</option>'; }).join('');
+      var opts = '<option value="">Kurye seçin…</option>' + free.map(function (c) { return '<option value="' + c.id + '">' + esc(c.name) + '</option>'; }).join('');
       var sh = UI.openSheet('<h2>' + esc(w.label) + '</h2>' +
         '<p><b>' + esc(w.restaurant) + '</b>' + (w.region ? ' · ' + esc(w.region) : '') + '<br>' +
         'Bekleme: <b class="late">' + w.minutes + ' dk</b></p>' +
@@ -95,7 +95,9 @@
       sh.querySelector('#wclose').onclick = function () { UI.closeSheet(); };
       var ata = sh.querySelector('#wata');
       if (ata) ata.onclick = function () {
-        API.yonetim('kuryeAta', { pkgId: w.id, courierId: Number(sh.querySelector('#wsel').value) }).then(function () {
+        var cid = sh.querySelector('#wsel').value;
+        if (!cid) { UI.toast('Kurye seçin', 'error'); return; }
+        API.yonetim('kuryeAta', { pkgId: w.id, courierId: Number(cid) }).then(function () {
           UI.closeSheet(); UI.toast('Kurye atandı', 'success'); render();
         }).catch(function (e) { UI.toast(e.message || 'Atanamadı', 'error'); });
       };
@@ -114,7 +116,7 @@
             (p.region || '').toLocaleLowerCase('tr').indexOf(q) >= 0 ||
             p.label.toLocaleLowerCase('tr').indexOf(q) >= 0;
         }).map(function (p) {
-          var opts = (d.couriers || []).map(function (c) {
+          var opts = '<option value="">Kurye seçin…</option>' + (d.couriers || []).map(function (c) {
             return '<option value="' + c.id + '">' + esc(c.name) + '</option>';
           }).join('');
           return '<div class="acard"><div class="ahd"><b>' + esc(p.label) + '</b><span class="tag">' + esc(p.payment || '') + '</span></div>' +
