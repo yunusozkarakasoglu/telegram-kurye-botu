@@ -68,6 +68,8 @@ Mantık dosyaları 300 satır altında tutulur. UI metinleri ve tekrar eden say�
 - Yayın akışı: `d1 execute schema` (eklemeli) → `wrangler deploy` → webhook zaten ayarlı. Kullanıcı güncellemesi gerekmez; rollback `wrangler rollback`, yedek `wrangler d1 export`.
 - Cloudflare modülleri: `core` (router+menü), `pool` (bölge/restoran/zaman grupları, ✅ seçim, ayraç+saat başlıkları), `accept` (kabul/toplu/aktarım/claim offer), `ops` (teslim, km, km düzeltme, iptal, otomatik teklif yanıtı), `adminops` (komutlar, tarife, bölge, yönetici telefonu, limit, sıfırlama, kurye durumu), `accounts` (filtre/arama/aktif-pasif/sil/ara), `profile` (kayıt, harita+arama düğmeleri), `reports` (filtre/rapor/analiz), `autooffer` (cron: uyarı + teklif), `views` (HTML kart + tip güvenli klavye).
 - Farklar: gönderim kuyruğu yerine doğrudan `sendMessage` (429 riski), tek kart yerine paket kartları.
+- Bildirim: `notifications` + `notif_targets` + `notif_read`; yönetici toplu mesajı hem Telegram hem 🔔; atamada `kind='assign'` → otomatik sarı popup + rozet.
+- Kayıt/davet: `invites` (ad/telefon/contact ön dolu olabilir) → `/api/kayit`; silinmiş hesap reaktivasyonu.
 - Mini App admin paneli: 3 sütun ızgara + mobil hamburger, kart görünümleri, arama, bölge sıralama (▲▼), özet KPI + geciken sipariş atama, davet paylaş/kopyala.
 - Mini App kimlik: `initData` HMAC (Telegram yeni imzası **`signature` dahil**), 24 saat; süre dolunca istemci bir kez otomatik yeniler.
 - Ücret: km aralığı başına **sabit ücret** (taban+kademe kaldırıldı).

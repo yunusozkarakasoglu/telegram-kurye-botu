@@ -24,6 +24,9 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] Yönetici paneli 3 sekme + ☰; kart/arama/yenile; bölge ▲▼; Raporlar 3 sekme + tarih; Mesaj geçmişi; Geciken→boştaki kuryeye atama.
+- [x] Mini App global header (Yenile/Sistem/Bildirim/Profil), geçmiş tarih filtresi, kazanç dönem filtresi + 3 kart.
+- [x] Davetle zorunlu kayıt; dolu davetle doğrudan giriş; silinmiş hesap reaktivasyonu; `tgWebAppStartParam` yedeği.
 - [x] Mini App yönetici paneli tamam: kartlar+arama, hamburger, bölge ▲▼ sıralama, 3 KPI, Geciken Siparişler + boştaki kuryeye atama, sabit ücret tarifesi, davet paylaş/kopyala.
 - [x] `initData` doğrulaması düzeltildi (signature dahil) + 24 saat + otomatik yenileme.
 - [x] Ücret modeli sabit aralık ücreti (CF+Python, testler güncel).

@@ -135,6 +135,13 @@ Bilinen mesaj kimliğiyle yapılan güncellemeler çökme sonrası aynı mesajı
 - Yönetici paneli yerel: kartlar+arama, hamburger, bölge ▲▼, KPI, geciken atama, davet paylaş/kopyala.
 - Ücret: 4,5 km → **190 TL**.
 
+### Son doğrulama (gece turu)
+
+- Python **382/382 OK**, `ruff` temiz, `tsc` temiz.
+- Canlı: kayıt akışı (boş davet → form; dolu davet → doğrudan giriş; silinmiş hesap reaktivasyonu) test edildi.
+- Yönetici: 3 sekme + ☰, il/restoran kartları, yenile, bölge sıralama, raporlar, mesaj geçmişi.
+- Kurye: global header ikonları, geçmiş tarih filtresi, kazanç 3 kart, atama popup'ı + 🔔.
+
 ## Kanıtlar ve tekrar çalıştırma
 
 ```bash

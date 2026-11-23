@@ -184,6 +184,12 @@ Kullanıcının **Bölgeler** ekranında tanımladığı listeden 4 bölge seçi
 - Kullanıcı adı: `@YunusKuryePilot_4862_bot` — BotFather `/setusername` artık yok (“Unrecognized command”), menülerde de yok; Telegram yalnız Bot Support ile değiştiriyor. **Karar: kullanıcı adı böyle kalacak.**
 - Mini App URL'si ve webhook kullanıcı adından bağımsız; etkilenmedi.
 
+### Davet & kayıt
+
+- Davet formunda ad/telefon doldurulursa linke tıklayan **doğrudan** kaydolur; boşsa form gelir (alanlar ön dolu).
+- Silinmiş/pasif hesap davetle yeniden aktifleşir; davetsiz girişte mock yerine engel ekranı.
+- `startapp` kodu taşınmazsa `tgWebAppStartParam` yedeği ve elle kod girme var.
+
 ### Yönetici paneli (tamam)
 
 - Menü: 3 sütun + mobil hamburger; Kuryeler/Restoranlar kart + arama; telefon 📞 + Düzenle.
