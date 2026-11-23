@@ -251,9 +251,24 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
 
     if (path === "/kazanc" && method === "GET") {
       if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const dateParam = url.searchParams.get("date") || "";
+      const range = url.searchParams.get("range") || "today";
+      let start: number | null = null;
+      let end: number | null = null;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+        start = Math.floor(Date.parse(dateParam + "T00:00:00+03:00") / 1000);
+        end = start + 86400;
+      } else if (range !== "all") {
+        const n = bot.now();
+        const dayStart = Math.floor((n + 3 * 3600) / 86400) * 86400 - 3 * 3600;
+        start = range === "yesterday" ? dayStart - 86400 : dayStart;
+        end = start + 86400;
+      }
+      const cond = start != null ? " AND delivered_at>=? AND delivered_at<?" : "";
+      const params: unknown[] = start != null ? [user.id, start, end] : [user.id];
       const row = await bot.db.first<{ total: number | null; count: number; km: number | null }>(
         `SELECT sum(courier_fee) AS total, count(*) AS count, sum(CAST(distance_km AS REAL)) AS km
-         FROM packages WHERE courier=? AND delivered_at IS NOT NULL`, user.id);
+         FROM packages WHERE courier=? AND delivered_at IS NOT NULL${cond}`, ...params);
       return json({
         total_tl: row?.total ?? 0,
         count: row?.count ?? 0,

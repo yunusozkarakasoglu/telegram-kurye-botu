@@ -365,7 +365,7 @@
     aktar: function (id, payload) { return req('POST', '/api/paket/' + id + '/aktar', payload || {}); },
     paketlerim: function () { return req('GET', '/api/paketlerim'); },
     gecmis: function () { return req('GET', '/api/gecmis'); },
-    kazanc: function () { return req('GET', '/api/kazanc'); },
+    kazanc: function (range, date) { return req('GET', '/api/kazanc' + (date ? '?date=' + encodeURIComponent(date) : (range ? '?range=' + encodeURIComponent(range) : ''))); },
     talepVer: function (items) { return req('POST', '/api/restoran/talep', { packages: items }); },
     paketlerimRestoran: function (filter) { return req('GET', '/api/restoran/paketlerim?filter=' + encodeURIComponent(filter || 'all')); },
     profil: function (data) { return req('PATCH', '/api/profil', data); },

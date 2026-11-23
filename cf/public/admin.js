@@ -16,8 +16,18 @@
   ];
 
   function head(t, s) { $('adm-title').textContent = t; $('adm-sub').textContent = s || ''; }
+  var MAIN = ['ozet', 'havuz', 'sontalepler'];
+  function renderTabs() {
+    $('adm-tabs').innerHTML = MAIN.map(function (key) {
+      var t = TABS.filter(function (x) { return x[0] === key; })[0];
+      return '<button class="' + (S.tab === key ? 'on' : '') + '" data-mt="' + key + '">' + t[1] + '</button>';
+    }).join('');
+    Array.prototype.forEach.call($('adm-tabs').children, function (b) {
+      b.onclick = function () { S.tab = b.getAttribute('data-mt'); render(); };
+    });
+  }
   function nav() {
-    $('adm-nav').innerHTML = TABS.map(function (t) {
+    $('adm-nav').innerHTML = TABS.filter(function (t) { return MAIN.indexOf(t[0]) < 0; }).map(function (t) {
       return '<button class="' + (S.tab === t[0] ? 'on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</button>';
     }).join('');
     Array.prototype.forEach.call($('adm-nav').children, function (b) {
@@ -545,6 +555,7 @@
 
   /* ---------------- çalıştır ---------------- */
   function render() {
+    renderTabs();
     nav();
     ({
       ozet: viewOzet, havuz: viewHavuz, kuryeler: viewKuryeler, restoranlar: viewRestoranlar,

@@ -21,6 +21,9 @@
     mineView: (localStorage.getItem('mineView') === 'card' ? 'card' : 'list'),
     histView: (localStorage.getItem('histView') === 'card' ? 'card' : 'list'),
     histRange: 'today',
+    histDate: '',
+    kazancRange: 'today',
+    kazancDate: '',
     sistemTab: 'fiyat',
     lateGroup: '',
     notifs: { items: [], unread: 0 },
@@ -32,10 +35,10 @@
   function curRole() { return S.session && S.session.role ? S.session.role : 'courier'; }
 
   function courierTabs() {
-    return [['havuz', '▤', 'Havuz'], ['paketlerim', '✓', 'Açık Paketler'], ['gecmis', '◷', 'Geçmiş'], ['kazanc', '₺', 'Kazanç'], ['sistem', '⚙', 'Sistem'], ['loglar', '🐞', 'Loglar']];
+    return [['havuz', '▤', 'Havuz'], ['paketlerim', '✓', 'Açık Paketler'], ['gecmis', '◷', 'Geçmiş'], ['kazanc', '₺', 'Kazanç']];
   }
   function restaurantTabs() {
-    return [['talep', '＋', 'Talep Ver'], ['paketlerim', '▤', 'Paketlerim'], ['sistem', '⚙', 'Sistem'], ['loglar', '🐞', 'Loglar']];
+    return [['talep', '＋', 'Talep Ver'], ['paketlerim', '▤', 'Paketlerim']];
   }
 
   function hardReload() {
@@ -52,7 +55,7 @@
       var c = counts && counts[x[0]];
       return '<button class="' + (S.tab === x[0] ? 'on' : '') + '" data-p="' + x[0] + '"><i>' + x[1] + '</i>' + x[2] +
         (c ? '<em>' + c + '</em>' : '') + '</button>';
-    }).join('') + '<button class="nv-ref" id="nv-ref" title="Yenile"><i>↻</i>Yenile</button>';
+    }).join('');
     Array.prototype.forEach.call(nv.children, function (b) {
       if (b.id === 'nv-ref') {
         b.onclick = function () { hardReload(); };
@@ -345,41 +348,34 @@
 
   function renderGecmis() {
     var items = (S.history && S.history.items) || [];
-    var range = S.histRange;
-    if (range !== 'all') {
-      var b = dayBounds(range === 'today' ? 0 : 1);
+    var bounds = null;
+    if (S.histDate) {
+      bounds = [Math.floor(Date.parse(S.histDate + 'T00:00:00+03:00') / 1000), Math.floor(Date.parse(S.histDate + 'T00:00:00+03:00') / 1000) + 86400];
+    } else if (S.histRange !== 'all') {
+      bounds = dayBounds(S.histRange === 'today' ? 0 : 1);
+    }
+    if (bounds) {
       items = items.filter(function (p) {
         var t = p.cancelled_at || p.delivered_at || p.created_at || 0;
-        return t >= b[0] && t < b[1];
+        return t >= bounds[0] && t < bounds[1];
       });
     }
     setHeader('Geçmiş', items.length + ' kayıt');
     var main = $('mn');
     var rseg = '<div class="seg three">' + [['today', 'Bugün'], ['yesterday', 'Dün'], ['all', 'Tümü']].map(function (r) {
-      return '<button data-r="' + r[0] + '" class="' + (range === r[0] ? 'on' : '') + '">' + r[1] + '</button>';
-    }).join('') + '</div>';
-    var vseg = '<div class="seg two" style="margin-top:6px">' + [['list', 'Liste'], ['card', 'Kart']].map(function (v) {
-      return '<button data-hv="' + v[0] + '" class="' + (S.histView === v[0] ? 'on' : '') + '">' + v[1] + '</button>';
-    }).join('') + '</div>';
-    var body;
-    if (!items.length) {
-      body = '<div class="empty"><b>Kayıt yok</b>Bu aralıkta tamamlanan/iptal edilen iş bulunmuyor.</div>';
-    } else if (S.histView === 'list') {
-      body = '<div class="card">' + items.map(function (p) {
-        return '<button class="prow" data-hopen="' + p.id + '"><span><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) + '</b>' +
-          '<small>' + esc(p.region || '') + ' · ' + esc(p.status) + ' · ' + dt(p.delivered_at || p.cancelled_at) + '</small></span>' +
-          '<em>' + (p.fee_tl == null ? '' : money(p.fee_tl)) + '</em></button>';
-      }).join('') + '</div>';
-    } else {
-      body = items.map(function (p) { return pkgCard(p, {}); }).join('');
-    }
-    main.innerHTML = rseg + vseg + body;
+      return '<button data-r="' + r[0] + '" class="' + (!S.histDate && S.histRange === r[0] ? 'on' : '') + '">' + r[1] + '</button>';
+    }).join('') + '</div>' +
+      '<div class="filters" style="margin-top:8px"><input type="date" id="hdate" value="' + esc(S.histDate) + '"></div>';
+    var body = items.length ? '<div class="card">' + items.map(function (p) {
+      return '<button class="prow" data-hopen="' + p.id + '"><span><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) + '</b>' +
+        '<small>' + esc(p.region || '') + ' · ' + esc(p.status) + ' · ' + dt(p.delivered_at || p.cancelled_at) + '</small></span>' +
+        '<em>' + (p.fee_tl == null ? '' : money(p.fee_tl)) + '</em></button>';
+    }).join('') + '</div>' : '<div class="empty"><b>Kayıt yok</b>Bu aralıkta tamamlanan/iptal edilen iş bulunmuyor.</div>';
+    main.innerHTML = rseg + body;
     Array.prototype.forEach.call(main.querySelectorAll('[data-r]'), function (b) {
-      b.onclick = function () { S.histRange = b.getAttribute('data-r'); render(); };
+      b.onclick = function () { S.histRange = b.getAttribute('data-r'); S.histDate = ''; render(); };
     });
-    Array.prototype.forEach.call(main.querySelectorAll('[data-hv]'), function (b) {
-      b.onclick = function () { S.histView = b.getAttribute('data-hv'); localStorage.setItem('histView', S.histView); render(); };
-    });
+    $('hdate').onchange = function () { S.histDate = $('hdate').value; render(); };
     Array.prototype.forEach.call(main.querySelectorAll('[data-hopen]'), function (b) {
       b.onclick = function () {
         var p = items.filter(function (x) { return String(x.id) === b.getAttribute('data-hopen'); })[0];
@@ -388,21 +384,33 @@
         bindPkgActions(sh, [p]);
       };
     });
-    if (S.histView === 'card') bindPkgActions(main, items);
     $('cta').innerHTML = '';
     nav(courierTabs(), { havuz: S.pool ? S.pool.packages.length : 0 });
   }
 
   function renderKazanc() {
     var e = S.earnings || { total_tl: 0, count: 0, total_km: 0 };
-    setHeader('Kazançlarım', e.period || 'Bugün');
-    $('mn').innerHTML =
-      '<div class="big"><span>Toplam hakediş</span><div>' + money(e.total_tl) + '</div></div>' +
-      '<div class="big"><span>Teslim edilen paket</span><div>' + (e.count || 0) + '</div></div>' +
-      '<div class="big"><span>Toplam mesafe</span><div>' + (Math.round((e.total_km || 0) * 10) / 10) + ' km</div></div>' +
-      '<p style="color:var(--t2);font-size:13px;padding:0 4px">Ücret hesabı sunucuda yapılır; uygulama sonucu gösterir.</p>';
+    setHeader('Kazançlarım', e.period || '');
+    var seg = '<div class="seg three">' + [['today', 'Bugün'], ['yesterday', 'Dün'], ['all', 'Tümü']].map(function (r) {
+      return '<button data-kr="' + r[0] + '" class="' + (!S.kazancDate && S.kazancRange === r[0] ? 'on' : '') + '">' + r[1] + '</button>';
+    }).join('') + '</div>' +
+      '<div class="filters" style="margin-top:8px"><input type="date" id="kdate" value="' + esc(S.kazancDate) + '"></div>';
+    $('mn').innerHTML = seg +
+      '<div class="krow">' +
+        '<div class="big"><span>Toplam hakediş</span><div>' + money(e.total_tl) + '</div></div>' +
+        '<div class="big"><span>Teslim paket</span><div>' + (e.count || 0) + '</div></div>' +
+        '<div class="big"><span>Toplam km</span><div>' + (Math.round((e.total_km || 0) * 10) / 10) + '</div></div>' +
+      '</div>';
+    Array.prototype.forEach.call($('mn').querySelectorAll('[data-kr]'), function (b) {
+      b.onclick = function () { S.kazancRange = b.getAttribute('data-kr'); S.kazancDate = ''; loadKazanc(); };
+    });
+    $('kdate').onchange = function () { S.kazancDate = $('kdate').value; loadKazanc(); };
     $('cta').innerHTML = '';
     nav(courierTabs(), { havuz: S.pool ? S.pool.packages.length : 0 });
+  }
+
+  function loadKazanc() {
+    API.kazanc(S.kazancRange, S.kazancDate).then(function (r) { S.earnings = r; renderKazanc(); }).catch(function () {});
   }
 
   /* ---------------- KM / İPTAL / AKTAR ---------------- */
@@ -748,7 +756,7 @@
     setHeader('Sistem', 'Fiyatlandırma · Restoranlar · Kuryeler · Bölgeler · v10');
     var main = $('mn');
     var admin = S.session && S.session.role === 'yonetici';
-    var seg = '<div class="seg four">' + [['fiyat', 'Fiyatlandırma'], ['restoran', 'Restoranlar'], ['kurye', 'Kuryeler'], ['bolge', 'Bölgeler']].map(function (x) {
+    var seg = '<div class="seg four">' + [['fiyat', 'Fiyatlandırma'], ['restoran', 'Restoranlar'], ['kurye', 'Kuryeler'], ['bolge', 'Bölgeler'], ['log', 'Tanılama']].map(function (x) {
       return '<button data-st="' + x[0] + '" class="' + (S.sistemTab === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
     }).join('') + '</div>';
     function bindSeg() {
@@ -766,6 +774,14 @@
           return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--ln);font-size:13px">' +
             '<span>' + esc(labels[i] || (i === 0 ? '0–3' : i + '. aralık')) + ' km</span><b>' + money(v) + '</b></div>';
         }).join('') + '</div>';
+      } else if (S.sistemTab === 'log') {
+        var logs = (API.logs ? API.logs() : []).slice(-60);
+        body = '<div class="card" style="padding:12px;font-size:12px">' +
+          '<div><b>Mod:</b> ' + (API.mode === 'real' ? 'CANLI' : 'MİMİK') + ' · <b>initData:</b> ' +
+          (window.Telegram && Telegram.WebApp && Telegram.WebApp.initData ? 'var' : 'YOK') + '</div>' +
+          '<div><b>Son hata:</b> ' + esc(API.lastError || '—') + '</div></div>' +
+          '<div class="card" style="padding:12px;font-size:12px;white-space:pre-wrap">' + (logs.length ? logs.map(esc).join('\n') : 'Kayıt yok.') + '</div>' +
+          '<button class="p" id="log-send" style="width:100%;margin-top:8px">Sunucuya Gönder</button>';
       } else if (S.sistemTab === 'bolge') {
         body = '<div class="card">' + ((d.settings && d.settings.regions) || []).map(function (r, i) {
           return '<div class="row" style="cursor:default"><div><b>' + (i + 1) + '. ' + esc(r) + '</b></div></div>';
@@ -801,6 +817,12 @@
           }).catch(function (e) { sh.querySelector('#se-err').textContent = e.message || 'Kaydedilemedi'; });
         };
       }
+      var logSend = main.querySelector('#log-send');
+      if (logSend) logSend.onclick = function () {
+        API.sendLogs({ mode: API.mode, lastError: API.lastError, ua: navigator.userAgent }).then(function () {
+          UI.toast('Log gönderildi', 'success');
+        }).catch(function (e) { UI.toast(e.message || 'Gönderilemedi', 'error'); });
+      };
       Array.prototype.forEach.call(main.querySelectorAll('[data-editc]'), function (b) {
         b.onclick = function () {
           var id = Number(b.getAttribute('data-editc'));
@@ -851,8 +873,12 @@
     if (role === 'yonetici') { hr.innerHTML = ''; return; }
     var unread = (S.notifs && S.notifs.unread) || 0;
     hr.innerHTML = '<span class="hicons">' +
+      '<button class="ico" id="hdr-ref" title="Yenile">↻</button>' +
+      '<button class="ico" id="hdr-sys" title="Sistem">⚙</button>' +
       '<button class="ico" id="hdr-bell" title="Bildirimler">🔔' + (unread ? '<em>' + unread + '</em>' : '') + '</button>' +
-      '<button class="ico" id="hdr-prof" title="Profil">☺</button></span>';
+      '<button class="ico" id="hdr-prof" title="Profil">👤</button></span>';
+    $('hdr-ref').onclick = hardReload;
+    $('hdr-sys').onclick = function () { S.sistem = null; S.tab = 'sistem'; render(); };
     $('hdr-bell').onclick = notifSheet;
     $('hdr-prof').onclick = function () { S.tab = 'profil'; render(); };
   }
@@ -947,7 +973,7 @@
     jobs.push(API.bildirimler().then(function (r) { S.notifs = r; }).catch(function () {}));
     if (full || S.tab === 'paketlerim') jobs.push(API.paketlerim().then(function (r) { S.mine = r; }));
     if (full || S.tab === 'gecmis') jobs.push(API.gecmis().then(function (r) { S.history = r; }));
-    if (full || S.tab === 'kazanc') jobs.push(API.kazanc().then(function (r) { S.earnings = r; }));
+    if (full || S.tab === 'kazanc') jobs.push(API.kazanc(S.kazancRange, S.kazancDate).then(function (r) { S.earnings = r; }));
     return Promise.all(jobs).then(function () {
       render();
       if (curRole() === 'kurye' && (S.offers || []).length && !UI.sheetOpen()) offersPopup();
