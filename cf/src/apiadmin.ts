@@ -143,6 +143,10 @@ export async function adminRoutes(
     return json({ ok: true });
   }
 
+  if (path === "/yonetim/bolgeler" && method === "GET") {
+    return json({ regions: await bot.regionList() });
+  }
+
   if (path === "/yonetim/bolge" && method === "POST") {
     const body = await readBody(request);
     const action = String(body.action || "add");

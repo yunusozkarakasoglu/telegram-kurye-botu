@@ -209,7 +209,7 @@
           }).catch(function (e) { UI.toast(e.message || 'Silinemedi', 'error'); });
         };
       });
-    });
+    }).catch(showError);
   }
 
   function viewTarife() {
@@ -330,7 +330,21 @@
     })[S.tab]();
   }
 
+  function bindBurger() {
+    var btn = document.getElementById('adm-burger');
+    var scrim = document.getElementById('adm-scrim');
+    var nav = document.getElementById('adm-nav');
+    if (!btn || !nav) return;
+    function close() { document.body.classList.remove('nav-open'); }
+    btn.onclick = function () { document.body.classList.toggle('nav-open'); };
+    if (scrim) scrim.onclick = close;
+    Array.prototype.forEach.call(nav.querySelectorAll('button'), function (b) {
+      b.addEventListener('click', close);
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
+    bindBurger();
     API.init().then(function (s) {
       S.session = s;
       if (s.role !== 'yonetici') {
