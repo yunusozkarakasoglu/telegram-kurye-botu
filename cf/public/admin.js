@@ -31,13 +31,19 @@
   function viewOzet() {
     head('Özet', 'Sistem durumu');
     API.yonetim('ozet').then(function (d) {
+      var waiting = d.waiting || [];
+      var list = waiting.length ? waiting.map(function (w) {
+        return '<div class="brow"><span><b>' + esc(w.label) + '</b> · ' + esc(w.restaurant) +
+          (w.region ? ' · ' + esc(w.region) : '') + (w.courier ? ' · Kuryede' : ' · Havuzda') + '</span>' +
+          '<b class="late">' + w.minutes + ' dk</b></div>';
+      }).join('') : '<div class="empty">10 dakikayı geçen paket yok.</div>';
       panel('<div class="kpis">' +
         kpi('Havuzda paket', d.pool_count) +
         kpi('Kuryede', d.active_count) +
         kpi('Teslim edilen', d.delivered_count) +
-        kpi('Ücret toplamı', money(d.total_fee_tl)) +
-        kpi('En eski bekleme', (d.oldest_wait_min || 0) + ' dk') +
         '</div>' +
+        '<h3 style="font-size:15px;margin:16px 0 6px">10 dakikayı geçen bekleyenler</h3>' +
+        '<div class="card" style="padding:6px 10px">' + list + '</div>' +
         '<p class="note">Bölgeler: ' + esc((d.regions || []).join(', ')) + '</p>');
     });
   }

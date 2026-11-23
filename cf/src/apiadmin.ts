@@ -33,7 +33,19 @@ export async function adminRoutes(
       "SELECT sum(courier_fee) AS total FROM packages WHERE delivered_at IS NOT NULL");
     const oldest = await bot.db.first<{ at: number | null }>(
       "SELECT min(b.created_at) AS at FROM packages p JOIN batches b ON b.id=p.batch WHERE p.courier IS NULL AND p.cancelled_at IS NULL");
+    const waitingRows = await bot.db.all<any>(
+      `SELECT p.id, p.batch, p.number, p.region, p.courier, r.name AS restaurant, b.created_at
+       FROM packages p JOIN batches b ON b.id=p.batch JOIN accounts r ON r.id=b.owner
+       WHERE p.delivered_at IS NULL AND p.cancelled_at IS NULL
+       ORDER BY b.created_at ASC LIMIT 100`);
+    const nowSec = bot.now();
+    const waiting = waitingRows
+      .map((row) => ({ ...row, minutes: Math.floor((nowSec - (row.created_at || nowSec)) / 60) }))
+      .filter((row) => row.minutes >= 10)
+      .sort((a, b) => b.minutes - a.minutes)
+      .map((row) => ({ id: row.id, label: `#${row.batch}-${row.number}`, restaurant: row.restaurant, region: row.region || "", minutes: row.minutes, courier: row.courier || null }));
     return json({
+      waiting,
       pool_count: pool?.n ?? 0,
       active_count: active?.n ?? 0,
       delivered_count: delivered?.n ?? 0,
