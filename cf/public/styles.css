@@ -228,3 +228,10 @@ header{position:relative}
 
 .bactions{display:flex;gap:4px;align-items:center}
 .bactions .sm{width:34px;padding:4px 0;text-align:center}
+.acards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:10px}
+.acard{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:12px;box-shadow:var(--sh)}
+.acard .ahd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.acard .ahd b{font-size:15px}
+.acard .ameta{color:var(--t2);font-size:13px;margin:2px 0;word-break:break-word}
+.acard .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.acard .acts .sm{flex:0 0 auto}

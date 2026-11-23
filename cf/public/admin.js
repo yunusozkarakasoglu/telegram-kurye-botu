@@ -95,37 +95,31 @@
     head('Kuryeler', 'Aktif/pasif yönetimi');
     API.yonetim('kuryeler').then(function (d) {
       var all = d.couriers || [];
-      var filter = 'all';
+      var filter = 'all', q = '';
       function draw() {
         var rows = all.filter(function (c) {
-          if (filter === 'online') return c.online;
-          if (filter === 'offline') return !c.online;
-          if (filter === 'active') return c.active;
-          if (filter === 'passive') return !c.active;
+          if (filter === 'online' && !c.online) return false;
+          if (filter === 'offline' && c.online) return false;
+          if (filter === 'active' && !c.active) return false;
+          if (filter === 'passive' && c.active) return false;
+          if (q && (c.name || '').toLocaleLowerCase('tr').indexOf(q) < 0 && (c.phone || '').indexOf(q) < 0) return false;
           return true;
         }).map(function (c) {
-          return '<tr><td>' + esc(c.name) + (c.phone ? ' <a class="tel" href="tel:' + esc(c.phone) + '" title="Ara">📞</a>' : '') +
-            ' <button class="sm" data-edit="' + c.id + '">Düzenle</button></td><td>' + esc(c.phone || '') + '</td>' +
-            '<td>' + (c.online ? '<span class="tag ok">Online</span>' : '<span class="tag">Offline</span>') + '</td>' +
-            '<td>' + (c.active ? '<span class="tag ok">Aktif</span>' : '<span class="tag er">Pasif</span>') + '</td>' +
-            '<td class="num">' + (c.active_packages || 0) + '</td>' +
-            '<td><a class="btn sm" href="tel:' + esc(c.phone || '') + '">Ara</a> ' +
-            '<button class="sm" data-acc="' + c.id + '" data-act="toggle">' + (c.active ? 'Pasif' : 'Aktif') + '</button> ' +
-            '<button class="sm d" data-acc="' + c.id + '" data-act="delete">Sil</button></td></tr>';
+          return '<div class="acard"><div class="ahd"><b>' + esc(c.name) + '</b>' +
+            (c.active ? '<span class="tag ok">Aktif</span>' : '<span class="tag er">Pasif</span>') + '</div>' +
+            '<div class="ameta">' + (c.online ? '🟢 Online' : '⚪ Offline') + ' · Aktif paket: ' + (c.active_packages || 0) + '</div>' +
+            '<div class="ameta">' + (c.phone ? '☎ ' + esc(c.phone) + ' <a class="tel" href="tel:' + esc(c.phone) + '">📞</a>' : 'Telefon yok') + '</div>' +
+            '<div class="acts"><button class="sm" data-edit="' + c.id + '">Düzenle</button>' +
+            '<button class="sm" data-acc="' + c.id + '" data-act="toggle">' + (c.active ? 'Pasif Yap' : 'Aktif Yap') + '</button>' +
+            '<button class="sm d" data-acc="' + c.id + '" data-act="delete">Sil</button></div></div>';
         }).join('');
-        panel('<div class="filters"><input id="q" placeholder="İsimle ara…"><select id="f">' +
+        panel('<div class="filters"><input id="q" placeholder="İsim veya telefon ara…"><select id="f">' +
           '<option value="all">Tümü</option><option value="online">Online</option><option value="offline">Offline</option>' +
           '<option value="active">Aktif</option><option value="passive">Pasif</option></select></div>' +
-          '<table class="tbl"><thead><tr><th>Ad</th><th>Telefon</th><th>Bağlantı</th><th>Durum</th><th class="num">Aktif paket</th><th></th></tr></thead>' +
-          '<tbody>' + (rows || '<tr><td colspan="6">Kayıt yok</td></tr>') + '</tbody></table>');
-        $('f').value = filter;
+          '<div class="acards">' + (rows || '<div class="empty">Kayıt yok</div>') + '</div>');
+        $('f').value = filter; $('q').value = q;
         $('f').onchange = function () { filter = $('f').value; draw(); };
-        $('q').oninput = function () {
-          var q = ($('q').value || '').toLocaleLowerCase('tr');
-          Array.prototype.forEach.call($('adm-body').querySelectorAll('tbody tr'), function (tr, i) {
-            tr.style.display = (!q || tr.innerText.toLocaleLowerCase('tr').indexOf(q) >= 0) ? '' : 'none';
-          });
-        };
+        $('q').oninput = function () { q = ($('q').value || '').toLocaleLowerCase('tr'); draw(); };
         bindAccountActions(all);
       }
       draw();
@@ -136,25 +130,31 @@
     head('Restoranlar', 'Hesap yönetimi');
     API.yonetim('restoranlar').then(function (d) {
       var all = d.restaurants || [];
-      var filter = 'all';
+      var filter = 'all', q = '';
       function draw() {
         var rows = all.filter(function (r) {
-          if (filter === 'active') return r.active;
-          if (filter === 'passive') return !r.active;
+          if (filter === 'active' && !r.active) return false;
+          if (filter === 'passive' && r.active) return false;
+          if (q && (r.name || '').toLocaleLowerCase('tr').indexOf(q) < 0 &&
+              (r.contact_name || '').toLocaleLowerCase('tr').indexOf(q) < 0 && (r.phone || '').indexOf(q) < 0) return false;
           return true;
         }).map(function (r) {
-          return '<tr><td>' + esc(r.name) + (r.phone ? ' <a class="tel" href="tel:' + esc(r.phone) + '" title="Ara">📞</a>' : '') +
-            ' <button class="sm" data-edit="' + r.id + '">Düzenle</button></td><td>' + esc(r.contact_name || '—') + '</td><td>' + esc(r.phone || '') + '</td>' +
-            '<td>' + (r.active ? '<span class="tag ok">Aktif</span>' : '<span class="tag er">Pasif</span>') + '</td>' +
-            '<td><button class="sm" data-acc="' + r.id + '" data-act="toggle">' + (r.active ? 'Pasif Yap' : 'Aktif Yap') + '</button> ' +
-            '<button class="sm d" data-acc="' + r.id + '" data-act="delete">Sil</button></td></tr>';
+          return '<div class="acard"><div class="ahd"><b>' + esc(r.name) + '</b>' +
+            (r.active ? '<span class="tag ok">Aktif</span>' : '<span class="tag er">Pasif</span>') + '</div>' +
+            '<div class="ameta">Yetkili: ' + esc(r.contact_name || '—') + '</div>' +
+            '<div class="ameta">' + (r.phone ? '☎ ' + esc(r.phone) + ' <a class="tel" href="tel:' + esc(r.phone) + '">📞</a>' : 'Telefon yok') + '</div>' +
+            '<div class="acts"><button class="sm" data-edit="' + r.id + '">Düzenle</button>' +
+            '<button class="sm" data-acc="' + r.id + '" data-act="toggle">' + (r.active ? 'Pasif Yap' : 'Aktif Yap') + '</button>' +
+            '<button class="sm d" data-acc="' + r.id + '" data-act="delete">Sil</button></div></div>';
         }).join('');
-        panel('<div class="filters"><button class="sm ' + (filter === 'all' ? 'p' : '') + '" data-f="all">Tümü</button>' +
+        panel('<div class="filters"><input id="rq" placeholder="Restoran / yetkili / telefon ara…">' +
+          '<button class="sm ' + (filter === 'all' ? 'p' : '') + '" data-f="all">Tümü</button>' +
           '<button class="sm ' + (filter === 'active' ? 'p' : '') + '" data-f="active">Aktif</button>' +
           '<button class="sm ' + (filter === 'passive' ? 'p' : '') + '" data-f="passive">Pasif</button></div>' +
-          '<table class="tbl"><thead><tr><th>Restoran</th><th>Yetkili</th><th>Telefon</th><th>Durum</th><th></th></tr></thead>' +
-          '<tbody>' + (rows || '<tr><td colspan="5">Kayıt yok</td></tr>') + '</tbody></table>' +
+          '<div class="acards">' + (rows || '<div class="empty">Kayıt yok</div>') + '</div>' +
           '<p class="note">Pasif yapılan hesap giriş yapamaz; raporlar korunur (soft delete).</p>');
+        $('rq').value = q;
+        $('rq').oninput = function () { q = ($('rq').value || '').toLocaleLowerCase('tr'); draw(); };
         Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-f]'), function (b) {
           b.onclick = function () { filter = b.getAttribute('data-f'); draw(); };
         });
@@ -348,10 +348,11 @@
         'restoran ayrıca konum ister.</p>' +
         '<div class="filters"><input id="tk" value="' + esc(d.token || '') + '" style="flex:1;min-width:260px"></div>' +
         '<div class="fld" style="max-width:520px"><label>Bağlantı</label><input id="lk" value="' + esc(link) + '" readonly></div>' +
-        '<button class="p" id="cp">Bağlantıyı kopyala</button>');
-      $('cp').onclick = function () {
-        var i = $('lk'); i.select();
-        try { document.execCommand('copy'); UI.toast('Kopyalandı', 'success'); } catch (e) { UI.toast('Kopyalanamadı', 'error'); }
+        '<button class="p" id="sh">Bağlantıyı Paylaş</button>');
+      $('sh').onclick = function () {
+        var url = 'https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent('Kurye Paket daveti');
+        if (window.TG && TG.openLink) TG.openLink(url);
+        else window.open(url, '_blank');
       };
     });
   }
