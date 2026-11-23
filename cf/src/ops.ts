@@ -6,6 +6,14 @@ import { dialNumber, parseLocation, validCoordinates } from "./util";
 
 const KM_RE = /^([0-9]{1,5}(?:[.,][0-9]{1,3})?)(?:\s*km)?$/i;
 
+/** Km metnini sayıya çevirir; geçersizse null. Tek doğruluk kaynağı (chat + Mini App). */
+export function parseKm(value: string): number | null {
+  const m = String(value || "").trim().match(KM_RE);
+  if (!m) return null;
+  const d = Number(m[1].replace(",", "."));
+  return Number.isFinite(d) && d > 0 ? d : null;
+}
+
 function feeFor(tariff: number[], distance: number) {
   let fee = tariff[0];
   for (let i = 0; i < TARIFF_BOUNDS.length; i++) if (distance > TARIFF_BOUNDS[i]) fee += tariff[i + 1];

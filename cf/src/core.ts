@@ -15,6 +15,8 @@ export class Bot {
   db: Db;
   tg: Telegram;
   env: Env;
+  /** Mini App API'sinde bildirim hatası isteği bozmamalıdır (veri yazımı esas alınır). */
+  ignoreNotifyErrors = false;
   constructor(env: Env) {
     this.env = env;
     this.db = new Db(env.DB);
@@ -32,6 +34,7 @@ export class Bot {
       return result?.message_id ?? null;
     } catch (e: any) {
       if (e.code === 403 || e.code === 400) return null;
+      if (this.ignoreNotifyErrors) { console.warn("sendMessage failed", e?.message || e); return null; }
       throw e;
     }
   }
