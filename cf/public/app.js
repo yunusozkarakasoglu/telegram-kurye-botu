@@ -636,12 +636,14 @@
       } else if (S.sistemTab === 'restoran') {
         body = '<div class="card">' + ((d.restaurants || []).length ? d.restaurants.map(function (r) {
           return '<div class="row" style="cursor:default"><div><b>' + esc(r.name) + '</b><small>' + esc(r.contact_name || '—') +
-            (r.phone ? ' · ' + esc(r.phone) : '') + '</small></div></div>';
+            (r.phone ? ' · ' + esc(r.phone) : '') + '</small></div>' +
+            (r.phone ? '<a class="tel" href="tel:' + esc(r.phone) + '">📞</a>' : '') + '</div>';
         }).join('') : '<div class="empty">Restoran yok</div>') + '</div>';
       } else {
         body = '<div class="card">' + ((d.couriers || []).length ? d.couriers.map(function (c) {
           return '<div class="row" style="cursor:default"><div><b>' + esc(c.name) + '</b><small>' +
-            (c.online ? 'Online' : 'Offline') + (c.phone ? ' · ' + esc(c.phone) : '') + '</small></div></div>';
+            (c.online ? 'Online' : 'Offline') + (c.phone ? ' · ' + esc(c.phone) : '') + '</small></div>' +
+            (c.phone ? '<a class="tel" href="tel:' + esc(c.phone) + '">📞</a>' : '') + '</div>';
         }).join('') : '<div class="empty">Kurye yok</div>') + '</div>';
       }
       main.innerHTML = seg + body;

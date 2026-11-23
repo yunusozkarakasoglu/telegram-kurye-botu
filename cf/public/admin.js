@@ -104,7 +104,7 @@
           if (filter === 'passive') return !c.active;
           return true;
         }).map(function (c) {
-          return '<tr><td>' + esc(c.name) + '</td><td>' + esc(c.phone || '') + '</td>' +
+          return '<tr><td>' + esc(c.name) + (c.phone ? ' <a class="tel" href="tel:' + esc(c.phone) + '" title="Ara">📞</a>' : '') + '</td><td>' + esc(c.phone || '') + '</td>' +
             '<td>' + (c.online ? '<span class="tag ok">Online</span>' : '<span class="tag">Offline</span>') + '</td>' +
             '<td>' + (c.active ? '<span class="tag ok">Aktif</span>' : '<span class="tag er">Pasif</span>') + '</td>' +
             '<td class="num">' + (c.active_packages || 0) + '</td>' +
@@ -143,7 +143,7 @@
           if (filter === 'passive') return !r.active;
           return true;
         }).map(function (r) {
-          return '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.contact_name || '—') + '</td><td>' + esc(r.phone || '') + '</td>' +
+          return '<tr><td>' + esc(r.name) + (r.phone ? ' <a class="tel" href="tel:' + esc(r.phone) + '" title="Ara">📞</a>' : '') + '</td><td>' + esc(r.contact_name || '—') + '</td><td>' + esc(r.phone || '') + '</td>' +
             '<td>' + (r.active ? '<span class="tag ok">Aktif</span>' : '<span class="tag er">Pasif</span>') + '</td>' +
             '<td><button class="sm" data-edit="' + r.id + '">Düzenle</button> ' +
             '<button class="sm" data-acc="' + r.id + '" data-act="toggle">' + (r.active ? 'Pasif Yap' : 'Aktif Yap') + '</button> ' +
