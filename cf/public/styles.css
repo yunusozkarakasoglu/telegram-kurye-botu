@@ -176,3 +176,7 @@ body.sheet-open #toast{bottom:auto;top:calc(14px + var(--sat));z-index:12}
 .prow b{display:block;font-weight:600;font-size:14px}
 .prow small{display:block;color:var(--t2);font-size:12px;margin-top:2px}
 .prow em{font-style:normal;font-weight:700;color:var(--ok);font-size:13px}
+
+.seg.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.sw{display:flex;align-items:center;gap:8px;margin:10px 0;font-size:14px}
+.sw input{width:20px;height:20px;accent-color:var(--ok)}

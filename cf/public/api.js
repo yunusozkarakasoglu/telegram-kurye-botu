@@ -247,6 +247,22 @@
     });
   };
 
+  Mock.prototype.durum = function (online) {
+    this.me.online = !!online;
+    return this.delay(function () { return { ok: true, online: !!online }; });
+  };
+  Mock.prototype.sistem = function () {
+    var self = this;
+    return this.delay(function () {
+      return { settings: self.settings,
+        restaurants: self.restaurants.map(function (r) { return { name: r.name, contact_name: r.contact_name, phone: r.phone }; }),
+        couriers: self.couriers.map(function (c) { return { name: c.name, online: c.online, phone: null }; }) };
+    });
+  };
+  Mock.prototype.aktarimKuryeler = function () { var self = this; return this.delay(function () { return { couriers: self.couriers.filter(function (c) { return c.id !== self.me.id; }).map(function (c) { return { id: c.id, name: c.name }; }) }; }); };
+  Mock.prototype.aktarimTeklifler = function () { return this.delay(function () { return { offers: [] }; }); };
+  Mock.prototype.aktarimKarar = function () { return this.delay(function () { return { ok: true }; }); };
+
   Mock.prototype.talepVer = function (items) {
     var self = this;
     return this.delay(function () {
@@ -335,13 +351,18 @@
     kmGir: function (id, km) { return req('POST', '/api/paket/' + id + '/km', { km: km }); },
     teslim: function (id) { return req('POST', '/api/paket/' + id + '/teslim'); },
     iptal: function (id, reason) { return req('POST', '/api/paket/' + id + '/iptal', { reason: reason }); },
-    aktar: function (id) { return req('POST', '/api/paket/' + id + '/aktar'); },
+    aktar: function (id, payload) { return req('POST', '/api/paket/' + id + '/aktar', payload || {}); },
     paketlerim: function () { return req('GET', '/api/paketlerim'); },
     gecmis: function () { return req('GET', '/api/gecmis'); },
     kazanc: function () { return req('GET', '/api/kazanc'); },
     talepVer: function (items) { return req('POST', '/api/restoran/talep', { packages: items }); },
     paketlerimRestoran: function (filter) { return req('GET', '/api/restoran/paketlerim?filter=' + encodeURIComponent(filter || 'all')); },
     profil: function (data) { return req('PATCH', '/api/profil', data); },
+    durum: function (online) { return req('POST', '/api/durum', { online: !!online }); },
+    sistem: function () { return req('GET', '/api/sistem'); },
+    aktarimKuryeler: function () { return req('GET', '/api/aktarim/kuryeler'); },
+    aktarimTeklifler: function () { return req('GET', '/api/aktarim/teklifler'); },
+    aktarimKarar: function (token, kabul) { return req('POST', '/api/aktarim/' + token + (kabul ? '/kabul' : '/reddet')); },
     yonetim: function (what, arg) {
       if (what === 'davet') return req('POST', '/api/yonetim/davet', arg || { role: 'kurye' });
       if (what === 'hesap') return req('POST', '/api/yonetim/hesap', arg || {});
@@ -384,7 +405,7 @@
     }
   };
   ['oturum', 'havuz', 'kabul', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
-    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'yonetim'].forEach(function (m) {
+    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);
         var target = mode === 'real' ? real : mock;

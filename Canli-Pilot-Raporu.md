@@ -191,6 +191,8 @@ Kullanıcının **Bölgeler** ekranında tanımladığı listeden 4 bölge seçi
 - Restoran: talep, paketlerim, profil düzenleme (ad/yetkili/telefon).
 - Yönetici: `/` → `/admin`; 3 sütunlu 12 sekmeli panel; Restoranlar/Kuryeler filtre + Düzenle; limit/tarife/son talepler.
 - `initData` 1 saat; roller sunucuda doğrulanıyor.
+- Kurye aktarım: havuza veya seçilen kuryeye teklif; hedef kurye uygulamada kabul/red eder.
+- Sistem sekmesi: Fiyatlandırma / Restoranlar / Kuryeler. Geçmiş: Bugün/Dün/Tümü + Liste/Kart. Profil: online/offline.
 
 - Menü düğmesi `commands` tipine alındı (kullanıcı kararı: önce bot tam düzenlenir, sonra Mini App yeniden açılır).
 - Statik arayüz ve `/api/*` yayında kalıyor; yalnız giriş noktası kaldırıldı.

@@ -187,6 +187,7 @@ async function targets(bot: Bot, user: Account, token: string): Promise<any> {
 
 export async function transferStep(bot: Bot, user: Account, action: string, token: string): Promise<any> {
   if (user.role !== "kurye") return "Bu işlem kullanılamıyor.";
+  if (action === "trma" || action === "trmd") return transferOfferStep(bot, user, action, token);
   const rows = await scopeRows(bot, token, user.id);
   if (!rows) return "Aktarım süresi doldu, tekrar deneyin.";
   if (action === "trpool") {
@@ -223,36 +224,37 @@ export async function transferStep(bot: Bot, user: Account, action: string, toke
     await bot.send(user.id, "Paketi alacak kuryeyi seçin.", keyboard(pickRows));
     return null;
   }
-  if (action === "trma" || action === "trmd") {
-    const offer = await bot.db.first<any>("SELECT * FROM transfer_offers WHERE token=? AND expires>?", token, bot.nowF());
-    if (!offer || offer.to_courier !== user.id) return "Bu teklif artık geçerli değil.";
-    if (action === "trmd") {
-      await bot.db.run("DELETE FROM transfer_offers WHERE token=?", token);
-      await bot.db.run("UPDATE packages SET courier=NULL,accepted_at=NULL,picked_up_at=NULL,distance_km=NULL,courier_fee=NULL,incoming=0,incoming_from=NULL,incoming_at=NULL WHERE id=?", offer.package);
-      await bot.send(offer.from_courier, "Aktarım teklifi kabul edilmedi; paket havuza alındı.");
-      return "Teklif reddedildi; paket havuza alındı.";
-    }
-    const [account, error] = await eligible(bot, user.id);
-    if (error) return error;
-    const pkg = await bot.db.first<PackageRow>("SELECT * FROM packages WHERE id=? AND courier=? AND delivered_at IS NULL AND cancelled_at IS NULL", offer.package, offer.from_courier);
-    if (!pkg) { await bot.db.run("DELETE FROM transfer_offers WHERE token=?", token); return "Paketler başka işlem görmüş; teklif kapandı."; }
-    await bot.db.run("UPDATE packages SET courier=?,accepted_at=? WHERE id=?", user.id, bot.now(), pkg.id);
-    await bot.db.run("INSERT INTO transfer_log(package,from_courier,to_courier,at,original_accepted_at) VALUES (?,?,?,?,?)",
-      pkg.id, offer.from_courier, user.id, bot.nowF(), pkg.accepted_at);
-    await bot.db.run("DELETE FROM transfer_offers WHERE token=?", token);
-    await bot.db.run("UPDATE packages SET incoming=1,incoming_from=?,incoming_at=? WHERE id=?", offer.from_courier, bot.nowF(), pkg.id);
-    await bot.db.run("DELETE FROM reservations WHERE courier=?", offer.from_courier);
-    if ((await bot.activeCount(user.id)) >= (await bot.activeLimit())) await bot.lockCourier(user.id, await bot.activeLimit());
-    else await bot.db.run("UPDATE accounts SET locked=0 WHERE id=? AND locked=1 AND NOT EXISTS (SELECT 1 FROM packages WHERE courier=? AND delivered_at IS NULL AND cancelled_at IS NULL)", offer.from_courier, offer.from_courier);
-    const fresh = (await bot.packages("p.id=?", [pkg.id]))[0];
-    await bot.db.run("UPDATE packages SET incoming=1,incoming_from=?,incoming_at=? WHERE id=?", offer.from_courier, bot.nowF(), pkg.id);
-    const sender = await bot.db.first<{ name: string }>("SELECT name FROM accounts WHERE id=?", offer.from_courier);
-    await bot.finishAssignment([pkg.id], user.id, account!, false, pkg.batch);
-    await bot.send(user.id, [`<b>🔔 AKTARILAN SİPARİŞ</b>`, `<b>Gönderen kurye : ${sender?.name || "—"}</b>`,
-      await details(bot.db, fresh, true)].join("\n"), undefined, "HTML");
-    return "Aktarım kabul edildi.";
-  }
   return "Bu işlem kullanılamıyor.";
+}
+
+export async function transferOfferStep(bot: Bot, user: Account, action: string, token: string): Promise<any> {
+  if (user.role !== "kurye") return "Bu işlem kullanılamıyor.";
+  const offer = await bot.db.first<any>("SELECT * FROM transfer_offers WHERE token=? AND expires>?", token, bot.nowF());
+  if (!offer || offer.to_courier !== user.id) return "Bu teklif artık geçerli değil.";
+  if (action === "trmd") {
+    await bot.db.run("DELETE FROM transfer_offers WHERE token=?", token);
+    await bot.db.run("UPDATE packages SET courier=NULL,accepted_at=NULL,picked_up_at=NULL,distance_km=NULL,courier_fee=NULL,incoming=0,incoming_from=NULL,incoming_at=NULL WHERE id=?", offer.package);
+    await bot.send(offer.from_courier, "Aktarım teklifi kabul edilmedi; paket havuza alındı.");
+    return "Teklif reddedildi; paket havuza alındı.";
+  }
+  const [account, error] = await eligible(bot, user.id);
+  if (error) return error;
+  const pkg = await bot.db.first<PackageRow>("SELECT * FROM packages WHERE id=? AND courier=? AND delivered_at IS NULL AND cancelled_at IS NULL", offer.package, offer.from_courier);
+  if (!pkg) { await bot.db.run("DELETE FROM transfer_offers WHERE token=?", token); return "Paketler başka işlem görmüş; teklif kapandı."; }
+  await bot.db.run("UPDATE packages SET courier=?,accepted_at=? WHERE id=?", user.id, bot.now(), pkg.id);
+  await bot.db.run("INSERT INTO transfer_log(package,from_courier,to_courier,at,original_accepted_at) VALUES (?,?,?,?,?)",
+    pkg.id, offer.from_courier, user.id, bot.nowF(), pkg.accepted_at);
+  await bot.db.run("DELETE FROM transfer_offers WHERE token=?", token);
+  await bot.db.run("UPDATE packages SET incoming=1,incoming_from=?,incoming_at=? WHERE id=?", offer.from_courier, bot.nowF(), pkg.id);
+  await bot.db.run("DELETE FROM reservations WHERE courier=?", offer.from_courier);
+  if ((await bot.activeCount(user.id)) >= (await bot.activeLimit())) await bot.lockCourier(user.id, await bot.activeLimit());
+  else await bot.db.run("UPDATE accounts SET locked=0 WHERE id=? AND locked=1 AND NOT EXISTS (SELECT 1 FROM packages WHERE courier=? AND delivered_at IS NULL AND cancelled_at IS NULL)", offer.from_courier, offer.from_courier);
+  const fresh = (await bot.packages("p.id=?", [pkg.id]))[0];
+  const sender = await bot.db.first<{ name: string }>("SELECT name FROM accounts WHERE id=?", offer.from_courier);
+  await bot.finishAssignment([pkg.id], user.id, account!, false, pkg.batch);
+  await bot.send(user.id, [`<b>🔔 AKTARILAN SİPARİŞ</b>`, `<b>Gönderen kurye : ${sender?.name || "—"}</b>`,
+    await details(bot.db, fresh, true)].join("\n"), undefined, "HTML");
+  return "Aktarım kabul edildi.";
 }
 
 /** Mini App için: tek paketi onaylı şekilde havuza geri ver (aktarım kapsamı + uygulama). */

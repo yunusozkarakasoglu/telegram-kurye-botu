@@ -106,8 +106,59 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         const result = await apiCourier.cancel(bot, user, packageId, reason);
         return result.ok ? json(result) : fail(result.error || "İşlem tamamlanamadı.", 409, "conflict");
       }
+      if (String(body.hedef || "") === "kurye") {
+        const courierId = Number(body.courier_id);
+        if (!courierId) return fail("Kurye seçilmedi.", 422, "invalid");
+        const sent = await apiCourier.transferToCourier(bot, user, packageId, courierId);
+        return sent.ok ? json(sent) : fail(sent.error || "Aktarılamadı.", 409, "conflict");
+      }
       const result = await apiCourier.transferToPool(bot, user, packageId);
       return result.ok ? json(result) : fail(result.message || "Aktarılamadı.", 409, "conflict");
+    }
+
+    if (path === "/durum" && method === "POST") {
+      if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const body = await readBody(request);
+      const online = !!body.online;
+      await bot.db.run("UPDATE accounts SET online=? WHERE id=? AND role='kurye'", online ? 1 : 0, user.id);
+      if (!online) {
+        await bot.db.run("DELETE FROM reservations WHERE courier=?", user.id);
+        await bot.db.run("DELETE FROM auto_offers WHERE courier=? AND state='pending'", user.id);
+      }
+      return json({ ok: true, online });
+    }
+
+    if (path === "/sistem" && method === "GET") {
+      const restaurants = await bot.db.all<Account>("SELECT * FROM accounts WHERE role='restoran' AND deleted=0 AND active=1 ORDER BY name");
+      const couriers = await bot.db.all<Account>("SELECT * FROM accounts WHERE role='kurye' AND deleted=0 AND active=1 ORDER BY name");
+      return json({
+        settings: await settings(bot),
+        restaurants: restaurants.map((r) => ({
+          name: r.name, contact_name: r.contact_name || null,
+          phone: user.role === "yonetici" ? r.phone || null : null,
+        })),
+        couriers: couriers.map((c) => ({
+          name: c.name, online: !!c.online,
+          phone: user.role === "yonetici" ? c.phone || null : null,
+        })),
+      });
+    }
+
+    if (path === "/aktarim/kuryeler" && method === "GET") {
+      if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      return json({ couriers: (await apiCourier.eligibleTargets(bot, user.id)).map((c) => ({ id: c.id, name: c.name })) });
+    }
+
+    if (path === "/aktarim/teklifler" && method === "GET") {
+      if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      return json({ offers: await apiCourier.offersFor(bot, user.id) });
+    }
+
+    match = path.match(/^\/aktarim\/([a-z0-9]+)\/(kabul|reddet)$/);
+    if (match && method === "POST") {
+      if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const result = await apiCourier.offerStep(bot, user, match[1], match[2] === "kabul");
+      return result.ok ? json(result) : fail(result.error || "İşlem tamamlanamadı.", 409, "conflict");
     }
 
     if (path === "/paketlerim" && method === "GET") {

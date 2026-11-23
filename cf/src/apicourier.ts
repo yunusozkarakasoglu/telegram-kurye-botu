@@ -81,6 +81,44 @@ export async function cancel(bot: Bot, user: Account, packageId: number, reason:
   return { ok: true, fee_tl: fresh.courier_fee ?? null, cancel_reason: fresh.cancel_reason };
 }
 
+export function eligibleTargets(bot: Bot, courier: number) {
+  return bot.db.all<Account>(`SELECT * FROM accounts a WHERE a.role='kurye' AND a.online=1 AND a.active=1
+    AND a.deleted=0 AND a.id<>? AND NOT EXISTS (SELECT 1 FROM packages p WHERE p.courier=a.id
+    AND p.delivered_at IS NULL AND p.cancelled_at IS NULL) ORDER BY a.name LIMIT 20`, courier);
+}
+
+export async function offersFor(bot: Bot, courier: number) {
+  return bot.db.all<any>(`SELECT o.token, o.package, o.from_courier, o.expires, p.batch, p.number, p.region, p.payment,
+      a.name AS from_name, r.name AS restaurant
+    FROM transfer_offers o JOIN packages p ON p.id=o.package JOIN batches b ON b.id=p.batch
+    JOIN accounts a ON a.id=o.from_courier JOIN accounts r ON r.id=b.owner
+    WHERE o.to_courier=? AND o.expires>?`, courier, bot.nowF());
+}
+
+export async function offerStep(bot: Bot, user: Account, token: string, accepted: boolean) {
+  const offer = await bot.db.first<{ to_courier: number }>("SELECT to_courier FROM transfer_offers WHERE token=? AND expires>?", token, bot.nowF());
+  if (!offer || offer.to_courier !== user.id) return { ok: false, error: "Teklif artık geçerli değil." };
+  const result = await accept.transferOfferStep(bot, user, accepted ? "trma" : "trmd", token);
+  if (typeof result === "string" && result.includes("kabul")) return { ok: true };
+  if (!accepted) return { ok: true };
+  return { ok: false, error: typeof result === "string" ? result : "Aktarım tamamlanamadı." };
+}
+
+export async function transferToCourier(bot: Bot, user: Account, packageId: number, courierId: number) {
+  if (user.role !== "kurye") return { ok: false, error: "Bu işlem kullanılamıyor." };
+  const rows = await bot.packages("p.id=? AND p.courier=? AND p.delivered_at IS NULL AND p.cancelled_at IS NULL", [packageId, user.id]);
+  if (!rows.length) return { ok: false, error: "Bu paket size ait değil." };
+  const target = await bot.db.first<Account>("SELECT * FROM accounts WHERE id=? AND role='kurye' AND online=1 AND active=1 AND deleted=0", courierId);
+  if (!target) return { ok: false, error: "Kurye şu anda paket alamaz." };
+  if (await bot.activeCount(courierId)) return { ok: false, error: "Kuryenin üzerinde paket var." };
+  const token = crypto.randomUUID().replace(/-/g, "").slice(0, 8);
+  await bot.db.run("INSERT OR REPLACE INTO transfer_offers VALUES (?,?,?,?,?)",
+    packageId, user.id, courierId, token, bot.nowF() + 300);
+  const pkg = rows[0];
+  await bot.send(courierId, `${user.name} size paket aktarmak istiyor.\nTalep #${pkg.batch}-${pkg.number} · ${pkg.restaurant}\n\nUygulamadan kabul veya reddedin.`);
+  return { ok: true, message: `${target.name} kuryesine teklif gönderildi.` };
+}
+
 /** Aktarım: havuza geri ver (alım/mesafe/ücret sıfırlanır, geçmiş korunur). */
 export async function transferToPool(bot: Bot, user: Account, packageId: number) {
   const result = await accept.transferToPool(bot, user, packageId);
