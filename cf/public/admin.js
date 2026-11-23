@@ -30,6 +30,7 @@
   /* ---------------- ekranlar ---------------- */
   function viewOzet() {
     head('Özet', 'Sistem durumu');
+    function load(refresh) {
     API.yonetim('ozet').then(function (d) {
       var waiting = d.waiting || [];
       function wrow(w) {
@@ -56,7 +57,7 @@
         '<button class="sm ' + (S.ozetGroup === 'region' ? 'p' : '') + '" data-og="region">Bölgeye göre</button>' +
         '<button class="sm ' + (S.ozetGroup === 'restaurant' ? 'p' : '') + '" data-og="restaurant">Restorana göre</button>' +
         '</div>';
-      panel('<div class="filters" style="margin-bottom:8px"><button class="sm" id="oz-ref">↻ Yenile</button></div>' +
+      panel('<div class="filters" style="margin-bottom:8px"><button class="p" id="oz-ref" style="padding:10px 18px;font-size:15px">↻ Yenile</button></div>' +
         '<div class="kpis k3">' +
         kpi('Aktif restoran', d.active_restaurants) +
         kpi('Aktif kurye', d.active_couriers) +
@@ -66,7 +67,8 @@
         groupBtns +
         '<div class="card" style="padding:6px 10px">' + list + '</div>' +
         '<p class="note">Bölgeler: ' + esc((d.regions || []).join(', ')) + '</p>');
-      $('oz-ref').onclick = function () { viewOzet(); };
+      if (refresh) UI.toast('Güncellendi', 'success');
+      $('oz-ref').onclick = function () { this.disabled = true; this.textContent = 'Yükleniyor…'; load(true); };
       Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-w]'), function (b) {
         b.onclick = function () { waitingSheet(Number(b.getAttribute('data-w')), waiting); };
       });
@@ -78,6 +80,8 @@
         };
       });
     });
+    }
+    load(false);
   }
   function kpi(l, v) { return '<div class="kpi"><div class="v">' + esc(v) + '</div><div class="l">' + esc(l) + '</div></div>'; }
 
@@ -108,6 +112,7 @@
 
   function viewHavuz() {
     head('Havuz', 'Satır bazlı kurye atama');
+    function load(refresh) {
     API.yonetim('havuz').then(function (d) {
       var all = d.packages || [];
       var q = '';
@@ -128,11 +133,11 @@
             '<button class="sm p" data-ata="' + p.id + '">Ata</button>' +
             '<button class="sm d" data-iptal="' + p.id + '">İptal</button></div></div>';
         }).join('');
-        panel('<div class="filters"><input id="hq" placeholder="Restoran / bölge / sipariş ara…"><button class="sm" id="hv-ref">↻ Yenile</button></div>' +
+        panel('<div class="filters"><input id="hq" placeholder="Restoran / bölge / sipariş ara…"><button class="p" id="hv-ref" style="padding:10px 18px;font-size:15px">↻ Yenile</button></div>' +
           '<div class="acards">' + (rows || '<div class="empty">Havuzda paket yok</div>') + '</div>');
         $('hq').value = q;
         $('hq').oninput = function () { q = ($('hq').value || '').toLocaleLowerCase('tr'); draw(); };
-        $('hv-ref').onclick = function () { viewHavuz(); };
+        $('hv-ref').onclick = function () { this.disabled = true; this.textContent = 'Yükleniyor…'; load(true); };
         Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-ata]'), function (b) {
           b.onclick = function () {
             var id = b.getAttribute('data-ata');
@@ -148,7 +153,10 @@
         });
       }
       draw();
+      if (refresh) UI.toast('Güncellendi', 'success');
     }).catch(showError);
+    }
+    load(false);
   }
 
   function viewKuryeler() {
@@ -351,15 +359,20 @@
 
   function viewSonTalepler() {
     head('Son Talepler', 'Son 30 talep');
+    function load(refresh) {
     API.yonetim('sontalepler').then(function (d) {
       var rows = (d.batches || []).map(function (b) {
         return '<tr><td>#' + b.id + '</td><td>' + esc(b.name) + '</td><td class="num">' + b.n + '</td>' +
           '<td>' + dt(b.created_at) + '</td></tr>';
       }).join('');
-      panel('<div class="filters" style="margin-bottom:8px"><button class="sm" id="st-ref">↻ Yenile</button></div>' +
+      panel('<div class="filters" style="margin-bottom:8px"><button class="p" id="st-ref" style="padding:10px 18px;font-size:15px">↻ Yenile</button></div>' +
         '<table class="tbl"><thead><tr><th>Talep</th><th>Restoran</th><th class="num">Paket</th><th>Tarih</th></tr></thead>' +
         '<tbody>' + (rows || '<tr><td colspan="4">Kayıt yok</td></tr>') + '</tbody></table>');
+      if (refresh) UI.toast('Güncellendi', 'success');
+      $('st-ref').onclick = function () { this.disabled = true; this.textContent = 'Yükleniyor…'; load(true); };
     }).catch(showError);
+    }
+    load(false);
   }
 
   function viewKuryeDurum() {
@@ -389,118 +402,6 @@
         });
       }
       draw();
-    }).catch(showError);
-  }
-
-  function viewBolgeler() {
-    head('Bölgeler', 'Restoran bölge listesi');
-    API.yonetim('bolgeler').then(function (d) {
-      panel('<div class="filters"><input id="nr" placeholder="Yeni bölge…"><button class="p sm" id="add">Ekle</button></div>' +
-        '<div id="blist">' + (d.regions || []).map(function (r, i) {
-          return '<div class="brow" data-name="' + esc(r) + '">' +
-            '<span class="bname"><b>' + (i + 1) + '.</b> ' + esc(r) + '</span>' +
-            '<span class="bactions">' +
-              '<button class="sm" data-up="' + esc(r) + '" title="Yukarı taşı">▲</button>' +
-              '<button class="sm" data-down="' + esc(r) + '" title="Aşağı taşı">▼</button>' +
-              '<button class="sm d" data-del="' + esc(r) + '" title="Sil">✕</button>' +
-            '</span></div>';
-        }).join('') + '</div>' +
-        '<p class="note">Restoranın bölge seçimi bu listeden beslenir.</p>');
-      $('add').onclick = function () {
-        API.yonetim('bolge', { action: 'add', name: $('nr').value.trim() }).then(function () {
-          UI.toast('Bölge eklendi', 'success'); render();
-        }).catch(function (e) { UI.toast(e.message || 'Eklenemedi', 'error'); });
-      };
-      bindRegionMove();
-      Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-del]'), function (b) {
-        b.onclick = function () {
-          API.yonetim('bolge', { action: 'del', name: b.getAttribute('data-del') }).then(function () {
-            UI.toast('Bölge silindi', 'success'); render();
-          }).catch(function (e) { UI.toast(e.message || 'Silinemedi', 'error'); });
-        };
-      });
-    }).catch(showError);
-  }
-
-  function bindRegionMove() {
-    var list = $('blist');
-    if (!list) return;
-    function renumber() {
-      Array.prototype.forEach.call(list.querySelectorAll('.brow'), function (row, i) {
-        row.querySelector('.bname b').textContent = (i + 1) + '.';
-      });
-    }
-    function save() {
-      var order = Array.prototype.map.call(list.querySelectorAll('.brow'), function (r) { return r.getAttribute('data-name'); });
-      API.yonetim('bolgeSirala', { regions: order }).then(function () {
-        UI.toast('Sıralama kaydedildi', 'success');
-      }).catch(function (e) { UI.toast(e.message || 'Kaydedilemedi', 'error'); });
-    }
-    function move(row, dir) {
-      if (!row) return;
-      if (dir < 0 && row.previousElementSibling) list.insertBefore(row, row.previousElementSibling);
-      if (dir > 0 && row.nextElementSibling) list.insertBefore(row.nextElementSibling, row);
-      renumber();
-      save();
-    }
-    Array.prototype.forEach.call(list.querySelectorAll('[data-up]'), function (b) {
-      b.onclick = function () { move(b.closest('.brow'), -1); };
-    });
-    Array.prototype.forEach.call(list.querySelectorAll('[data-down]'), function (b) {
-      b.onclick = function () { move(b.closest('.brow'), 1); };
-    });
-  }
-
-  function viewTarife() {
-    head('Ücret Tarifesi', 'Km aralığı başına sabit ücret');
-    API.yonetim('tarife').then(function (d) {
-      var tariff = d.tariff || [];
-      var bounds = d.tariff_bounds || [];
-      var labels = d.tariff_intervals || [];
-      panel('<div class="fld" style="max-width:280px"><label>0–3 km sabit ücret (TL)</label>' +
-        '<input id="t0" type="number" value="' + (tariff[0] || 0) + '"></div>' +
-        '<h3 style="font-size:15px;margin:14px 0 8px">Sabit ücretler</h3>' +
-        tariff.slice(1).map(function (v, i) {
-          return '<div class="tier-row"><span>' + esc(labels[i + 1] || ((i + 1) + ' km')) + ' km</span>' +
-            '<input type="number" data-t="' + (i + 1) + '" value="' + v + '"></div>';
-        }).join('') +
-        '<button class="p" id="tsave" style="margin-top:12px">Kaydet</button>');
-      $('tsave').onclick = function () {
-        var values = [Number($('t0').value) || 0];
-        Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-t]'), function (inp) {
-          values[Number(inp.getAttribute('data-t'))] = Number(inp.value) || 0;
-        });
-        API.yonetim('tarifeKaydet', { tariff: values })
-          .then(function () { UI.toast('Tarife kaydedildi', 'success'); })
-          .catch(function (e) { UI.toast(e.message || 'Kaydedilemedi', 'error'); });
-      };
-    }).catch(showError);
-  }
-
-  function viewLimit() {
-    head('Kurye Paket Limiti', 'Aynı anda taşınabilecek en fazla aktif paket');
-    API.yonetim('tarife').then(function (d) {
-      panel('<div class="fld" style="max-width:220px"><label>Limit (1–99)</label>' +
-        '<input id="lim" type="number" min="1" max="99" value="' + (d.limit || 3) + '"></div>' +
-        '<button class="p" id="lsave">Kaydet</button>');
-      $('lsave').onclick = function () {
-        API.yonetim('limit', { limit: Number($('lim').value) }).then(function () {
-          UI.toast('Limit kaydedildi', 'success');
-        }).catch(function (e) { UI.toast(e.message || 'Kaydedilemedi', 'error'); });
-      };
-    }).catch(showError);
-  }
-
-  function viewSonTalepler() {
-    head('Son Talepler', 'Son 30 talep');
-    API.yonetim('sontalepler').then(function (d) {
-      var rows = (d.batches || []).map(function (b) {
-        return '<tr><td>#' + b.id + '</td><td>' + esc(b.name) + '</td><td class="num">' + b.n + '</td>' +
-          '<td>' + dt(b.created_at) + '</td></tr>';
-      }).join('');
-      panel('<div class="filters" style="margin-bottom:8px"><button class="sm" id="st-ref">↻ Yenile</button></div>' +
-        '<table class="tbl"><thead><tr><th>Talep</th><th>Restoran</th><th class="num">Paket</th><th>Tarih</th></tr></thead>' +
-        '<tbody>' + (rows || '<tr><td colspan="4">Kayıt yok</td></tr>') + '</tbody></table>');
     }).catch(showError);
   }
 
