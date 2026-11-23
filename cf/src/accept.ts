@@ -2,6 +2,7 @@ import type { Bot } from "./core";
 import type { Account, PackageRow } from "./types";
 import { PRIORITY_SECONDS, TRANSFER_OFFER_SECONDS, TRANSFER_SCOPE_SECONDS, INCOMING_HOLD_SECONDS } from "./constants";
 import { details, keyboard } from "./views";
+import { fmtTime } from "./util";
 
 async function eligible(bot: Bot, courier: number): Promise<[Account | null, string | null]> {
   const user = await bot.db.first<Account>("SELECT * FROM accounts WHERE id=? AND role='kurye'", courier);
@@ -232,9 +233,15 @@ export async function transferOfferStep(bot: Bot, user: Account, action: string,
   const offer = await bot.db.first<any>("SELECT * FROM transfer_offers WHERE token=? AND expires>?", token, bot.nowF());
   if (!offer || offer.to_courier !== user.id) return "Bu teklif artık geçerli değil.";
   if (action === "trmd") {
+    const pkgInfo = await bot.packages("p.id=?", [offer.package]);
     await bot.db.run("DELETE FROM transfer_offers WHERE token=?", token);
     await bot.db.run("UPDATE packages SET courier=NULL,accepted_at=NULL,picked_up_at=NULL,distance_km=NULL,courier_fee=NULL,incoming=0,incoming_from=NULL,incoming_at=NULL WHERE id=?", offer.package);
     await bot.send(offer.from_courier, "Aktarım teklifi kabul edilmedi; paket havuza alındı.");
+    const admin = await bot.db.first<Account>("SELECT * FROM accounts WHERE role='yonetici' LIMIT 1");
+    if (admin && pkgInfo.length) {
+      const p0 = pkgInfo[0];
+      await bot.send(admin.id, `${user.name} kuryesi, ${p0.restaurant} restoranından aktarılan #${p0.batch}-${p0.number} paketini ${fmtTime(bot.now())} reddetti.`);
+    }
     return "Teklif reddedildi; paket havuza alındı.";
   }
   const [account, error] = await eligible(bot, user.id);

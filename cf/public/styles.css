@@ -250,3 +250,9 @@ header{position:relative}
 .kpis.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .wrow{width:100%;background:none;border:0;border-bottom:1px solid var(--ln);text-align:left;cursor:pointer;padding:9px 4px}
 .wrow:last-child{border-bottom:0}
+
+.offerbox{background:#fff7d6;border:1px solid #e6c34a;border-radius:12px;padding:14px}
+.offerbox h2{font-size:16px;margin:0 0 4px}
+.offeritem{border-top:1px dashed #e6c34a;padding:8px 0}
+.offeritem small{display:block;color:var(--t2)}
+.offeritem .act{display:flex;gap:6px;margin-top:6px}

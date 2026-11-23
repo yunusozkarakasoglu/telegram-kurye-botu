@@ -274,13 +274,10 @@
     var L = mine.packages || [];
     setHeader('Açık Paketler', L.length + ' aktif iş');
     var main = $('mn');
-    var seg = '<div class="seg two">' + [['list', 'Liste'], ['card', 'Kart']].map(function (v) {
-      return '<button data-v="' + v[0] + '" class="' + (S.mineView === v[0] ? 'on' : '') + '">' + v[1] + '</button>';
-    }).join('') + '</div>';
     if (!L.length) {
-      main.innerHTML = seg + offersBanner() + '<div class="empty"><b>Açık paketiniz yok</b>Havuzdan paket alabilirsiniz.</div>';
-    } else if (S.mineView === 'list') {
-      main.innerHTML = seg + offersBanner() +
+      main.innerHTML = offersBanner() + '<div class="empty"><b>Açık paketiniz yok</b>Havuzdan paket alabilirsiniz.</div>';
+    } else {
+      main.innerHTML = offersBanner() +
         '<div class="card" style="padding:12px;margin-top:10px">' +
           '<div style="font-size:13px;color:var(--t2)">Aktif ' + (mine.summary.active || 0) +
           ' · Km bekleyen ' + (mine.summary.waiting_km || 0) + '</div></div>' +
@@ -291,17 +288,7 @@
             '<small>' + esc(p.region || '') + ' · ' + esc(p.payment || '') + ' · ' + state + '</small></span>' +
             '<em>' + (p.fee_tl == null ? '' : money(p.fee_tl)) + '</em></button>';
         }).join('') + '</div>';
-    } else {
-      main.innerHTML = seg + L.map(function (p) { return pkgCard(p, { own: true }); }).join('');
-      bindPkgActions(main, L);
     }
-    Array.prototype.forEach.call(main.querySelectorAll('button[data-v]'), function (b) {
-      b.onclick = function () {
-        S.mineView = b.getAttribute('data-v');
-        localStorage.setItem('mineView', S.mineView);
-        render();
-      };
-    });
     Array.prototype.forEach.call(main.querySelectorAll('button[data-ofs]'), function (b) { b.onclick = offersSheet; });
     Array.prototype.forEach.call(main.querySelectorAll('button[data-open]'), function (b) {
       b.onclick = function () { openPkg(Number(b.getAttribute('data-open'))); };
@@ -676,6 +663,36 @@
       '<button class="p" data-ofs style="width:100%;margin-top:8px">Teklifleri gör</button></div>';
   }
 
+  function offersPopup() {
+    var offers = S.offers || [];
+    if (!offers.length) return;
+    var html = '<div class="offerbox"><h2>🔔 ' + offers.length + ' paket aktarıldı</h2>' +
+      '<p>Lütfen açık iş ilanlarını inceleyiniz.</p>' +
+      offers.map(function (o) {
+        return '<div class="offeritem"><b>#' + o.batch + '-' + o.number + ' · ' + esc(o.restaurant) + '</b>' +
+          '<small>' + esc(o.region || '') + ' · Gönderen: ' + esc(o.from_name) + '</small>' +
+          '<div class="act"><button class="sm p" data-oacc="' + o.token + '">Kabul</button>' +
+          '<button class="sm d" data-orej="' + o.token + '">Reddet</button></div></div>';
+      }).join('') + '</div>';
+    var sh = UI.openSheet(html, { onClose: function () { render(); } });
+    var ovl = document.getElementById('ovl');
+    if (ovl) ovl.onclick = null;
+    Array.prototype.forEach.call(sh.querySelectorAll('[data-oacc]'), function (b) {
+      b.onclick = function () {
+        API.aktarimKarar(b.getAttribute('data-oacc'), true).then(function () {
+          UI.closeSheet(); UI.toast('Aktarım kabul edildi', 'success'); refresh(true);
+        }).catch(function (e) { UI.toast(e.message || 'Kabul edilemedi', 'error'); });
+      };
+    });
+    Array.prototype.forEach.call(sh.querySelectorAll('[data-orej]'), function (b) {
+      b.onclick = function () {
+        API.aktarimKarar(b.getAttribute('data-orej'), false).then(function () {
+          UI.closeSheet(); UI.toast('Teklif reddedildi', 'success'); refresh(true);
+        }).catch(function (e) { UI.toast(e.message || 'Reddedilemedi', 'error'); });
+      };
+    });
+  }
+
   function offersSheet() {
     var offers = S.offers || [];
     if (!offers.length) return;
@@ -834,7 +851,10 @@
     if (full || S.tab === 'paketlerim') jobs.push(API.paketlerim().then(function (r) { S.mine = r; }));
     if (full || S.tab === 'gecmis') jobs.push(API.gecmis().then(function (r) { S.history = r; }));
     if (full || S.tab === 'kazanc') jobs.push(API.kazanc().then(function (r) { S.earnings = r; }));
-    return Promise.all(jobs).then(function () { render(); }).catch(function () {});
+    return Promise.all(jobs).then(function () {
+      render();
+      if (curRole() === 'kurye' && (S.offers || []).length && !UI.sheetOpen()) offersPopup();
+    }).catch(function () {});
   }
 
   /* geri sayım (öncelik penceresi) */
