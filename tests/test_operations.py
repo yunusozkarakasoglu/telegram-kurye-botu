@@ -114,7 +114,7 @@ class OperationTests(BotCase):
         self.click(ADMIN, f"give:{ids[1]}:{COURIER}")
         self.assertIsNone(self.package(ids[1])["courier"])
         self.clear_messages()
-        self.message(COURIER, "Havuz")
+        self.click(COURIER, "pv:batch")
         self.batch()
         self.flush()
         self.assertIn("çevrimiçi olun", self.texts(COURIER))
@@ -131,7 +131,7 @@ class OperationTests(BotCase):
         self.assertEqual(self.texts(COURIER), "")
         self.assertIn("Talep #2", self.texts(OTHER_COURIER))
         self.clear_messages()
-        self.message(COURIER, "Havuz")
+        self.click(COURIER, "pv:batch")
         self.flush()
         self.assertIn("tüm paketleri teslim edin", self.texts(COURIER))
 
@@ -508,7 +508,7 @@ class StatusLabelTests(BotCase):
     def test_pool_card_shows_havuzda_bekliyor(self):
         self.batch(count=2)
         self.clear_messages()
-        self.message(COURIER, "Havuz")
+        self.click(COURIER, "pv:batch")
         self.flush()
         self.assertEqual(self.texts(COURIER).count("Havuzda bekliyor"), 2)
 
@@ -612,8 +612,53 @@ class DetailLineTests(BotCase):
     def test_pool_package_shows_placeholder_courier(self):
         self.batch()
         self.clear_messages()
-        self.message(COURIER, "Havuz")
+        self.click(COURIER, "pv:batch")
         self.flush()
         text = self.texts(COURIER)
         self.assertIn("Durum : Havuzda bekliyor", text)
         self.assertIn("Kurye : —", text)
+
+
+class CardFormattingTests(BotCase):
+    def setUp(self):
+        super().setUp()
+        self.onboard(False)
+        self.clear_messages()
+
+    def cards(self, user=COURIER):
+        self.flush()
+        return [(m, p) for m, p in self.api.calls
+                if m == "sendMessage" and p.get("chat_id") == user and "<b>" in p.get("text", "")]
+
+    def test_first_three_lines_are_bold_uppercase(self):
+        ids = self.batch()
+        self.click(COURIER, f"claim:{ids[0]}")
+        text = self.cards()[-1][1]["text"]
+        lines = text.splitlines()
+        self.assertEqual(lines[0], "<b>REST_A</b>")
+        self.assertEqual(lines[1], "<b>KADIKÖY</b>")
+        self.assertEqual(lines[2], "<b>NAKİT</b>")
+        self.assertTrue(lines[3].startswith("Sipariş no : 1-1"))
+        self.assertIn("Durum : Kabul edildi", text)
+
+    def test_cards_use_html_parse_mode(self):
+        ids = self.batch()
+        self.click(COURIER, f"claim:{ids[0]}")
+        self.assertEqual(self.cards()[-1][1]["parse_mode"], "HTML")
+
+    def test_turkish_uppercase_is_correct(self):
+        ids = self.batch()
+        with self.db:
+            self.db.execute("UPDATE packages SET region='Üsküdar', payment='Ödendi' WHERE id=?", (ids[0],))
+        self.click(COURIER, f"claim:{ids[0]}")
+        text = self.cards()[-1][1]["text"]
+        self.assertIn("<b>ÜSKÜDAR</b>", text)
+        self.assertIn("<b>ÖDENDİ</b>", text)
+
+    def test_missing_values_show_placeholder(self):
+        ids = self.batch()
+        with self.db:
+            self.db.execute("UPDATE packages SET region='' WHERE id=?", (ids[0],))
+        self.click(COURIER, f"claim:{ids[0]}")
+        text = self.cards()[-1][1]["text"]
+        self.assertIn("<b>BELİRTİLMEDİ</b>", text)

@@ -189,6 +189,7 @@ class PricingMixin:
         if not updated.rowcount:
             self.send(courier, "Bu paketin kilometre girişi artık açık değil.")
             return
+        self.clear_incoming(package_id)
         package = self.packages("p.id=?", (package_id,))[0]
         self.send(courier, f"{self.label(package)}\nKaydedildi · {format(distance.normalize(), 'f').replace('.', ',')} km"
                            f" · Kurye ücreti {fee} TL", order_related=True)

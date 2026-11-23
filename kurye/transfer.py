@@ -20,14 +20,15 @@ class TransferMixin:
     def scope_packages(self, scope):
         if scope["all_flag"]:
             return self.active_packages(scope["courier"])
-        rows = self.packages("p.id=? AND p.courier=? AND p.delivered_at IS NULL",
+        rows = self.packages("p.id=? AND p.courier=? AND p.delivered_at IS NULL AND p.cancelled_at IS NULL",
                              (scope["package"], scope["courier"]))
         return rows
 
     def start_transfer(self, user, package_id):
         if user["role"] != "kurye":
             return "Bu işlem kullanılamıyor."
-        rows = self.packages("p.id=? AND p.courier=? AND p.delivered_at IS NULL", (package_id, user["id"]))
+        rows = self.packages("p.id=? AND p.courier=? AND p.delivered_at IS NULL AND p.cancelled_at IS NULL",
+                             (package_id, user["id"]))
         if not rows:
             return "Bu paket size ait değil."
         active = self.active_packages(user["id"])
@@ -41,7 +42,8 @@ class TransferMixin:
     def transfer_scope_choice(self, user, package_id, all_flag):
         if user["role"] != "kurye":
             return "Bu işlem kullanılamıyor."
-        if not self.packages("p.id=? AND p.courier=? AND p.delivered_at IS NULL", (package_id, user["id"])):
+        if not self.packages("p.id=? AND p.courier=? AND p.delivered_at IS NULL AND p.cancelled_at IS NULL",
+                             (package_id, user["id"])):
             return "Bu paket size ait değil."
         return self.transfer_targets(user, self.new_scope(user["id"], package_id, all_flag))
 
@@ -75,7 +77,8 @@ class TransferMixin:
         if not scope:
             return "Aktarım süresi doldu, tekrar deneyin."
         couriers = self.db.execute("""
-            SELECT a.id, a.name FROM accounts a WHERE a.role='kurye' AND a.online=1 AND a.id<>?
+            SELECT a.id, a.name FROM accounts a WHERE a.role='kurye' AND a.online=1 AND a.active=1
+            AND a.deleted=0 AND a.id<>?
             AND (SELECT count(*) FROM packages p WHERE p.courier=a.id AND p.delivered_at IS NULL)=0
             ORDER BY a.name, a.id LIMIT 11
         """, (user["id"],)).fetchall()
@@ -151,6 +154,7 @@ class TransferMixin:
             return "Paketler başka işlem görmüş; teklif kapandı."
         packages = [self.packages("p.id=?", (pid,))[0] for pid in moved]
         origin = offers[0]["from_courier"]
+        self.mark_incoming(moved, origin)
         self.db.execute("DELETE FROM reservations WHERE courier=?", (origin,))
         limit = self.active_limit()
         if self.active_count(user["id"]) >= limit:
@@ -163,9 +167,13 @@ class TransferMixin:
             self.card(origin, package, "kurye")
             self.card(user["id"], package, "kurye")
             self.refresh_batch(package["batch"])
-            self.send(package["owner"], f"Aktarım tamamlandı.\n{self.details(package)}\nYeni kurye · {user['name']}",
+            self.send(package["owner"], f"Aktarım tamamlandı.\n{self.details(package)}\n"
+                                        f"Yeni kurye · {user['name']}", parse_mode="HTML",
                       order_related=True)
-        self.send(user["id"], f"{len(packages)} paket üzerinize aktarıldı.", order_related=True)
+        for package in packages:
+            self.incoming_notice(user["id"], self.packages("p.id=?", (package["id"],))[0])
+        self.send(user["id"], f"🔔 {len(packages)} paket üzerinize aktarıldı. Açık Paketler'de işaretli görünür.",
+                  order_related=True)
         self.menu(self.db.execute("SELECT * FROM accounts WHERE id=?", (user["id"],)).fetchone(),
                   "Aktarılan paketler Açık Paketler menüsünde.")
         return "Aktarım kabul edildi."
@@ -200,6 +208,8 @@ class TransferMixin:
                 distance_km=NULL,courier_fee=NULL WHERE id=?""", (package_id,))
             self.db.execute("DELETE FROM pending_distance WHERE package=?", (package_id,))
             self.db.execute("DELETE FROM transfer_offers WHERE package=?", (package_id,))
+            self.db.execute("DELETE FROM claim_offers WHERE package=?", (package_id,))
+            self.clear_incoming(package_id)
             self.db.execute("DELETE FROM reservations WHERE package=?", (package_id,))
             if origin is not None:
                 self.db.execute("UPDATE accounts SET locked=0 WHERE id=? AND locked=1 AND NOT EXISTS "

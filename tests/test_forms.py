@@ -101,3 +101,69 @@ class FormTests(BotCase):
             "id": "forged", "from": {"id": COURIER}, "data": f"send:{draft['nonce']}",
             "message": {"chat": {"id": RESTAURANT, "type": "private"}}}})
         self.assertEqual(self.db.execute("SELECT count(*) FROM batches").fetchone()[0], 0)
+
+
+class GuidedFormTests(BotCase):
+    def setUp(self):
+        super().setUp()
+        self.onboard(False)
+        self.clear_messages()
+        self.message(RESTAURANT, "Kurye Çağır")
+        self.flush()
+        self.nonce = self.db.execute("SELECT nonce FROM drafts").fetchone()[0]
+
+    def labels(self):
+        self.flush()
+        out = []
+        for _m, payload in self.api.calls:
+            if payload.get("chat_id") != RESTAURANT:
+                continue
+            markup = payload.get("reply_markup")
+            if isinstance(markup, dict) and "inline_keyboard" in markup:
+                out = [b["text"] for row in markup["inline_keyboard"] for b in row]
+        return out
+
+    def test_completed_package_row_leaves_the_button_list(self):
+        self.click(RESTAURANT, f"count:{self.nonce}:3")
+        self.flush()
+        self.assertIn("▶ 1. Bölge", self.labels())
+        self.assertNotIn("2. Bölge", self.labels())
+        self.click(RESTAURANT, f"region:{self.nonce}:0:0")
+        self.click(RESTAURANT, f"payment:{self.nonce}:0:0")
+        self.flush()
+        labels = self.labels()
+        self.assertIn("▶ 2. Bölge", labels)
+        self.assertNotIn("1. Bölge", labels)
+        self.assertNotIn("3. Bölge", labels)
+
+    def test_all_completed_hides_field_buttons(self):
+        self.click(RESTAURANT, f"count:{self.nonce}:2")
+        for index in range(2):
+            self.click(RESTAURANT, f"region:{self.nonce}:{index}:{index}")
+            self.click(RESTAURANT, f"payment:{self.nonce}:{index}:{index}")
+        self.flush()
+        labels = self.labels()
+        self.assertFalse([label for label in labels if "Bölge" in label or "Ödeme" in label])
+        self.assertIn("Talebi Gönder", labels)
+        self.assertIn("✓ 1.", self.texts(RESTAURANT))
+        self.assertIn("✓ 2.", self.texts(RESTAURANT))
+
+    def test_marked_text_shows_pending_packages(self):
+        self.click(RESTAURANT, f"count:{self.nonce}:2")
+        self.click(RESTAURANT, f"region:{self.nonce}:0:1")
+        self.click(RESTAURANT, f"payment:{self.nonce}:0:1")
+        self.flush()
+        text = self.texts(RESTAURANT)
+        self.assertIn("✓ 1. Bölge: Üsküdar · Ödeme: Kart", text)
+        self.assertIn("▢ 2. Bölge: Belirtilmedi · Ödeme: Belirtilmedi", text)
+
+    def test_previous_package_can_still_be_edited_by_callback(self):
+        self.click(RESTAURANT, f"count:{self.nonce}:2")
+        self.click(RESTAURANT, f"region:{self.nonce}:0:0")
+        self.click(RESTAURANT, f"payment:{self.nonce}:0:0")
+        self.click(RESTAURANT, f"field:{self.nonce}:0:region")
+        self.flush()
+        self.assertIn("Kadıköy", self.labels())
+        self.click(RESTAURANT, f"region:{self.nonce}:0:2")
+        row = self.db.execute("SELECT regions FROM drafts").fetchone()
+        self.assertIn("Ataşehir", json.loads(row["regions"]))

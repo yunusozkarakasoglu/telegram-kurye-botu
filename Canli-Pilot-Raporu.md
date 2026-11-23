@@ -163,4 +163,12 @@ Kullanıcının onayladığı kurallarla eklendi: **Aktar** → **Tümünü / Ya
 
 Not: phase-5 veritabanı 3 paket + restoran profili ile korunuyor; phase-4 (10 paket, limit 6) ayrı dosyada bekliyor.
 
+### Uçtan uca test kapsamı (izole, canlı değil)
+
+Cloudflare öncesi rollerin tamamı için uçtan uca senaryolar yazıldı ve geçti: yönetici kurulum→davet→atama→izleme→rapor→temizlik; restoran kayıt→talep→bildirim→filtre→arama→rapor; kurye kayıt→online→kabul→km→teslim→aktarma→rapor; roller arası izolasyon/kapasite/otomatik teklif. Toplam **310 test**. Bunlar sahte API + geçici SQLite ile çalışır; gerçek Telegram/Cloudflare değildir.
+
+### Bölge gruplama canlı verisi (phase-5)
+
+Kullanıcının **Bölgeler** ekranında tanımladığı listeden 4 bölge seçilerek **10 paketlik fikstür talep** (`batch 5000002`, fikstür restoran) oluşturuldu: Yenişehir 3, Havaalanı (Yolcu) 4, Şeyhli 2, Sülüntepe 1. Önceki 2 fikstür havuz paketi, sayının tam 10 kalması için **iptal** işaretlendi (gerçek sipariş değil). Havuzda şu an 4 bölge grubu ve 10 bekleyen paket var; kurye **Havuz → Bölgeye Göre Grupla** ekranında görecek.
+
 **Pilot tamamlanmadı.** Otomatik izole testlerin raporu ayrı: `Test-Raporu.md`. Buradaki kayıt yalnız gerçekten gözlenen canlı adımları belirtir.

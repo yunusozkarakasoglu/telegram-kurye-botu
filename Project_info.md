@@ -1,9 +1,9 @@
 # Proje künyesi
 
-**Telegram Kurye Botu v2** — Restoran paket taleplerini kurye firması adına yöneten Telegram operasyon uygulaması.
+**Telegram Kurye Botu v2** — Restoran paket taleplerini kurye firması adına Telegram üzerinden yöneten operasyon uygulaması.
 
-- Roller: yönetici, restoran, kurye. Kayıt: isimsiz davetle kişinin kendi bilgilerini girmesi veya yöneticinin isim vererek davet etmesi.
+- Roller: yönetici, restoran, kurye. Kayıt: isimsiz davetle kişinin kendi bilgilerini girmesi veya yöneticinin isim vererek davet etmesi; hesaplar aktif/pasif/silinmiş olabilir.
 - Teknoloji: Python 3.11+, standart kütüphane, SQLite, Telegram Bot API (long polling + ayrı gönderim işçisi).
-- Öne çıkanlar: tek kart talep formu, atomik toplu kabul, 10 sn seçim önceliği, Havuz/Açık Paketler ayrımı, arıza aktarımı + aktarma geçmişi, restoran profili (yetkili/telefon/konum), Restoranı Ara / Kuryeyi Ara / Yöneticiyi Ara, bölge ve tarife yönetimi, durum etiketleri, dosya yok sayma, rol bazlı komut menüleri, yetkili raporlar.
+- Öne çıkanlar: tek kart talep formu, atomik tekli/toplu kabul, 10 sn öncelik, bölgeye göre havuz + ✅/⬜ seçim, arıza aktarımı (🔔 bildirim, onay, geçmiş), sipariş iptali (neden/onay, 10 dk ücret kuralı, 🔴 kart), restoran profili (yetkili/telefon/konum) + harita/arama düğmeleri, bölge/telefon/tarife yönetimi, rol bazlı komut menüleri, durum etiketleri, dosya yok sayma, raporlar.
 - Kurulum: `Readme.md`, `Kurulum-Kilavuzu.md`. Mimari: `Mimari.md`. Doğrulama: `Test-Raporu.md`, `Canli-Pilot-Raporu.md`.
-- Sonraki hedef: Cloudflare; henüz uygulanmadı (`Roadmaps.md`).
+- Sonraki hedef: Cloudflare (webhook + D1); henüz uygulanmadı.

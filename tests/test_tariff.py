@@ -120,8 +120,8 @@ class LimitCommandTests(BotCase):
                   if p.get("chat_id") == ADMIN and isinstance(p.get("reply_markup"), dict)
                   and "keyboard" in p["reply_markup"]
                   for row in p["reply_markup"]["keyboard"] for b in row]
-        self.assertIn("Paket-Limit", labels)
-        self.assertNotIn("Paket Limiti", labels)
+        self.assertIn("Kurye Paket Limiti", labels)
+        self.assertNotIn("Paket-Limit", labels)
 
     def test_paket_limit_command_sets_and_reports(self):
         self.message(ADMIN, "/paket-limit 5")
@@ -144,7 +144,7 @@ class LimitCommandTests(BotCase):
                   if p.get("chat_id") == ADMIN and isinstance(p.get("reply_markup"), dict)
                   and "inline_keyboard" in p["reply_markup"]
                   for row in p["reply_markup"]["inline_keyboard"] for b in row]
-        self.assertIn("/paket-limit", labels)
+        self.assertIn("/kuryepaketlimiti", labels)
 
 
 class LimitInputToleranceTests(BotCase):
@@ -187,10 +187,10 @@ class AdminCommandMenuCoverageTests(BotCase):
     def test_admin_command_menu_lists_every_admin_command(self):
         self.message(ADMIN, "Komutlar")
         labels = self.buttons()
-        for expected in ("/davet", "/paket-limit", "/tarife", "/bilgi", "/bolgeler",
-                         "/yonetici-numara", "/sohbeti-temizle", "/rapor", "/start"):
+        for expected in ("/davet", "/kuryepaketlimiti", "/tarife", "/bilgi", "/bolgeler",
+                         "/yonetici-numara", "/sohbeti-temizle", "/redlog", "/rapor", "/start"):
             self.assertIn(expected, labels)
-        self.assertEqual(len(labels), 9)
+        self.assertEqual(len(labels), 10)
         self.assertNotIn("/havuz", labels)
 
     def test_bolgeler_button_opens_region_screen(self):

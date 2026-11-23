@@ -3,12 +3,13 @@ from .ui import keyboard
 
 ADMIN_COMMANDS = (
     ("/davet", "davet", "Restoran/kurye daveti oluştur"),
-    ("/paket-limit", "limit", "Kurye başına aktif paket limiti (ör. /paket-limit 5)"),
+    ("/kuryepaketlimiti", "limit", "Kurye başına aktif paket limiti (ör. /kuryepaketlimiti 5)"),
     ("/tarife", "tarife", "Ücret tarifesini göster veya değiştir"),
     ("/bilgi", "bilgi", "Restoran yetkili/telefon/konum bilgisi (ör. /bilgi)"),
     ("/bolgeler", "bolgeler", "Restoran bölge seçim listesi"),
     ("/yonetici-numara", "yoneticinumara", "Yönetici telefonları (en fazla 5)"),
     ("/sohbeti-temizle", "temizle", "Sohbet geçmişini temizleme yolu"),
+    ("/redlog", "redlog", "Otomatik teklif reddetme kaydı"),
     ("/rapor", "rapor", "Sipariş raporu"),
     ("/start", "start", "Menüyü yenile"),
 )
@@ -39,6 +40,8 @@ RESTAURANT_COMMANDS = (
 COMMANDS_BY_ROLE = {"yonetici": ADMIN_COMMANDS, "kurye": COURIER_COMMANDS, "restoran": RESTAURANT_COMMANDS}
 ALIASES = {command: key for commands in COMMANDS_BY_ROLE.values() for command, key, _hint in commands}
 ALIASES["/limit"] = "limit"  # eski kullanım korunur
+ALIASES["/paket-limit"] = "limit"
+ALIASES["/kurye-paket-limiti"] = "limit"
 for _commands in COMMANDS_BY_ROLE.values():
     for _command, _key, _hint in _commands:
         if _command.startswith("/yoneticiyi-ara"):
@@ -90,6 +93,9 @@ class CommandsMixin:
 
     def command_yoneticiyiara(self, user):
         self.call_admin_menu(user)
+
+    def command_redlog(self, user):
+        self.rejection_log(user)
 
     def command_temizle(self, user):
         self.send(user["id"], "Sohbeti temizlemek için: sohbet başlığına dokunun → Menü → "

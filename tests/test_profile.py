@@ -158,7 +158,7 @@ class ProfileTests(BotCase):
         self.fill_all("Ali Usta", "+90 532 111 22 33", 41.0, 29.0)
         self.batch()
         self.clear_messages()
-        self.message(COURIER, "Havuz")
+        self.click(COURIER, "pv:batch")
         labels = [b.get("text") for b in self.buttons(COURIER)]
         self.assertIn("Haritada Aç", labels)
         self.assertIn("Restoranı Ara", labels)

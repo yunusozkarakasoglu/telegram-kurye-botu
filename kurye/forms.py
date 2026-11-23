@@ -20,7 +20,9 @@ class FormsMixin:
         regions, payments = json.loads(draft["regions"]), json.loads(draft["payments"])
         lines = ["Yeni Kurye Talebi", f"Paket adedi: {draft['quantity']}", ""]
         for i, (region, payment) in enumerate(zip(regions, payments, strict=True), 1):
-            lines.append(f"{i}. Bölge: {region or UNSPECIFIED} · Ödeme: {payment or UNSPECIFIED}")
+            done = region is not None and payment is not None
+            mark = "✓" if done else "▢"
+            lines.append(f"{mark} {i}. Bölge: {region or UNSPECIFIED} · Ödeme: {payment or UNSPECIFIED}")
         lines.append("\nBölge ve ödeme isteğe bağlıdır.")
         return "\n".join(lines)
 
@@ -38,9 +40,13 @@ class FormsMixin:
             rows += [choices[i:i + 2] for i in range(0, len(choices), 2)]
             rows.append([("Geri", f"back:{nonce}")])
         else:
-            for i in range(quantity):
-                rows.append([(f"{i + 1}. Bölge", f"field:{nonce}:{i}:region"),
-                             (f"{i + 1}. Ödeme", f"field:{nonce}:{i}:payment")])
+            regions, payments = json.loads(draft["regions"]), json.loads(draft["payments"])
+            active = next((i for i in range(quantity)
+                           if regions[i] is None or payments[i] is None), None)
+            if active is not None:
+                # Tamamlanan satırlar listeden düşer; yalnız sıradaki paket seçilebilir.
+                rows.append([(f"▶ {active + 1}. Bölge", f"field:{nonce}:{active}:region"),
+                             (f"▶ {active + 1}. Ödeme", f"field:{nonce}:{active}:payment")])
             rows.append([("Talebi Gönder", f"send:{nonce}"), ("Vazgeç", f"cancel:{nonce}")])
         payload = {"chat_id": chat, "text": self.form_text(draft), "reply_markup": keyboard(rows)}
         method = "sendMessage"

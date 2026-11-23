@@ -20,8 +20,8 @@ class AcceptanceMixin:
 
     def eligible_courier(self, courier):
         user = self.db.execute("SELECT * FROM accounts WHERE id=? AND role='kurye'", (courier,)).fetchone()
-        if not user:
-            return None, "Kurye bulunamadı."
+        if not user or user["deleted"] or not user["active"]:
+            return None, "Kurye hesabı pasif veya silinmiş."
         if not user["online"]:
             return None, "Kurye çevrimdışı. Yeni paket alamaz."
         if user["locked"] or not self.capacity(courier):
@@ -55,7 +55,8 @@ class AcceptanceMixin:
     def available_packages(self, batch, courier):
         return self.db.execute("""
             SELECT p.id FROM packages p LEFT JOIN reservations r ON r.package=p.id AND r.expires>?
-            WHERE p.batch=? AND p.courier IS NULL AND (r.courier IS NULL OR r.courier=?) ORDER BY p.id
+            WHERE p.batch=? AND p.courier IS NULL AND p.delivered_at IS NULL AND p.cancelled_at IS NULL
+              AND (r.courier IS NULL OR r.courier=?) ORDER BY p.id
         """, (self.now(), batch, courier)).fetchall()
 
     def claim(self, package_id, courier, manual):
@@ -64,7 +65,9 @@ class AcceptanceMixin:
         account, error = self.eligible_courier(courier)
         if error:
             return error
-        package = self.db.execute("SELECT * FROM packages WHERE id=? AND courier IS NULL", (package_id,)).fetchone()
+        package = self.db.execute("""SELECT * FROM packages
+            WHERE id=? AND courier IS NULL AND delivered_at IS NULL AND cancelled_at IS NULL""",
+                                  (package_id,)).fetchone()
         if not package:
             return "Bu paket alındı veya bulunamadı."
         reservation = self.db.execute("SELECT courier FROM reservations WHERE package=? AND expires>?",
@@ -104,6 +107,35 @@ class AcceptanceMixin:
         self.finish_assignment(ids, courier, account, False)
         return f"{len(ids)} paket atandı."
 
+    def take_packages(self, courier, ids):
+        if not self.db.in_transaction:
+            raise RuntimeError("Kabul, işlem sınırı içinde çalıştırılmalı")
+        account, error = self.eligible_courier(courier)
+        if error:
+            return error
+        capacity = self.capacity(courier)
+        taken = []
+        for package_id in ids:
+            if len(taken) >= capacity:
+                break
+            reserved = self.db.execute("SELECT courier FROM reservations WHERE package=? AND expires>?",
+                                       (package_id, self.now())).fetchone()
+            if reserved and reserved["courier"] != courier:
+                continue
+            changed = self.db.execute("""UPDATE packages SET courier=?,accepted_at=?
+                WHERE id=? AND courier IS NULL AND delivered_at IS NULL AND cancelled_at IS NULL""",
+                                      (courier, int(self.now()), package_id)).rowcount
+            if changed:
+                taken.append(package_id)
+                self.db.execute("DELETE FROM reservations WHERE package=?", (package_id,))
+        if not taken:
+            return "Alınabilecek paket yok; havuza bakın."
+        self.db.execute("DELETE FROM pool_select WHERE courier=?", (courier,))
+        if self.active_count(courier) >= self.active_limit():
+            self.lock_courier(courier, self.active_limit())
+        self.finish_assignment(taken, courier, account, False)
+        return f"{len(taken)} paket atandı."
+
     def assign_packages(self, ids, courier):
         for package in ids:
             changed = self.db.execute("UPDATE packages SET courier=?,accepted_at=? WHERE id=? AND courier IS NULL",
@@ -124,7 +156,8 @@ class AcceptanceMixin:
             # Old installations may still have per-package message references.
             for card in self.db.execute("SELECT * FROM cards WHERE package=?", (package["id"],)):
                 self.queue("editMessageText", {"chat_id": card["chat"], "message_id": card["message"],
-                           "text": self.details(package), "reply_markup": keyboard([])}, order_related=True)
+                           "text": self.details(package), "reply_markup": keyboard([]),
+                           "parse_mode": "HTML"}, order_related=True)
             self.db.execute("DELETE FROM cards WHERE package=?", (package["id"],))
         self.refresh_batch(packages[0]["batch"])
 

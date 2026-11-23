@@ -14,20 +14,29 @@ class BatchViewsMixin:
             return None
         if user["role"] == "kurye" and (not user["online"] or user["locked"]) and not message:
             return None
-        open_packages = [p for p in packages if p["courier"] is None]
+        open_packages = [p for p in packages if p["courier"] is None and not p["cancelled_at"]]
         reservations = {r["package"]: r for r in self.db.execute("""
             SELECT r.* FROM reservations r JOIN packages p ON p.id=r.package
             WHERE p.batch=? AND r.expires>?
         """, (batch, self.now()))}
+        claim_offers = {r["package"]: r for r in self.db.execute("""
+            SELECT o.* FROM claim_offers o JOIN packages p ON p.id=o.package
+            WHERE p.batch=? AND o.expires>?
+        """, (batch, self.now()))}
         lines = [packages[0]["restaurant"], f"Talep #{batch} · {len(open_packages)} paket bekliyor", ""]
         for p in packages:
             status = self.status(p)
-            if p["id"] in reservations:
+            if p["id"] in claim_offers:
+                r = claim_offers[p["id"]]
+                status = ("Aktarım onayınız bekleniyor" if r["courier"] == chat
+                          else "Başka kuryenin aktarım onayı bekleniyor")
+            elif p["id"] in reservations:
                 r = reservations[p["id"]]
                 status = "Seçim önceliğiniz" if r["courier"] == chat else "Başka kuryede seçim önceliği"
             courier = self.db.execute("SELECT name FROM accounts WHERE id=?", (p["courier"],)).fetchone() \
                 if p["courier"] else None
-            lines.append(f"#{batch}-{p['number']} {p['region'] or UNSPECIFIED} · {p['payment'] or UNSPECIFIED}")
+            mark = "🔔 " if p["incoming"] else ""
+            lines.append(f"{mark}#{batch}-{p['number']} {p['region'] or UNSPECIFIED} · {p['payment'] or UNSPECIFIED}")
             lines.append(f"   Durum : {status} · Kurye : {courier['name'] if courier else '—'}")
         own_holds = [r["expires"] for r in reservations.values() if r["courier"] == chat]
         if own_holds:
@@ -46,7 +55,8 @@ class BatchViewsMixin:
             if any(r["courier"] == chat for r in reservations.values()):
                 buttons.append([("Öncelikten Vazgeç", f"release:{batch}")])
         else:
-            buttons += [[(f"{p['number']}. Kurye Seç", f"assign:{p['id']}")] for p in open_packages]
+            buttons += [[(f"{p['number']}. Kurye Seç", f"assign:{p['id']}"),
+                         (f"{p['number']}. İptal", f"cx:{p['id']}")] for p in open_packages]
         if user["role"] == "kurye":
             buttons += self.contact_buttons(packages[0])
         if open_packages:
@@ -80,7 +90,11 @@ class BatchViewsMixin:
         """Kuryenin üzerindeki teslim edilmemiş paketler; çevrimdışı/kilitli de görebilir."""
         if user["role"] != "kurye":
             return "Bu işlem kullanılamıyor."
-        self.show_packages(user, "p.courier=? AND p.delivered_at IS NULL", (user["id"],), page, "active")
+        self.show_packages(user, "p.courier=? AND p.delivered_at IS NULL AND p.cancelled_at IS NULL",
+                          (user["id"],), page, "active")
+        for row in self.active_packages(user["id"]):
+            if row["incoming"]:
+                self.clear_incoming(row["id"])
 
     def active_summary(self, user):
         rows = sorted(self.active_packages(user["id"]), key=lambda row: (row["batch"], row["number"]))
@@ -102,6 +116,67 @@ class BatchViewsMixin:
             lines.append(f"… ve {len(rows) - 20} paket daha")
         self.send(user["id"], "\n".join(lines))
 
+    def show_pool_filters(self, user):
+        if user["role"] != "yonetici":
+            return "Bu işlem kullanılamıyor."
+        self.send(user["id"], "Havuzu filtreleyin.", keyboard([
+            [("Tümü", "pool:all:0"), ("Bekleyenler", "pool:pool:0")],
+            [("Kuryede", "pool:courier:0")]]))
+
+    def show_pool(self, user, mode, page):
+        if user["role"] != "yonetici":
+            return "Bu işlem kullanılamıyor."
+        where = "p.delivered_at IS NULL AND p.cancelled_at IS NULL"
+        if mode == "pool":
+            where += " AND p.courier IS NULL"
+        elif mode == "courier":
+            where += " AND p.courier IS NOT NULL"
+        rows = self.packages(where, (page * 8,), "LIMIT 9 OFFSET ?")
+        for row in rows[:8]:
+            buttons = []
+            if row["courier"] is None:
+                buttons.append([("Kurye Ata", f"assign:{row['id']}"), ("İptal", f"cx:{row['id']}")])
+            else:
+                buttons.append([("İptal", f"cx:{row['id']}")])
+            self.send(user["id"], self.details(row), keyboard(buttons), parse_mode="HTML")
+        if not rows:
+            self.send(user["id"], "Bu filtrede paket yok.")
+        self.pool_summary(user, mode)
+        nav = []
+        if page:
+            nav.append(("Önceki", f"pool:{mode}:{page - 1}"))
+        if len(rows) > 8:
+            nav.append(("Sonraki", f"pool:{mode}:{page + 1}"))
+        if nav:
+            self.send(user["id"], f"Sayfa {page + 1}", keyboard([nav]))
+
+    def pool_summary(self, user, mode):
+        where = "p.delivered_at IS NULL AND p.cancelled_at IS NULL"
+        if mode == "pool":
+            where += " AND p.courier IS NULL"
+        elif mode == "courier":
+            where += " AND p.courier IS NOT NULL"
+        stats = self.db.execute(f"""
+            SELECT count(*) AS total,
+                   count(*) FILTER (WHERE p.courier IS NULL) AS waiting,
+                   count(*) FILTER (WHERE p.courier IS NOT NULL) AS on_courier,
+                   coalesce(sum(p.courier_fee),0) AS fees,
+                   count(DISTINCT nullif(p.region,'')) AS regions
+            FROM packages p WHERE {where}
+        """).fetchone()
+        oldest = self.db.execute(f"""
+            SELECT min(b.created_at) FROM packages p JOIN batches b ON b.id=p.batch WHERE {where}
+        """).fetchone()[0]
+        lines = ["", "Özet",
+                 f"Toplam : {stats['total']} paket · {stats['regions']} bölge",
+                 f"Havuzda bekleyen : {stats['waiting']} · Kuryede : {stats['on_courier']}"]
+        if mode == "courier":
+            lines.append(f"Kayıtlı kurye ücreti toplamı : {stats['fees']} TL")
+        if oldest:
+            minutes = int((self.now() - oldest) / 60)
+            lines.append(f"En eski paket : {minutes} dk önce oluşturuldu")
+        self.send(user["id"], "\n".join(lines))
+
     def show_open(self, user, page, force_new=False):
         if user["role"] == "kurye" and not user["online"]:
             self.send(user["id"], "Açık paketleri görmek için çevrimiçi olun.")
@@ -109,7 +184,8 @@ class BatchViewsMixin:
         if user["role"] == "kurye" and user["locked"]:
             self.send(user["id"], "Yeni işler için üzerinizdeki tüm paketleri teslim edin.")
             return
-        batches = self.db.execute("""SELECT batch FROM packages WHERE courier IS NULL
+        batches = self.db.execute("""SELECT batch FROM packages
+            WHERE courier IS NULL AND delivered_at IS NULL AND cancelled_at IS NULL
             GROUP BY batch ORDER BY batch LIMIT 9 OFFSET ?""", (page * 8,)).fetchall()
         for row in batches[:8]:
             self.batch_card(user["id"], row["batch"], force_new=force_new)

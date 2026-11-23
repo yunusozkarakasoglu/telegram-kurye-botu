@@ -17,6 +17,15 @@ Ek Python paketi, gerçek token, Telegram kurulumu veya sunucu gerekmez. `suppor
 - `test_reproductions.py`: 6 düzeltilmiş kusur regresyonu + 1 açıkça belgelenmiş ilk gönderim/çökme sınırı.
 - `test_roles.py`: 15 hesap/rol/yetki/kapsam testi.
 - `test_profile.py` içinde konum linki/koordinat testleri (6).
+- `test_e2e_admin.py`: yönetici uçtan uca (kurulum → davet → atama → izleme → rapor → temizlik), 4 test.
+- `test_e2e_restaurant.py`: restoran uçtan uca (kayıt → talep → bildirim → filtre → arama → rapor), 6 test.
+- `test_e2e_courier.py`: kurye uçtan uca (kayıt → online → kabul → km → teslim → aktarma → rapor), 7 test.
+- `test_e2e_cross.py`: roller arası (izolasyon, kapasite, aktarım, otomatik teklif), 5 test.
+- `test_cancel.py`: 10 iptal akışı/fiyat/filtre testi.
+- `test_pool_10.py`: 6 gerçekçi 10 paket/bölge/özet testi.
+- `test_pool_view.py`: 8 bölge gruplama/seçim testi.
+- `test_cancel_e2e.py`: 14 iptal uçtan uca testi (rol, zaman sınırı 9/10/11 dk, kilit, rapor).
+- `test_accounts_admin.py`: 17 hesap yönetimi testi (filtre/arama/aktif-pasif/sil/ara).
 - `test_self_registration.py`: 6 kişinin kendi kaydı (ad/telefon/konum) testi.
 - `test_contacts.py`: 14 yönetici/kurye numarası / Yöneticiyi Ara testi.
 - `test_regions.py`: 9 bölge listesi yönetimi testi.
@@ -27,7 +36,7 @@ Ek Python paketi, gerçek token, Telegram kurulumu veya sunucu gerekmez. `suppor
 - `test_media.py`: 8 dosya gönderimi yok sayma/uyarı freni testi.
 - `test_navigation.py`: 16 Havuz/Açık Paketler, kart yenileme, menü etiketi, toplu kabul metni, paket numaralandırma ve rapor okunurluğu testi.
 
-**271 testin başarılı olması gerçek Telegram pilotunun yapıldığı anlamına gelmez.** `test_DOCUMENTED_LIMIT_...` ilk gönderimin çökme sonrasında tekrarlanabileceğini gösterir; bu sınırın giderildiği iddia edilmez.
+**382 testin başarılı olması gerçek Telegram pilotunun yapıldığı anlamına gelmez.** `test_DOCUMENTED_LIMIT_...` ilk gönderimin çökme sonrasında tekrarlanabileceğini gösterir; bu sınırın giderildiği iddia edilmez.
 
 Dağıtım kaynaklarını ayrıca sınamak için:
 

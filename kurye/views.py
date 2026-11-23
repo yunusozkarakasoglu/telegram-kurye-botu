@@ -1,7 +1,13 @@
 from datetime import datetime
+from html import escape
 
 from .constants import TURKIYE, UNSPECIFIED
 from .ui import keyboard
+
+
+def tr_upper(value):
+    """Türkçe büyük harf: i→İ, ı→I."""
+    return (value or "").replace("i", "İ").upper()
 
 
 class ViewsMixin:
@@ -23,11 +29,18 @@ class ViewsMixin:
                 f"Ödeme · {package['payment'] or 'Belirtilmedi'}")
 
 
-    @staticmethod
-    def status(package):
+    def status(self, package):
         """Havuzda bekliyor → Kabul edildi → Kuryede / Yolda → Teslim edildi."""
+        if package["cancelled_at"]:
+            return "İptal edildi"
         if package["delivered_at"]:
             return "Teslim edildi"
+        if self.db.execute("SELECT 1 FROM claim_offers WHERE package=? AND expires>?",
+                           (package["id"], self.now())).fetchone():
+            return "Aktarım onayı bekleniyor"
+        if self.db.execute("SELECT 1 FROM transfer_offers WHERE package=? AND expires>?",
+                           (package["id"], self.now())).fetchone():
+            return "Aktarım onayı bekleniyor"
         if package["picked_up_at"]:
             return "Kuryede / Yolda"
         if package["courier"]:
@@ -42,6 +55,7 @@ class ViewsMixin:
         """, (package["id"],)).fetchone()
 
     def details(self, package, show_fee=False):
+        """Sipariş kartı: ilk üç satır restoran/bölge/ödeme (büyük harf kalın)."""
         def stamp(key):
             value = package[key]
             if value is None:
@@ -51,44 +65,56 @@ class ViewsMixin:
         contact = " · ".join(part for part in (package["restaurant_contact"],
                                                package["restaurant_phone"] and
                                                str(package["restaurant_phone"])) if part)
+        headline = []
+        if package["cancelled_at"]:
+            headline.append("<b>🔴 İPTAL</b>")
+        if package["incoming"]:
+            headline.append("<b>🔔 AKTARIM</b>")
+        headline += [
+            f"<b>{escape(tr_upper(package['restaurant']))}</b>",
+            f"<b>{escape(tr_upper(package['region'] or UNSPECIFIED))}</b>",
+            f"<b>{escape(tr_upper(package['payment'] or UNSPECIFIED))}</b>",
+        ]
         fields = [
             ("Sipariş no", f"{package['batch']}-{package['number']}"),
-            ("Restoran", package["restaurant"]),
-            ("Bölge", package["region"] or UNSPECIFIED),
-            ("Ödeme", package["payment"] or UNSPECIFIED),
             ("Yetkili", contact or UNSPECIFIED),
             ("Kabul", stamp("accepted_at")),
         ]
         transfer = self.transfer_info(package)
         if transfer and transfer["original_accepted_at"]:
             first = datetime.fromtimestamp(transfer["original_accepted_at"], TURKIYE).strftime("%d.%m.%Y %H:%M:%S")
-            fields.append(("İlk kabul", f"{first} · {transfer['from_name']}"))
+            fields.append(("İlk kabul", f"{first} · {escape(transfer['from_name'] or '')}"))
         fields += [
             ("Alım", f"{stamp('picked_up_at')} · ilk kurye"
              if transfer and package["picked_up_at"] else stamp("picked_up_at")),
-            ("Teslim", stamp("delivered_at")),
+            ("İptal", stamp("cancelled_at")),
+            ("Neden", escape(package["cancel_reason"] or "—")),
             ("Mesafe", f"{package['distance_km'].replace('.', ',')} km" if package["distance_km"] else "—"),
         ]
         if show_fee:
             fields.append(("Paket ücreti", f"{package['courier_fee']} TL" if package["courier_fee"] is not None else "—"))
-        fields += [("Durum", self.status(package)), ("Kurye", package["courier_name"] or "—")]
-        lines = [f"{label} : {value}" for label, value in fields]
+        fields += [("Durum", escape(self.status(package))),
+                   ("Kurye", escape(package["courier_name"] or "—"))]
+        lines = headline + [f"{label} : {value}" for label, value in fields]
         offer = self.db.execute("SELECT to_courier, expires FROM transfer_offers WHERE package=? AND expires>?",
                                 (package["id"], self.now())).fetchone()
         if offer:
             target = self.db.execute("SELECT name FROM accounts WHERE id=?", (offer["to_courier"],)).fetchone()
-            lines.append(f"Aktarım : onay bekleniyor ({target['name'] if target else 'kurye'})")
+            lines.append(f"Aktarım : onay bekleniyor ({escape(target['name']) if target else 'kurye'})")
         if transfer:
             moment = datetime.fromtimestamp(transfer["at"], TURKIYE).strftime("%d.%m.%Y %H:%M:%S")
-            lines.append(f"Aktarma bilgisi : Kurye {transfer['from_name']} tarafından aktarma {moment} kabul edildi.")
+            lines.append(f"Aktarma bilgisi : Kurye {escape(transfer['from_name'] or '')} tarafından "
+                         f"aktarma {moment} kabul edildi.")
         return "\n".join(lines)
 
     def delivery_markup(self, package, extra=None):
-        if package["delivered_at"]:
+        if package["delivered_at"] or package["cancelled_at"]:
             return keyboard(extra or [])
         action, label = ("deliver", "Teslim Ettim") if package["picked_up_at"] else ("pickup", "Restorandan Aldım")
-        return keyboard([[(label, f"{action}:{package['id']}")],
-                         [("Aktar", f"tr:{package['id']}")], *(extra or [])])
+        rows = [[(label, f"{action}:{package['id']}")],
+                [("Aktar", f"tr:{package['id']}"), ("İptal", f"cx:{package['id']}")]]
+        rows += extra or []
+        return keyboard(rows)
 
 
     def card(self, chat, package, role):
@@ -96,13 +122,20 @@ class ViewsMixin:
             markup = None
             if role == "kurye" and chat == package["courier"]:
                 markup = self.delivery_markup(package, self.contact_buttons(package))
-            elif role == "restoran" and package["courier_phone"] and not package["delivered_at"]:
-                markup = keyboard([[("Kuryeyi Ara", f"callc:{package['id']}")]])
-            self.send(chat, self.details(package, show_fee=role in ("kurye", "yonetici")), markup)
+            elif role == "yonetici" and not package["delivered_at"] and not package["cancelled_at"]:
+                markup = keyboard([[("İptal", f"cx:{package['id']}")]])
+            elif role == "restoran" and not package["delivered_at"] and not package["cancelled_at"]:
+                rows = []
+                if package["courier_phone"]:
+                    rows.append([("Kuryeyi Ara", f"callc:{package['id']}")])
+                rows.append([("İptal", f"cx:{package['id']}")])
+                markup = keyboard(rows)
+            self.send(chat, self.details(package, show_fee=role in ("kurye", "yonetici")), markup,
+                      parse_mode="HTML")
         elif role in ("kurye", "yonetici"):
             self.batch_card(chat, package["batch"])
         else:
-            self.send(chat, self.details(package))
+            self.send(chat, self.details(package), parse_mode="HTML")
 
 
     def show_packages(self, user, where, params, page, mode):
@@ -111,7 +144,7 @@ class ViewsMixin:
             self.card(user["id"], row, user["role"])
         if not rows:
             self.send(user["id"], "Bu listede paket yok.")
-        prefix = mode if mode.startswith("analysis:") else f"page:{mode}"
+        prefix = mode if mode.startswith(("analysis:", "pool:")) else f"page:{mode}"
         navigation = []
         if page:
             navigation.append(("Önceki", f"{prefix}:{page - 1}"))

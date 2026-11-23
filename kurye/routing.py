@@ -1,3 +1,4 @@
+from .accounts_admin import FILTERS as ACCOUNT_FILTERS
 from .constants import PERIODS, REPORT_PERIODS
 from .orders import FILTERS
 from .validation import number, page_number
@@ -34,7 +35,7 @@ class RoutingMixin:
         if action == "osip" and role == "restoran" and len(args) == 3:
             mode, days, page = args[0], args[1], args[2]
             if mode in FILTERS and number(days) and page_number(page):
-                if mode == "pending":
+                if mode in ("pending", "onroad"):
                     self.order_list(user, mode, 0, int(page))
                     return
                 self.order_period_choice(user, mode)
@@ -77,6 +78,75 @@ class RoutingMixin:
                 return
             if args[0] == "pos" and len(args) == 2 and number(args[1]):
                 self.start_tariff_edit(chat, int(args[1]))
+                return
+        if action == "pv" and role == "kurye":
+            if len(args) == 1 and args[0] in ("regions", "batch"):
+                if args[0] == "batch":
+                    self.show_open(user, 0, force_new=True)
+                else:
+                    self.show_pool_regions(user)
+                return
+            if len(args) == 2:
+                sub, code = args
+                if sub == "g":
+                    self.show_pool_group(user, code)
+                    return
+                if sub == "sel":
+                    self.show_pool_selection(user, code)
+                    return
+                if sub == "takeall":
+                    return self.take_pool_group(user, code)
+                if sub == "go":
+                    return self.take_pool_selected(user, code)
+                if sub in ("all", "none"):
+                    self.select_all_pool(user, code, select=(sub == "all"))
+                    return
+            if len(args) == 2 and args[0] == "t" and number(args[1]):
+                state = self.pool_view_state(user["id"])
+                self.toggle_pool_select(user, int(args[1]), self.region_code(state["region"]) if state else "rz")
+                return
+        if action == "pool" and role == "yonetici" and len(args) == 2 and page_number(args[1]):
+            if args[0] in ("all", "pool", "courier"):
+                self.show_pool(user, args[0], int(args[1]))
+                return
+        if action == "cx" and role in ("restoran", "kurye", "yonetici") and len(args) == 1 and number(args[0]):
+            return self.start_cancel(user, int(args[0]))
+        if action in ("cxr", "cxy", "cxv") and role in ("restoran", "kurye", "yonetici"):
+            if action == "cxr" and len(args) == 1 and number(args[0]):
+                return self.cancel_reason_chosen(user, int(args[0]))
+            if action == "cxy":
+                return self.confirm_cancel(user)
+            self.db.execute("DELETE FROM cancel_flow WHERE account=?", (user["id"],))
+            return "Vazgeçildi."
+        if action == "cxl" and role == "yonetici" and len(args) == 2 and number(args[1]) and page_number(args[1]):
+            mode = args[0]
+            if mode in ("all", "today"):
+                self.show_cancelled_orders(user, mode, int(args[1]))
+                return
+        if action in ("coa", "cod") and role == "kurye" and len(args) == 1:
+            return (self.accept_claim_offer(user, args[0]) if action == "coa"
+                    else self.decline_claim_offer(user, args[0]))
+        if action in ("aoa", "aod") and role == "kurye" and len(args) == 1 and number(args[0]):
+            if action == "aoa":
+                return self.accept_auto_offer(user, int(args[0]))
+            return self.decline_auto_offer(user, int(args[0]))
+        if action == "acc" and role == "yonetici":
+            if len(args) == 2 and args[0] in ("tgl", "del", "dely", "call") and number(args[1]):
+                if args[0] == "tgl":
+                    return self.toggle_account(user, int(args[1]))
+                if args[0] == "call":
+                    return self.call_account(user, int(args[1]))
+                if args[0] == "del":
+                    return self.confirm_delete_account(user, int(args[1]))
+                return self.delete_account(user, int(args[1]))
+            if len(args) == 1 and args[0] == "x":
+                return "İptal edildi."
+            if len(args) == 1 and args[0] == "s":
+                return self.start_account_search(user)
+            if len(args) == 1 and args[0] == "clr":
+                return self.clear_account_search(user)
+            if len(args) == 3 and args[0] == "f" and args[1] in ACCOUNT_FILTERS and number(args[2]):
+                self.show_accounts(user, "kurye", int(args[2]), args[1])
                 return
         if action == "cmd" and len(args) == 1:
             return self.run_command(user, args[0])
@@ -127,5 +197,8 @@ class RoutingMixin:
         if action == "assign" and role == "yonetici" and len(args) in (1, 2) and numeric and (len(args) == 1 or page_number(args[1])):
             return self.choose_courier(chat, int(args[0]), int(args[1]) if len(args) == 2 else 0)
         if action == "give" and role == "yonetici" and len(args) == 2 and numeric:
+            offered = self.offer_manual_transfer(chat, int(args[0]), int(args[1]))
+            if offered is not None:
+                return offered
             return self.claim(int(args[0]), int(args[1]), True)
         return "Bu işlem kullanılamıyor."

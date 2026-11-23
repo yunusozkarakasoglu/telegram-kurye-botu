@@ -41,7 +41,7 @@ class NavigationTests(BotCase):
         ids = self.batch(count=3)
         self.click(COURIER, f"claim:{ids[0]}")
         self.clear_messages()
-        self.message(COURIER, "Havuz")
+        self.click(COURIER, "pv:batch")
         self.flush()
         text = self.texts(COURIER)
         self.assertIn("2 paket bekliyor", text)
@@ -51,7 +51,7 @@ class NavigationTests(BotCase):
         ids = self.batch()
         self.click(COURIER, f"claim:{ids[0]}")
         self.clear_messages()
-        self.message(COURIER, "Havuz")
+        self.click(COURIER, "pv:batch")
         self.flush()
         self.assertIn("Havuzda bekleyen paket yok.", self.texts(COURIER))
 
@@ -90,7 +90,7 @@ class NavigationTests(BotCase):
     def test_bulk_button_says_take_all_with_package_count(self):
         self.batch(count=3)
         self.clear_messages()
-        self.message(COURIER, "Havuz")
+        self.click(COURIER, "pv:batch")
         labels = self.inline_labels(COURIER)
         self.assertIn("Tümünü Al (3 Paket)", labels)
         self.assertIn("1. Paketi Al", labels)
@@ -98,7 +98,7 @@ class NavigationTests(BotCase):
     def test_bulk_button_says_capacity_when_not_all_packages_fit(self):
         self.batch(count=5)
         self.clear_messages()
-        self.message(COURIER, "Havuz")
+        self.click(COURIER, "pv:batch")
         labels = self.inline_labels(COURIER)
         self.assertIn("Kapasite Kadar Al (3 Paket)", labels)
         self.assertNotIn("Tümünü Al (5 Paket)", labels)
@@ -108,7 +108,7 @@ class NavigationTests(BotCase):
         self.flush()
         first = self.db.execute("SELECT message FROM batch_cards").fetchone()[0]
         self.clear_messages()
-        self.message(COURIER, "Havuz")
+        self.click(COURIER, "pv:batch")
         self.flush()
         deleted = [p for m, p in self.api.calls if m == "deleteMessage"]
         self.assertEqual([p["message_id"] for p in deleted], [first])
@@ -132,7 +132,7 @@ class NavigationTests(BotCase):
     def test_each_package_has_its_own_request_number(self):
         self.batch(count=3)
         self.clear_messages()
-        self.message(COURIER, "Havuz")
+        self.click(COURIER, "pv:batch")
         self.flush()
         text = self.texts(COURIER)
         self.assertIn("#1-1", text)
@@ -176,3 +176,16 @@ class NavigationTests(BotCase):
         self.click(ADMIN, "report:0:0")
         self.flush()
         self.assertIn("Bölge · Belirtilmedi", self.texts(ADMIN))
+
+class AdminMenuLayoutTests(BotCase):
+    def test_admin_last_row_pairs_yonetici_numarasi_and_raporlar(self):
+        self.message(ADMIN, "/start")
+        self.flush()
+        rows = [p["reply_markup"]["keyboard"] for _m, p in self.api.calls
+                if p.get("chat_id") == ADMIN and isinstance(p.get("reply_markup"), dict)
+                and "keyboard" in p["reply_markup"]][-1]
+        self.assertEqual([b["text"] for b in rows[-1]], ["Yönetici Numarası", "Raporlar"])
+        self.assertTrue(all(len(row) <= 2 for row in rows))
+        labels = [b["text"] for row in rows for b in row]
+        self.assertEqual(labels.count("Raporlar"), 1)
+        self.assertEqual(labels.count("Yönetici Numarası"), 1)

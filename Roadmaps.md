@@ -1,6 +1,6 @@
 # Yol haritası
 
-1. **Tamamlandı — Yerel v2:** Kabul/öncelik, aktarım, profil/harita/arama, dosya yok sayma, durum etiketleri, rol bazlı komutlar, bölge/telefon yönetimi, kendi kendine kayıt. Kanıt: `Test-Raporu.md`.
-2. **Sürüyor — Canlı pilot:** phase-1 (yönetici/restoran) ve phase-2 (yönetici/kurye) tamam; phase-3'te sipariş→kabul→km→teslim ve kilit doğrulandı; phase-5'te yönetici ekranları test ediliyor. Ayrıntı: `Canli-Pilot-Raporu.md`.
+1. **Tamamlandı — Yerel v2 çekirdek:** kabul/öncelik, aktarım + bildirim + onay, profil/harita/arama, medya yok sayma, durum etiketleri, komut menüleri, bölge/telefon/tarife yönetimi, kendi kendine kayıt, hesap aktif/pasif/sil, iptal akışı, havuz bölge gruplama. Kanıt: `Test-Raporu.md`.
+2. **Sürüyor — Canlı pilot (phase-5):** phase-1/2 tamam; phase-3 sipariş→kabul→km→teslim→kilit doğrulandı; phase-5'te yönetici ekranları ve 10 paketlik bölge grubu hazır. Ayrıntı: `Canli-Pilot-Raporu.md`.
 3. **Planlanacak — phase-4:** iki kurye + 10 paket/limit 6 ile kurye–kurye aktarım ve 10/6/4 havuz senaryosu.
-4. **Planlanacak — Ücretsiz Cloudflare:** webhook + D1; medya yok sayma ve kuyruk sözleşmesi korunarak taşıma.
+4. **Planlanacak — Ücretsiz Cloudflare:** webhook + D1, yedek/rollback, eklemeli migrasyon; medya ve kuyruk sözleşmesi korunarak taşıma.

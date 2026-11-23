@@ -155,7 +155,7 @@ class ProfileMixin:
                             (latitude, longitude, row["ref"]))
 
     def profile_targets(self, chat):
-        rows = self.db.execute("SELECT id, name FROM accounts WHERE role='restoran' ORDER BY name").fetchall()
+        rows = self.db.execute("SELECT id, name FROM accounts WHERE role='restoran' AND deleted=0 ORDER BY name").fetchall()
         if not rows:
             self.send(chat, "Kayıtlı restoran yok.")
             return

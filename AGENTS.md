@@ -22,7 +22,8 @@ Global kurallar (`~/.pi/agent/AGENTS.md`) geçerlidir; burada yalnız bu projeye
 - Aktarım: havuza (onaylı) veya kabul şartıyla kuryeye; ret/süre/çevrimdışı → havuza. Kabulde km/ücret korunur, `accepted_at` yeni kuryeye yazılır, geçmiş `transfer_log` ile gösterilir.
 - Medya indirilmez; sohbet başına 10 dk'da bir uyarı. Konum/harita `google.com/maps/dir`, arama numarası **tek parça E.164** metin (`tel:` inline düğmede desteklenmez, `sendContact` "kişi ekle" açar).
 - Durum etiketleri tek kaynaktan: Havuzda bekliyor → Kabul edildi → Kuryede / Yolda → Teslim edildi.
-- Aynı anda tek yönetici düzenleme akışı: profil/tarife/bölge/telefon başlatırken `reset_admin_edits`.
+- Aynı anda tek yönetici düzenleme akışı: profil/tarife/bölge/telefon/arama başlatırken `reset_admin_edits` (cancel_flow kendi `account` alanını kullanır).
+- İptal: havuza/teslim alınmadan ücretsiz; alımdan 10 dk altı taban, üstü tam ücret; tüm iptaller yöneticiye gider. Aktif/uygun kurye sorguları `active=1 AND deleted=0`, aktif paket sorguları `cancelled_at IS NULL` içerir.
 
 ## Kalite kapısı (commit öncesi)
 

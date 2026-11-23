@@ -1,4 +1,4 @@
-from support import ADMIN, COURIER, RESTAURANT, BotCase
+from support import ADMIN, COURIER, OTHER_COURIER, OTHER_RESTAURANT, RESTAURANT, BotCase
 
 
 class AdminPhoneTests(BotCase):
@@ -150,8 +150,9 @@ class CourierPhoneTests(BotCase):
         ids = self.batch()
         self.clear_messages()
         self.click(900, f"claim:{ids[0]}")
+        self.pickup(ids[0], courier=900, distance="4,5")
         self.clear_messages()
-        self.message(RESTAURANT, "Paketlerim")
+        self.click(RESTAURANT, "osip:onroad:0:0")
         self.assertIn("Kuryeyi Ara", self.buttons(RESTAURANT))
 
     def test_call_courier_sends_tappable_number_to_restaurant(self):
@@ -173,7 +174,7 @@ class CourierPhoneTests(BotCase):
         ids = self.batch()
         self.click(COURIER, f"claim:{ids[0]}")
         self.clear_messages()
-        self.message(RESTAURANT, "Paketlerim")
+        self.click(RESTAURANT, "osip:onroad:0:0")
         self.assertNotIn("Kuryeyi Ara", self.buttons(RESTAURANT))
 
 
@@ -202,3 +203,65 @@ class CourierStatusPhoneTests(BotCase):
         text = self.texts(ADMIN)
         self.assertIn("COURIER_A", text)
         self.assertNotIn("☎", text)
+
+
+class CallCourierMappingTests(BotCase):
+    """Kuryeyi Ara, paketin GERÇEK kuryesini aramalı; çapraz eşleşme olmamalı."""
+
+    def setUp(self):
+        super().setUp()
+        self.onboard(second=True)
+        with self.db:
+            self.db.execute("UPDATE accounts SET phone='+905550001111' WHERE id=?", (COURIER,))
+            self.db.execute("UPDATE accounts SET phone='+905550002222' WHERE id=?", (OTHER_COURIER,))
+        self.clear_messages()
+
+    def call_text(self, user, package_id):
+        self.clear_messages()
+        self.click(user, f"callc:{package_id}")
+        self.flush()
+        return self.texts(user)
+
+    def test_each_package_calls_its_own_courier(self):
+        first_batch = self.batch(count=1)
+        second_batch = self.batch(count=1)
+        self.click(COURIER, f"claim:{first_batch[0]}")
+        self.click(OTHER_COURIER, f"claim:{second_batch[0]}")
+        first = self.call_text(RESTAURANT, first_batch[0])
+        second = self.call_text(RESTAURANT, second_batch[0])
+        self.assertIn("Kurye : COURIER_A", first)
+        self.assertIn("+905550001111", first)
+        self.assertNotIn("+905550002222", first)
+        self.assertIn("Kurye : COURIER_B", second)
+        self.assertIn("+905550002222", second)
+        self.assertNotIn("+905550001111", second)
+
+    def test_transfer_updates_who_is_called(self):
+        ids = self.batch(count=1)
+        pid = ids[0]
+        self.click(COURIER, f"claim:{pid}")
+        self.click(COURIER, f"tr:{pid}")
+        self.click(COURIER, f"trone:{pid}")
+        token = self.db.execute("SELECT token FROM transfer_scope").fetchone()[0]
+        self.click(COURIER, f"trcour:{token}")
+        self.click(COURIER, f"trg:{token}:{OTHER_COURIER}")
+        offer = self.db.execute("SELECT token FROM transfer_offers").fetchone()[0]
+        self.click(OTHER_COURIER, f"trma:{offer}")
+        text = self.call_text(RESTAURANT, pid)
+        self.assertIn("Kurye : COURIER_B", text)
+        self.assertIn("+905550002222", text)
+        self.assertNotIn("+905550001111", text)
+
+    def test_other_restaurant_cannot_call_this_packages_courier(self):
+        ids = self.batch(count=1)
+        self.click(COURIER, f"claim:{ids[0]}")
+        self.clear_messages()
+        self.click(OTHER_RESTAURANT, f"callc:{ids[0]}")
+        self.assertIn("Bu paket size ait değil", self.last_answer())
+
+    def test_courier_cannot_use_restaurant_call_button(self):
+        ids = self.batch(count=1)
+        self.click(COURIER, f"claim:{ids[0]}")
+        self.clear_messages()
+        self.click(COURIER, f"callc:{ids[0]}")
+        self.assertEqual(self.last_answer(), "Bu işlem kullanılamıyor.")

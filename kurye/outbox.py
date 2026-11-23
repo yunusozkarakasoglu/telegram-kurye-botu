@@ -30,10 +30,12 @@ class OutboxMixin:
             stamp=excluded.stamp,priority=max(outbox.priority,excluded.priority)
         """, (method, json.dumps(payload), package, int(related), batch, draft_nonce, key, secrets.token_hex(12), priority))
 
-    def send(self, chat, text, markup=None, package=None, *, order_related=None):
+    def send(self, chat, text, markup=None, package=None, *, order_related=None, parse_mode=None):
         payload = {"chat_id": chat, "text": text}
         if markup is not None:
             payload["reply_markup"] = markup
+        if parse_mode:
+            payload["parse_mode"] = parse_mode
         self.queue("sendMessage", payload, package, order_related=order_related)
 
     def prepared_payload(self, row):

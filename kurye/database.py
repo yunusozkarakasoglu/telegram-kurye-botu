@@ -60,12 +60,17 @@ def connect(path):
             },
             "accounts": {"locked": "INTEGER NOT NULL DEFAULT 0", "online": "INTEGER NOT NULL DEFAULT 0",
                          "latitude": "REAL", "longitude": "REAL",
-                         "contact_name": "TEXT", "phone": "TEXT"},
+                         "contact_name": "TEXT", "phone": "TEXT",
+                         "active": "INTEGER NOT NULL DEFAULT 1", "deleted": "INTEGER NOT NULL DEFAULT 0"},
             "invites": {"latitude": "REAL", "longitude": "REAL", "admin": "INTEGER",
                         "contact_name": "TEXT", "phone": "TEXT"},
             "drafts": {"payments": "TEXT NOT NULL DEFAULT '[]'", "message": "INTEGER"},
             "batches": {"created_at": "INTEGER", "priority_used": "INTEGER NOT NULL DEFAULT 0"},
             "packages": {
+                "incoming": "INTEGER NOT NULL DEFAULT 0", "incoming_from": "INTEGER",
+                "cancelled_at": "INTEGER", "cancel_reason": "TEXT", "cancel_note": "TEXT",
+                "cancelled_by": "INTEGER",
+                "incoming_at": "REAL",
                 "payment": "TEXT", "accepted_at": "INTEGER",
                 "picked_up_at": "INTEGER", "delivered_at": "INTEGER",
                 "distance_km": "TEXT", "courier_fee": "INTEGER",
@@ -97,6 +102,27 @@ def connect(path):
                 batch INTEGER NOT NULL REFERENCES batches, chat INTEGER NOT NULL,
                 message INTEGER NOT NULL, PRIMARY KEY(batch,chat)
             );
+            CREATE TABLE IF NOT EXISTS pool_view (
+                courier INTEGER PRIMARY KEY REFERENCES accounts, region TEXT, expires REAL NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS pool_select (
+                courier INTEGER NOT NULL REFERENCES accounts, package INTEGER NOT NULL REFERENCES packages,
+                PRIMARY KEY (courier, package)
+            );
+            CREATE TABLE IF NOT EXISTS cancel_flow (
+                account INTEGER PRIMARY KEY REFERENCES accounts, package INTEGER NOT NULL,
+                reason TEXT, step TEXT NOT NULL, expires REAL NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS claim_offers (
+                package INTEGER PRIMARY KEY REFERENCES packages, courier INTEGER NOT NULL REFERENCES accounts,
+                token TEXT NOT NULL UNIQUE, expires REAL NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS auto_offers (
+                id INTEGER PRIMARY KEY, package INTEGER NOT NULL REFERENCES packages,
+                courier INTEGER NOT NULL REFERENCES accounts, round INTEGER NOT NULL,
+                expires REAL NOT NULL, state TEXT NOT NULL DEFAULT 'pending', created REAL NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS auto_offers_package ON auto_offers(package,state);
             CREATE TABLE IF NOT EXISTS transfer_log (
                 id INTEGER PRIMARY KEY, package INTEGER NOT NULL, from_courier INTEGER NOT NULL,
                 to_courier INTEGER NOT NULL, at REAL NOT NULL, original_accepted_at REAL
@@ -104,6 +130,10 @@ def connect(path):
             CREATE TABLE IF NOT EXISTS km_edit (
                 courier INTEGER PRIMARY KEY REFERENCES accounts,
                 package INTEGER NOT NULL REFERENCES packages, expires REAL NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS account_search (
+                admin INTEGER PRIMARY KEY REFERENCES accounts, role TEXT NOT NULL,
+                query TEXT, expires REAL NOT NULL
             );
             CREATE TABLE IF NOT EXISTS admin_phones (
                 position INTEGER PRIMARY KEY, name TEXT NOT NULL, phone TEXT NOT NULL

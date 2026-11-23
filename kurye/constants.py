@@ -13,7 +13,19 @@ TARIFF_EDIT_SECONDS = 300
 MAX_REGIONS = 50
 REGION_NAME_MAX = 50
 REGION_EDIT_SECONDS = 300
+WAIT_WARN_SECONDS = 600
+AUTO_OFFER_AFTER = 1200
+AUTO_OFFER_TTL = 120
+AUTO_OFFER_RETRY = 300
+WARN_COOLDOWN = 600
 MAX_ADMIN_PHONES = 5
+ACCOUNT_SEARCH_SECONDS = 300
+INCOMING_HOLD_SECONDS = 600
+CANCEL_FLOW_SECONDS = 1800
+POOL_VIEW_SECONDS = 900
+CANCEL_BASE_FEE_MINUTES = 10
+CANCEL_REASONS = ("Müşteri iptal etti", "Adres yanlış", "Restoran kapandı",
+                  "Gecikme", "Paket hasarlı", "Müşteriye ulaşılamadı", "Diğer")
 ADMIN_PHONE_EDIT_SECONDS = 300
 PERIODS = {1: "Bugün", 7: "Son 7 Gün", 30: "Son 30 Gün"}
 REPORT_PERIODS = {**PERIODS, 0: "Tüm Zamanlar"}
@@ -51,7 +63,7 @@ MEDIA_NOTICE_TEXT = "Bu bot üzerinden dosya gönderimi yapılmamaktadır. Lütf
 MENUS = {
     "restoran": ["Kurye Çağır", "Paketlerim", "Analiz", "Komutlar", "Yöneticiyi Ara"],
     "kurye": ["Havuz", "Açık Paketler", "Paketlerim", "Komutlar", "Yöneticiyi Ara"],
-    "yonetici": ["Havuz", "Son Talepler", "Paket-Limit", "Ücret Tarifesi", "Bölgeler",
-                 "Yönetici Numarası", "Komutlar",
+    "yonetici": ["Havuz", "Son Talepler", "Kurye Paket Limiti", "Ücret Tarifesi", "Bölgeler",
+                 "Restoranlar", "Kuryeler", "İptal Siparişler", "Yönetici Numarası", "Komutlar",
                  "Sipariş Verilerini Temizle", "Kurye Durumu"],
 }

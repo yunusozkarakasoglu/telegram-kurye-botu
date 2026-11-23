@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from .constants import REPORT_PERIODS, TURKIYE
 from .ui import keyboard
 
-FILTERS = {"all": "Tümü", "pending": "Bekleyen", "delivered": "Teslim Edilen"}
+FILTERS = {"all": "Tümü", "pending": "Bekleyen", "onroad": "Yolda (Aktif)", "delivered": "Teslim Edilen"}
 
 
 class OrdersMixin:
@@ -14,7 +14,7 @@ class OrdersMixin:
             return "Bu işlem kullanılamıyor."
         self.send(user["id"], "Siparişleri filtreleyin.", keyboard([
             [("Tümü", "osip:all:0:0"), ("Bekleyen", "osip:pending:0:0")],
-            [("Teslim Edilen", "osip:delivered:0:0")],
+            [("Yolda (Aktif)", "osip:onroad:0:0"), ("Teslim Edilen", "osip:delivered:0:0")],
         ]))
 
     def order_period_choice(self, user, mode):
@@ -35,7 +35,9 @@ class OrdersMixin:
             return "Bu işlem kullanılamıyor."
         where, params = "b.owner=?", [user["id"]]
         if mode == "pending":
-            where += " AND p.delivered_at IS NULL"
+            where += " AND p.delivered_at IS NULL AND p.cancelled_at IS NULL"
+        elif mode == "onroad":
+            where += " AND p.delivered_at IS NULL AND p.cancelled_at IS NULL AND p.picked_up_at IS NOT NULL"
         elif mode == "delivered":
             where += " AND p.delivered_at IS NOT NULL"
         if days:

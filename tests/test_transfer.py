@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from support import COURIER, OTHER_COURIER, RESTAURANT, BotCase
+from support import ADMIN, COURIER, OTHER_COURIER, RESTAURANT, BotCase
 
 
 class TransferTests(BotCase):
@@ -179,7 +179,7 @@ class TransferTests(BotCase):
         self.flush()
         self.assertEqual(self.bot.active_count(COURIER), 0)
         self.assertEqual(self.account(COURIER)["locked"], 0)
-        self.message(COURIER, "Havuz")
+        self.click(COURIER, "pv:batch")
         self.flush()
         self.assertIn("3 paket bekliyor", self.texts(COURIER))
 
@@ -254,3 +254,283 @@ class TransferHistoryTests(BotCase):
         self.assertNotIn("İlk kabul", text)
         self.assertNotIn("Aktarma bilgisi", text)
         self.assertNotIn("· ilk kurye", text)
+
+
+class AutoOfferTests(BotCase):
+    def setUp(self):
+        super().setUp()
+        self.onboard(second=True)
+        ids = self.batch(count=1)
+        self.pid = ids[0]
+        with self.db:
+            self.db.execute("UPDATE batches SET created_at=?", (self.bot.now() - 1300,))
+
+    def offers(self):
+        return self.db.execute("SELECT * FROM auto_offers ORDER BY id").fetchall()
+
+    def tick(self):
+        self.bot.auto_offer_tick()
+        self.flush()
+
+    def test_warning_counts_packages_waiting_ten_minutes(self):
+        self.tick()
+        self.assertIn("Havuzda bekleyen 1 paket var", self.texts(ADMIN))
+
+    def test_offers_sent_to_idle_online_couriers_after_twenty_minutes(self):
+        self.tick()
+        self.assertEqual(len(self.offers()), 2)
+        self.assertIn("Otomatik iş teklifi", self.texts(COURIER))
+        self.assertIn("Otomatik iş teklifi", self.texts(OTHER_COURIER))
+
+    def test_first_accept_wins(self):
+        self.tick()
+        first = self.offers()[0]
+        second = self.offers()[1]
+        self.click(COURIER, f"aoa:{first['id']}")
+        self.click(OTHER_COURIER, f"aoa:{second['id']}")
+        row = self.package(self.pid)
+        self.assertIn(row["courier"], (COURIER, OTHER_COURIER))
+        self.assertEqual(self.db.execute("SELECT count(*) FROM auto_offers WHERE state='accepted'").fetchone()[0], 1)
+        self.assertEqual(self.db.execute("SELECT count(*) FROM auto_offers WHERE state='superseded'").fetchone()[0], 1)
+
+    def test_decline_is_logged_and_third_decline_warns_admin(self):
+        self.tick()
+        offered = self.offers()
+        self.click(COURIER, f"aod:{offered[0]['id']}")
+        self.click(OTHER_COURIER, f"aod:{offered[1]['id']}")
+        with self.db:
+            self.db.execute("INSERT INTO auto_offers(package,courier,round,expires,state,created) "
+                            "VALUES (?,?,3,?, 'declined', ?)",
+                            (self.pid, COURIER, self.bot.now() + 60, self.bot.now()))
+        self.bot._warn_repeated_rejection(self.pid)
+        self.flush()
+        self.assertIn("🔴", self.texts(ADMIN))
+        self.assertIn("3 kez reddedildi/kaçırıldı", self.texts(ADMIN))
+
+    def test_warning_is_sent_once(self):
+        self.tick()
+        offered = self.offers()
+        for row in offered:
+            self.click(row["courier"], f"aod:{row['id']}")
+        with self.db:
+            self.db.execute("INSERT INTO auto_offers(package,courier,round,expires,state,created) "
+                            "VALUES (?,?,3,?, 'expired', ?)", (self.pid, COURIER, self.bot.now(), self.bot.now()))
+        self.bot._warn_repeated_rejection(self.pid)
+        self.flush()
+        count = self.texts(ADMIN).count("🔴")
+        self.bot._warn_repeated_rejection(self.pid)
+        self.flush()
+        self.assertEqual(self.texts(ADMIN).count("🔴"), count)
+
+    def test_rejection_log_lists_couriers(self):
+        self.tick()
+        offered = self.offers()
+        self.click(COURIER, f"aod:{offered[0]['id']}")
+        self.clear_messages()
+        self.message(ADMIN, "/redlog")
+        self.flush()
+        text = self.texts(ADMIN)
+        self.assertIn("COURIER_A", text)
+        self.assertIn("reddetti 1", text)
+
+
+class IncomingTransferNoticeTests(BotCase):
+    def setUp(self):
+        super().setUp()
+        self.onboard()
+        self.third = 60
+        self.invite(self.third, "kurye", "DEVIR_ALAN")
+        self.message(self.third, "Çevrimiçi Ol")
+
+    def transfer_to_third(self):
+        ids = self.batch(count=1)
+        pid = ids[0]
+        self.click(COURIER, f"claim:{pid}")
+        self.pickup(pid, distance="4,5")
+        self.click(COURIER, f"tr:{pid}")
+        self.click(COURIER, f"trone:{pid}")
+        token = self.db.execute("SELECT token FROM transfer_scope").fetchone()[0]
+        self.click(COURIER, f"trcour:{token}")
+        self.click(COURIER, f"trg:{token}:{self.third}")
+        offer = self.db.execute("SELECT token FROM transfer_offers").fetchone()[0]
+        self.clear_messages()
+        self.click(self.third, f"trma:{offer}")
+        self.flush()
+        return pid
+
+    def test_accepted_transfer_sends_prominent_notice(self):
+        pid = self.transfer_to_third()
+        text = self.texts(self.third)
+        self.assertIn("AKTARILAN SİPARİŞ", text)
+        self.assertIn("Gönderen kurye : COURIER_A", text)
+        self.assertIn("🔔", text)
+        self.assertEqual(self.package(pid)["incoming"], 1)
+
+    def test_incoming_marker_on_cards_and_menu_counter(self):
+        self.transfer_to_third()
+        self.clear_messages()
+        self.message(self.third, "/start")
+        self.flush()
+        self.assertIn("1 aktarım dikkatinizi bekliyor", self.texts(self.third))
+        self.clear_messages()
+        self.message(self.third, "Açık Paketler")
+        self.flush()
+        self.assertIn("🔔 AKTARIM", self.texts(self.third))
+
+    def test_incoming_clears_after_courier_opens_list(self):
+        pid = self.transfer_to_third()
+        self.message(self.third, "Açık Paketler")
+        self.flush()
+        self.assertEqual(self.package(pid)["incoming"], 0)
+
+    def test_admin_assignment_of_transferred_package_requires_courier_acceptance(self):
+        pid = self.transfer_to_third()
+        # paketi havuza geri koy (kurye aktarsın)
+        self.click(self.third, f"tr:{pid}")
+        self.click(self.third, f"trone:{pid}")
+        token = self.db.execute("SELECT token FROM transfer_scope").fetchone()[0]
+        self.click(self.third, f"trcour:{token}")
+        self.click(self.third, f"trg:{token}:{COURIER}")
+        offer = self.db.execute("SELECT token FROM transfer_offers").fetchone()[0]
+        self.click(COURIER, f"trmd:{offer}")   # reddet → havuza
+        self.clear_messages()
+        self.click(ADMIN, f"give:{pid}:{OTHER_COURIER}")
+        self.flush()
+        self.assertIsNone(self.package(pid)["courier"])
+        self.flush()
+        self.assertIn("Onay istendi", self.texts(ADMIN))
+        notice = self.texts(OTHER_COURIER)
+        self.assertIn("AKTARILAN SİPARİŞ — ONAY GEREKLİ", notice)
+        self.assertIn("Kabul Et", " ".join(
+            b["text"] for _m, p in self.api.calls if p.get("chat_id") == OTHER_COURIER
+            for row in p.get("reply_markup", {}).get("inline_keyboard", []) for b in row) or notice)
+        self.click(OTHER_COURIER, f"coa:co{pid}")
+        self.assertEqual(self.package(pid)["courier"], OTHER_COURIER)
+        self.assertEqual(self.package(pid)["incoming"], 1)
+
+    def test_normal_admin_assignment_still_instant(self):
+        ids = self.batch(count=1)
+        self.click(ADMIN, f"give:{ids[0]}:{COURIER}")
+        self.assertEqual(self.package(ids[0])["courier"], COURIER)
+
+    def test_declined_incoming_assignment_returns_to_pool_and_warns_admin(self):
+        pid = self.transfer_to_third()
+        self.click(self.third, f"tr:{pid}")
+        self.click(self.third, f"trone:{pid}")
+        token = self.db.execute("SELECT token FROM transfer_scope").fetchone()[0]
+        self.click(self.third, f"trcour:{token}")
+        self.click(self.third, f"trg:{token}:{COURIER}")
+        offer = self.db.execute("SELECT token FROM transfer_offers").fetchone()[0]
+        self.click(COURIER, f"trmd:{offer}")
+        self.click(ADMIN, f"give:{pid}:{OTHER_COURIER}")
+        self.clear_messages()
+        self.click(OTHER_COURIER, f"cod:co{pid}")
+        self.flush()
+        self.assertIsNone(self.package(pid)["courier"])
+        self.assertEqual(self.package(pid)["incoming"], 0)
+        self.assertIn("reddetti", self.texts(ADMIN))
+
+
+class TransferStatusConsistencyTests(BotCase):
+    def setUp(self):
+        super().setUp()
+        self.onboard(second=True)
+
+    def status(self, pid):
+        return self.bot.status(self.package(pid))
+
+    def transferred_pool_package(self):
+        """Kabul edilmiş bir aktarım geçmişi olan, sonra havuza dönmüş paket."""
+        pid = self.batch(count=1)[0]
+        self.click(COURIER, f"claim:{pid}")
+        self.click(COURIER, f"tr:{pid}")
+        self.click(COURIER, f"trone:{pid}")
+        token = self.db.execute("SELECT token FROM transfer_scope").fetchone()[0]
+        self.click(COURIER, f"trcour:{token}")
+        self.click(COURIER, f"trg:{token}:{OTHER_COURIER}")
+        offer = self.db.execute("SELECT token FROM transfer_offers").fetchone()[0]
+        self.click(OTHER_COURIER, f"trma:{offer}")   # aktarım kabul → transfer_log
+        self.click(OTHER_COURIER, f"tr:{pid}")
+        self.click(OTHER_COURIER, f"trone:{pid}")
+        token = self.db.execute("SELECT token FROM transfer_scope").fetchone()[0]
+        self.click(OTHER_COURIER, f"trpool:{token}")
+        token = self.db.execute("SELECT token FROM transfer_scope").fetchone()[0]
+        self.click(OTHER_COURIER, f"trpy:{token}")
+        self.clear_messages()
+        return pid
+
+    def test_pool_transfer_resets_status_and_incoming(self):
+        ids = self.batch(count=1)
+        pid = ids[0]
+        self.click(COURIER, f"claim:{pid}")
+        self.pickup(pid, distance="4,5")
+        self.click(COURIER, f"tr:{pid}")
+        self.click(COURIER, f"trall:{pid}")
+        token = self.db.execute("SELECT token FROM transfer_scope").fetchone()[0]
+        self.click(COURIER, f"trpool:{token}")
+        token = self.db.execute("SELECT token FROM transfer_scope").fetchone()[0]
+        self.click(COURIER, f"trpy:{token}")
+        row = self.package(pid)
+        self.assertIsNone(row["courier"])
+        self.assertIsNone(row["accepted_at"])
+        self.assertIsNone(row["picked_up_at"])
+        self.assertIsNone(row["courier_fee"])
+        self.assertEqual(row["incoming"], 0)
+        self.assertEqual(self.status(pid), "Havuzda bekliyor")
+
+    def test_courier_to_courier_offer_shows_pending_status(self):
+        ids = self.batch(count=1)
+        pid = ids[0]
+        self.click(COURIER, f"claim:{pid}")
+        self.click(COURIER, f"tr:{pid}")
+        self.click(COURIER, f"trone:{pid}")
+        token = self.db.execute("SELECT token FROM transfer_scope").fetchone()[0]
+        self.click(COURIER, f"trcour:{token}")
+        self.click(COURIER, f"trg:{token}:{OTHER_COURIER}")
+        self.assertEqual(self.status(pid), "Aktarım onayı bekleniyor")
+
+    def test_declined_transfer_returns_pool_without_marker(self):
+        ids = self.batch(count=1)
+        pid = ids[0]
+        self.click(COURIER, f"claim:{pid}")
+        self.click(COURIER, f"tr:{pid}")
+        self.click(COURIER, f"trone:{pid}")
+        token = self.db.execute("SELECT token FROM transfer_scope").fetchone()[0]
+        self.click(COURIER, f"trcour:{token}")
+        self.click(COURIER, f"trg:{token}:{OTHER_COURIER}")
+        offer = self.db.execute("SELECT token FROM transfer_offers").fetchone()[0]
+        self.click(OTHER_COURIER, f"trmd:{offer}")
+        self.assertIsNone(self.package(pid)["courier"])
+        self.assertEqual(self.package(pid)["incoming"], 0)
+        self.assertEqual(self.status(pid), "Havuzda bekliyor")
+
+    def test_admin_assignment_of_transferred_package_shows_pending_status(self):
+        pid = self.transferred_pool_package()
+        self.click(ADMIN, f"give:{pid}:{OTHER_COURIER}")
+        self.assertEqual(self.status(pid), "Aktarım onayı bekleniyor")
+        self.clear_messages()
+        self.click(OTHER_COURIER, "pv:batch")
+        self.flush()
+        self.assertIn("Aktarım onayınız bekleniyor", self.texts(OTHER_COURIER))
+        self.clear_messages()
+        self.click(COURIER, "pv:batch")
+        self.flush()
+        self.assertIn("Başka kuryenin aktarım onayı bekleniyor", self.texts(COURIER))
+
+    def test_expired_admin_assignment_returns_to_pool(self):
+        pid = self.transferred_pool_package()
+        self.click(ADMIN, f"give:{pid}:{OTHER_COURIER}")
+        with self.db:
+            self.db.execute("UPDATE claim_offers SET expires=1")
+        self.bot.expire_claim_offers()
+        self.flush()
+        self.assertEqual(self.status(pid), "Havuzda bekliyor")
+        self.assertEqual(self.db.execute("SELECT count(*) FROM claim_offers").fetchone()[0], 0)
+        self.assertEqual(self.db.execute("SELECT count(*) FROM reservations").fetchone()[0], 0)
+        self.assertIn("aktarım onayını vermedi", self.texts(ADMIN))
+
+    def test_normal_assignment_status_is_accepted(self):
+        ids = self.batch(count=1)
+        pid = ids[0]
+        self.click(ADMIN, f"give:{pid}:{COURIER}")
+        self.assertEqual(self.status(pid), "Kabul edildi")

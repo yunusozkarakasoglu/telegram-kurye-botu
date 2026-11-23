@@ -1,14 +1,14 @@
 # Görevler
 
 ## Açık
-- [ ] Canlı pilotu bitir (phase-5): havuzdan kabul, `Aktar` havuz/kurye, harita + Restoranı Ara, kurye durumunda telefon, bölge/telefon ekleme, `paket-limit`, `mesafe-guncelle` adımlarını telefonda doğrula.
-- [ ] Phase-4 (iki hesap kurye, 10 paket, limit 6) ile kurye–kurye aktarım ve 10/6/4 senaryosunu tamamla; dosya korunuyor.
-- [ ] Pilot bitince Cloudflare Workers (webhook) + D1 uyarlama planı ve ücretsiz kota ölçümü.
+- [ ] Canlı pilotu bitir (phase-5): bölge gruplama/10 paket, iptal akışları, kurye onaylı atama, Hesap listeleri, İptal Siparişler ve Havuz özetlerini telefonda doğrula.
+- [ ] Phase-4 (iki hesap kurye, 10 paket, limit 6) ile kurye–kurye aktarım ve 10/6/4 senaryosunu tamamla.
+- [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
-- [x] Kişinin kendi kaydı: `/davet kurye` (isimsiz) → ad soyad + telefon; restoranda ayrıca konum. 6 test.
-- [x] Kurye telefonu + `Kuryeyi Ara` (restoran) ve `Kurye Durumu`nda telefon. 4 test.
-- [x] Durum etiketleri (Havuzda bekliyor → Kabul edildi → Kuryede / Yolda → Teslim edildi), başlıklı kart, aktarma geçmişi satırları. 11 test.
-- [x] `Mesafe Güncelle` (`/mesafe-guncelle`), km beklerken işlem kilidi, `mesafeiptal` menüden kaldırıldı. 9 test.
-- [x] Bölge listesi, yönetici numaraları + `Yöneticiyi Ara`, komut menüleri (rol bazlı), tarife editörü, restoran sipariş filtresi. 60+ test.
-- [x] Modüler kaynak, 271 test, sürümlü ZIP, sürekli canlı servis güncellemesi.
+- [x] Kurye havuzu **Bölgeye Göre Grupla** (grup altı Tümünü Al / Paket Seç ✅⬜); yönetici havuzunda satır başına Kurye Ata/İptal + Özet. 14 test.
+- [x] Sipariş iptali: neden+onay, 10 dk ücret kuralı (altı taban/üstü tam), 🔴 kart, tüm iptaller yöneticiye, **İptal Siparişler** (Tümü/Bugün). 24 test.
+- [x] Aktarım bildirimi 🔔 + sayaç; yönetici aktarılmış paketi atarken kurye onayı; durum tutarlılığı. 12 test.
+- [x] Hesap yönetimi: Kuryeler/Restoranlar filtre+arama, aktif/pasif, soft delete, Ara. 17 test.
+- [x] Restoran profili (yetkili/telefon/konum), Restoranı Ara/Kuryeyi Ara/Yöneticiyi Ara, tarife editörü, bölge/telefon yönetimi, rol komutları.
+- [x] Uçtan uca testler (yönetici/restoran/kurye/roller arası) + 382 test, ZIP doğrulama, sürekli canlı servis.

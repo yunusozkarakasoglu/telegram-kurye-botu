@@ -62,11 +62,11 @@ class AdminMixin:
             self.send(chat, (
                 f"Genel paket limiti · {current} paket\n"
                 "Bu, her kuryenin aynı anda üzerinde taşıyabileceği en fazla aktif paket sayısıdır.\n"
-                "Değiştirmek için /paket-limit 5 gibi yazın (1–99)."
+                "Değiştirmek için /kuryepaketlimiti 5 gibi yazın (1–99)."
             ))
             return
         if not value.isascii() or not value.isdecimal() or len(value) > 2 or not 1 <= int(value) <= 99:
-            self.send(chat, "1 ile 99 arasında bir paket limiti girin. Örnek: /paket-limit 5")
+            self.send(chat, "1 ile 99 arasında bir paket limiti girin. Örnek: /kuryepaketlimiti 5")
             return
         limit = int(value)
         self.db.execute("UPDATE settings SET value=? WHERE key='active_limit'", (limit,))
@@ -111,13 +111,13 @@ class AdminMixin:
                    count(*) FILTER (WHERE EXISTS (
                        SELECT 1 FROM packages WHERE courier=accounts.id AND delivered_at IS NULL
                    )) AS working
-            FROM accounts WHERE role='kurye'
+            FROM accounts WHERE role='kurye' AND deleted=0
         """).fetchone()
         rows = self.db.execute("""
-            SELECT a.name,a.online,a.locked,a.phone,
+            SELECT a.name,a.online,a.locked,a.phone,a.active,
                    (SELECT count(*) FROM packages WHERE courier=a.id AND delivered_at IS NULL) AS active
-            FROM accounts a WHERE a.role='kurye'
-            ORDER BY a.online DESC,a.locked,a.name,a.id LIMIT 13 OFFSET ?
+            FROM accounts a WHERE a.role='kurye' AND a.deleted=0
+            ORDER BY a.active DESC, a.online DESC,a.locked,a.name,a.id LIMIT 13 OFFSET ?
         """, (page * 12,)).fetchall()
         lines = [
             "Kurye Durumu",
@@ -126,7 +126,8 @@ class AdminMixin:
             "",
         ]
         for row in rows[:12]:
-            state = "Çevrimdışı" if not row["online"] else "Teslim kilidi" if row["locked"] else "Müsait"
+            state = ("Pasif" if not row["active"] else "Çevrimdışı" if not row["online"]
+                     else "Teslim kilidi" if row["locked"] else "Müsait")
             phone = f" · ☎ {dial_number(row['phone'])}" if row["phone"] else ""
             lines.append(f"{row['name']} · {state} · {row['active']} aktif paket{phone}")
         if not rows:
@@ -140,12 +141,15 @@ class AdminMixin:
 
 
     def choose_courier(self, chat, package_id, page):
-        if not self.packages("p.id=? AND p.courier IS NULL", (package_id,)):
+        if not self.packages("p.id=? AND p.courier IS NULL AND cancelled_at IS NULL", (package_id,)):
             return "Bu paket artık açık değil."
-        couriers = self.db.execute(
-            "SELECT * FROM accounts WHERE role='kurye' AND online=1 AND locked=0 ORDER BY name,id LIMIT 11 OFFSET ?",
-            (10 * page,),
-        ).fetchall()
+        couriers = self.db.execute("""
+            SELECT * FROM accounts a
+            WHERE a.role='kurye' AND a.online=1 AND a.locked=0 AND a.active=1 AND a.deleted=0
+              AND NOT EXISTS (SELECT 1 FROM packages p WHERE p.courier=a.id
+                              AND p.delivered_at IS NULL AND p.cancelled_at IS NULL)
+            ORDER BY a.name, a.id LIMIT 11 OFFSET ?
+        """, (10 * page,)).fetchall()
         if not couriers:
             return "Bu sayfada uygun kurye yok."
         buttons = [[(courier["name"], f"give:{package_id}:{courier['id']}")] for courier in couriers[:10]]

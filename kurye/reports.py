@@ -13,14 +13,16 @@ class ReportsMixin:
             SELECT count(*) AS total,
                    count(*) FILTER (WHERE p.courier IS NULL) AS waiting,
                    count(*) FILTER (WHERE p.courier IS NOT NULL AND p.delivered_at IS NULL) AS active,
-                   count(p.delivered_at) AS delivered
+                   count(p.delivered_at) AS delivered,
+                   count(p.cancelled_at) AS cancelled
             FROM packages p JOIN batches b ON p.batch=b.id
             WHERE b.owner=? AND b.created_at>=?
         """, params).fetchone()
         self.send(user["id"], (
             f"{PERIODS[days]} · {start:%d.%m.%Y} itibarıyla oluşturulan paketler\n"
             f"Toplam {counts['total']} · Havuzda bekliyor {counts['waiting']} · "
-            f"Kurye üzerinde {counts['active']} · Teslim edildi {counts['delivered']}"
+            f"Kurye üzerinde {counts['active']} · Teslim edildi {counts['delivered']} · "
+            f"İptal {counts['cancelled']}"
         ))
         self.show_packages(user, "b.owner=? AND b.created_at>=?", params, page, f"analysis:{days}")
 
@@ -59,6 +61,8 @@ class ReportsMixin:
             fee = f"{row['courier_fee']} TL" if row["courier_fee"] is not None else "—"
             fields.append(f"Kurye ücreti · {fee}")
             fields.append(f"Durum · {self.status(row)}")
+            if row["cancelled_at"]:
+                fields.append(f"Neden · {row['cancel_reason'] or '—'}")
             entries.append("\n".join(fields))
         buttons = []
         if page:

@@ -189,7 +189,7 @@ class RestaurantOrderFilterTests(BotCase):
 
     def test_filter_screen_offers_three_options(self):
         self.message(RESTAURANT, "/siparisler")
-        self.assertEqual(self.labels(RESTAURANT), ["Tümü", "Bekleyen", "Teslim Edilen"])
+        self.assertEqual(self.labels(RESTAURANT), ["Tümü", "Bekleyen", "Yolda (Aktif)", "Teslim Edilen"])
 
     def test_pending_filter_lists_only_undelivered(self):
         pending, delivered = self.prepare()
@@ -242,3 +242,53 @@ class RestaurantOrderFilterTests(BotCase):
         self.message(COURIER, "/siparisler")
         self.click(COURIER, "osip:all:0:0")
         self.assertEqual(self.last_answer(), "Bu işlem kullanılamıyor.")
+
+
+class RestaurantPackageFilterTests(BotCase):
+    def setUp(self):
+        super().setUp()
+        self.onboard(False)
+        self.clear_messages()
+
+    def labels(self):
+        self.flush()
+        rows = []
+        for _m, payload in self.api.calls:
+            if payload.get("chat_id") != RESTAURANT:
+                continue
+            markup = payload.get("reply_markup")
+            if isinstance(markup, dict) and "inline_keyboard" in markup:
+                rows = markup["inline_keyboard"]
+        return [b["text"] for row in rows for b in row]
+
+    def test_paketlerim_opens_filter_screen_first(self):
+        self.message(RESTAURANT, "Paketlerim")
+        self.assertEqual(self.labels(), ["Tümü", "Bekleyen", "Yolda (Aktif)", "Teslim Edilen"])
+
+    def test_onroad_filter_lists_only_picked_up_packages(self):
+        ids = self.batch(count=3)
+        self.click(COURIER, f"claim:{ids[0]}")
+        self.click(COURIER, f"claim:{ids[1]}")
+        self.pickup(ids[0], distance="4,5")
+        self.click(COURIER, f"deliver:{ids[2]}")
+        self.clear_messages()
+        self.click(RESTAURANT, "osip:onroad:0:0")
+        self.flush()
+        text = self.texts(RESTAURANT)
+        self.assertIn("Sipariş no : 1-1", text)
+        self.assertNotIn("Sipariş no : 1-2", text)
+        self.assertNotIn("Sipariş no : 1-3", text)
+        self.assertIn("Durum : Kuryede / Yolda", text)
+
+    def test_pending_filter_includes_accepted_but_not_delivered(self):
+        ids = self.batch(count=2)
+        self.click(COURIER, f"claim:{ids[0]}")
+        self.click(COURIER, f"claim:{ids[1]}")
+        self.pickup(ids[1], distance="3")
+        self.click(COURIER, f"deliver:{ids[1]}")
+        self.clear_messages()
+        self.click(RESTAURANT, "osip:pending:0:0")
+        self.flush()
+        text = self.texts(RESTAURANT)
+        self.assertIn("Sipariş no : 1-1", text)
+        self.assertNotIn("Sipariş no : 1-2", text)
