@@ -514,43 +514,42 @@
   }
 
   function viewDavet() {
-    head('Davet', 'Kurye / restoran daveti');
-    API.yonetim('davet', { role: 'courier' }).then(function (d) {
-      var link = d.url || ('https://t.me/YunusKuryePilot_4862_bot?startapp=' + (d.token || ''));
-      panel('<p class="note">Davet bağlantısı tek kullanımlıktır. Kurye adı/soyadı ve telefonunu Mini App formunda girer; ' +
-        'restoran ayrıca konum ister.</p>' +
-        '<div class="filters"><input id="tk" value="' + esc(d.token || '') + '" style="flex:1;min-width:260px"></div>' +
-        '<div class="fld" style="max-width:520px"><label>Bağlantı</label><input id="lk" value="' + esc(link) + '" readonly></div>' +
-        '<div class="acts" style="gap:8px;flex-wrap:nowrap"><button class="p" id="sh" style="flex:1">Bağlantıyı Paylaş</button>' +
-        '<button class="p" id="cp" style="flex:1">Kopyala</button></div>');
-      $('cp').onclick = function () {
-        var msg = 'Kurye Paket Bot sistemine kayıt olmak için verilen linkteki bağlantıdan ulaşabilirsiniz.\n' +
-          'Bağlantı Linki : ' + link + '\n\n' +
-          'Sistem sizden ilk kayıt için ad soyad ve telefon bilgileri isteyecektir. ' +
-          'İstenen verileri girerek sisteme kaydolabilirsiniz.';
-        function done() { UI.toast('Metin kopyalandı', 'success'); }
-        function fallback() {
-          var ta = document.createElement('textarea');
-          ta.value = msg; ta.style.position = 'fixed'; ta.style.opacity = '0';
-          document.body.appendChild(ta); ta.select();
-          try { document.execCommand('copy'); done(); } catch (e) { UI.toast('Kopyalanamadı', 'error'); }
-          document.body.removeChild(ta);
-        }
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(msg).then(done).catch(fallback);
-        } else fallback();
-      };
-      $('sh').onclick = function () {
-        var text = 'Kurye Paket daveti: ' + link;
-        if (navigator.share) {
-          navigator.share({ title: 'Kurye Paket daveti', text: text, url: link }).catch(function () {});
-          return;
-        }
-        var url = 'https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent('Kurye Paket daveti');
-        if (window.TG && TG.openLink) TG.openLink(url);
-        else window.open(url, '_blank');
-      };
-    });
+    head('Davet', 'Kurye / restoran daveti oluştur');
+    panel('<div class="fld"><label>Kime</label><select id="d-role"><option value="kurye">Kurye</option><option value="restoran">Restoran</option></select></div>' +
+      '<div class="fld"><label id="d-nl">Ad Soyad</label><input id="d-name" placeholder="Ahmet Yılmaz"></div>' +
+      '<div class="fld" id="d-cw" style="display:none"><label>Yetkili adı</label><input id="d-contact" placeholder="Ali Usta"></div>' +
+      '<div class="fld"><label>Telefon</label><input id="d-phone" inputmode="tel" placeholder="0546 208 99 00"></div>' +
+      '<button class="p" id="d-create">Davet Oluştur</button>' +
+      '<div id="d-out" style="margin-top:14px"></div>' +
+      '<p class="note">Ad ve telefon girilirse kurye linke tıklayınca doğrudan kaydolur; boş bırakılırsa kendi girer.</p>');
+    $('d-role').onchange = function () {
+      var r = $('d-role').value === 'restoran';
+      $('d-nl').textContent = r ? 'Restoran adı' : 'Ad Soyad';
+      $('d-cw').style.display = r ? '' : 'none';
+    };
+    $('d-create').onclick = function () {
+      var role = $('d-role').value;
+      API.yonetim('davet', { role: role === 'restoran' ? 'restoran' : 'kurye', name: $('d-name').value.trim(), phone: $('d-phone').value.trim(), contact_name: $('d-contact').value.trim() }).then(function (d) {
+        var link = d.url || ('https://t.me/YunusKuryePilot_4862_bot?startapp=' + (d.token || ''));
+        $('d-out').innerHTML = '<div class="fld"><label>Davet bağlantısı</label><input id="dk-link" readonly value="' + esc(link) + '"></div>' +
+          '<div class="fld"><label>Davet kodu</label><input id="dk-code" readonly value="' + esc(d.token || '') + '"></div>' +
+          '<div class="acts" style="gap:8px;flex-wrap:nowrap"><button class="p" id="dk-share" style="flex:1">Bağlantıyı Paylaş</button>' +
+          '<button class="p" id="dk-copy" style="flex:1">Kopyala</button></div>';
+        $('dk-share').onclick = function () {
+          var text = 'Kurye Paket Bot daveti: ' + link;
+          if (navigator.share) { navigator.share({ title: 'Kurye Paket daveti', text: text, url: link }).catch(function () {}); return; }
+          var u = 'https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent('Kurye Paket daveti');
+          if (window.TG && TG.openLink) TG.openLink(u); else window.open(u, '_blank');
+        };
+        $('dk-copy').onclick = function () {
+          var msg = 'Kurye Paket Bot sistemine kayıt olmak için verilen linkteki bağlantıdan ulaşabilirsiniz.\n' +
+            'Bağlantı Linki : ' + link + '\n\n' +
+            'Sistem sizden ilk kayıt için ad soyad ve telefon bilgileri isteyecektir.';
+          if (navigator.clipboard) navigator.clipboard.writeText(msg).then(function () { UI.toast('Kopyalandı', 'success'); }).catch(function () { UI.toast('Kopyalanamadı', 'error'); });
+          else UI.toast('Kopyalanamadı', 'error');
+        };
+      }).catch(function (e) { UI.toast(e.message || 'Oluşturulamadı', 'error'); });
+    };
   }
 
   /* ---------------- çalıştır ---------------- */

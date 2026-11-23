@@ -288,8 +288,8 @@ export async function adminRoutes(
     const body = await readBody(request);
     const role = body.role === "restoran" ? "restoran" : "kurye";
     const code = crypto.randomUUID().replace(/-/g, "");
-    await bot.db.run("INSERT OR REPLACE INTO invites(code,role,name,expires) VALUES (?,?,?,?)",
-      code, role, body.name || "", bot.now() + 7 * 86400);
+    await bot.db.run("INSERT OR REPLACE INTO invites(code,role,name,expires,contact_name,phone) VALUES (?,?,?,?,?,?)",
+      code, role, body.name || "", bot.now() + 7 * 86400, body.contact_name || null, body.phone || null);
     const username = bot.env.BOT_USERNAME || "";
     return json({ ok: true, token: code, url: `https://t.me/${username}?startapp=${code}` });
   }

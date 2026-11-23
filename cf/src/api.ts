@@ -42,15 +42,21 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
   } catch (e: any) {
     return fail(e.message || "Yetkilendirme hatası", e instanceof HttpError ? e.status : 401, "unauthorized");
   }
-  const existing = await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(ident.id).first<Account>();
+  let existing = await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(ident.id).first<Account>();
   const path0 = url.pathname.replace(/^\/api/, "") || "/";
   if (!existing) {
-    if (path0 === "/oturum") {
-      const code = ident.startParam || "";
-      const invite = code ? await env.DB.prepare("SELECT code,role FROM invites WHERE code=? AND expires>?").bind(code, Math.floor(Date.now() / 1000)).first<any>() : null;
-      return json({ need_register: true, invite: invite ? { code: invite.code, role: invite.role } : null, user: { id: ident.id, name: ident.name } });
+    const code0 = ident.startParam || "";
+    const invite0 = code0 ? await env.DB.prepare("SELECT * FROM invites WHERE code=? AND expires>?").bind(code0, Math.floor(Date.now() / 1000)).first<any>() : null;
+    if (invite0 && invite0.name && invite0.phone) {
+      await env.DB.prepare("INSERT INTO accounts(id,role,name,phone,contact_name) VALUES (?,?,?,?,?)")
+        .bind(ident.id, invite0.role === "restoran" ? "restoran" : "kurye", invite0.name, invite0.phone, invite0.contact_name || null).run();
+      await env.DB.prepare("DELETE FROM invites WHERE code=?").bind(code0).run();
+      existing = await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(ident.id).first<Account>();
     }
-    if (path0 === "/kayit" && request.method === "POST") {
+    if (!existing && path0 === "/oturum") {
+      return json({ need_register: true, invite: invite0 ? { code: invite0.code, role: invite0.role } : null, user: { id: ident.id, name: ident.name } });
+    }
+    if (!existing && path0 === "/kayit" && request.method === "POST") {
       const body = await readBody(request);
       const code = String(body.code || ident.startParam || "");
       const invite = code ? await env.DB.prepare("SELECT * FROM invites WHERE code=? AND expires>?").bind(code, Math.floor(Date.now() / 1000)).first<any>() : null;
@@ -67,34 +73,38 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       await env.DB.prepare("DELETE FROM invites WHERE code=?").bind(code).run();
       return json({ ok: true, role });
     }
-    return fail("Bu Telegram hesabı tanımlı değil. Davet bağlantısını kullanın.", 403, "forbidden");
+    if (!existing) return fail("Bu Telegram hesabı tanımlı değil. Davet bağlantısını kullanın.", 403, "forbidden");
   }
-  user = existing;
+  user = existing!;
   if (user.deleted || !user.active) {
     const code0 = ident.startParam || "";
     const invite0 = code0 ? await env.DB.prepare("SELECT * FROM invites WHERE code=? AND expires>?").bind(code0, Math.floor(Date.now() / 1000)).first<any>() : null;
-    if (path0 === "/oturum" && invite0) {
-      return json({ need_register: true, invite: { code: invite0.code, role: invite0.role }, user: { id: user.id, name: "" } });
-    }
-    if (path0 === "/kayit" && request.method === "POST") {
+    if (invite0 && invite0.name && invite0.phone) {
+      await env.DB.prepare("UPDATE accounts SET deleted=0,active=1,online=0,locked=0,role=?,name=?,phone=?,contact_name=? WHERE id=?")
+        .bind(invite0.role === "restoran" ? "restoran" : "kurye", invite0.name, invite0.phone, invite0.contact_name || null, user.id).run();
+      await env.DB.prepare("DELETE FROM invites WHERE code=?").bind(invite0.code).run();
+      user = (await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(user.id).first<Account>())!;
+    } else if (path0 === "/kayit" && request.method === "POST") {
       const body = await readBody(request);
       const code = String(body.code || code0);
       const invite = await env.DB.prepare("SELECT * FROM invites WHERE code=? AND expires>?").bind(code, Math.floor(Date.now() / 1000)).first<any>();
       if (!invite) return fail("Davet geçersiz veya süresi dolmuş.", 403, "forbidden");
       const role = invite.role === "restoran" ? "restoran" : "kurye";
-      const name = String(body.name || "").trim();
-      const phone = String(body.phone || "").trim().replace(/[ ()\-]/g, "");
+      const name = String(body.name || invite.name || "").trim();
+      const phone = String(body.phone || invite.phone || "").trim().replace(/[ ()\-]/g, "");
       if (role === "kurye" && !validFullName(name)) return fail("Ad ve soyadı birlikte yazın. Örnek: Ahmet Yılmaz", 422, "invalid");
       if (role === "restoran" && (name.length < 2 || name.length > 80)) return fail("Restoran adı geçersiz.", 422, "invalid");
       if (!validPhone(phone)) return fail("Telefon numarası geçersiz.", 422, "invalid");
-      const contact = String(body.contact_name || "").trim();
+      const contact = String(body.contact_name || invite.contact_name || "").trim();
       await env.DB.prepare("UPDATE accounts SET role=?,name=?,phone=?,contact_name=?,deleted=0,active=1,online=0,locked=0 WHERE id=?")
         .bind(role, name, phone, contact || null, user.id).run();
       await env.DB.prepare("DELETE FROM invites WHERE code=?").bind(code).run();
       return json({ ok: true, role });
+    } else if (path0 === "/oturum") {
+      return json({ need_register: true, invite: invite0 ? { code: invite0.code, role: invite0.role } : null, user: { id: user.id, name: "" } });
+    } else {
+      return fail("Hesabınız pasif veya silinmiş. Yöneticiden yeni davet isteyin.", 403, "account_inactive");
     }
-    if (path0 === "/oturum") return json({ need_register: true, invite: null, user: { id: user.id, name: "" } });
-    return fail("Hesabınız pasif veya silinmiş. Yöneticiden yeni davet isteyin.", 403, "account_inactive");
   }
 
   const path = url.pathname.replace(/^\/api/, "") || "/";
