@@ -173,6 +173,11 @@ export class Bot {
     if (!text.startsWith("/") && (await this.db.first("SELECT 1 FROM profile_setup WHERE admin=? AND expires>?", chat, this.nowF()))) {
       if (await profileFlow.profileText(this, chat, text)) return;
     }
+    if (command === "/panel" && user.role === "yonetici") {
+      const url = this.env.PANEL_URL || "https://telegram-kurye-botu.packonexpress.workers.dev/admin.html";
+      await this.send(chat, "Yönetici panelini açın.", { inline_keyboard: [[{ text: "Paneli Aç", web_app: { url } }]] });
+      return;
+    }
     if (command === "/start" || command === "/yonetici") { await this.menu(user, `Hoş geldiniz, ${user.name}.`); return; }
     if (await ops.handlePendingText(this, chat, user, text)) return;
     if (await adminops.handleAdminText(this, chat, user, text)) return;
