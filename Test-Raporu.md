@@ -98,6 +98,21 @@ Bilinen mesaj kimliğiyle yapılan güncellemeler çökme sonrası aynı mesajı
 - Canlı doğrulanan: yönetici bağlama, bölge/tarife/limit/davet komutları, kurye kaydı (ad+telefon), havuz grupları ve seçimli kabul.
 - **Not:** Cloudflare tarafı için otomatik test paketi henüz yok; Python 382 testlik paket yalnız yerel sürümü kapsar.
 
+### Yerel uçtan uca simülasyon (restoran akışı, telefon gerekmez)
+
+`wrangler dev --local` + yerel D1 üzerinde webhook güncellemeleri yeniden oynatıldı (sahte sohbet kimlikleri; Telegram 400'leri yutulur):
+
+| Adım | Sonuç |
+|---|---|
+| Restoran "Kurye Çağır" → talep gönder | ✅ batch/paket D1'e yazıldı |
+| Kurye `take` | ✅ paket atandı |
+| Km `4,5` | ✅ `distance_km=4.5`, ücret **190 TL** |
+| Teslim | ✅ `delivered_at` |
+| 2 paketli talep + aktarım (havuz) | ✅ `courier=NULL`, rezervasyonlar temiz |
+| İptal (alınmadan) | ✅ ücret **ödenmez**, neden kaydı |
+
+**Not:** Bu simülasyon gerçek Telegram sohbetine mesaj göndermez; mantık/D1 doğrular. Gerçek cihaz testi için restoranın kendi Telegram hesabı (kendi telefon numarası) veya davet linkini kullanacak bir kişi gerekir.
+
 ## Kanıtlar ve tekrar çalıştırma
 
 ```bash

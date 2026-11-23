@@ -184,6 +184,7 @@ Kullanıcının **Bölgeler** ekranında tanımladığı listeden 4 bölge seçi
 - Havuz görünümleri: **Bölgeye / Restorana / Sipariş Zamanına Göre**; her satırda checkbox + sipariş no + restoran + bölge/ödeme + **oluşturulma saati**; başlıklarda liste türü + saat; `==========================` ayracı.
 - **Seçilenleri Kabul Et** atomik çalışıyor; otomatik teklifler kurye başına tek mesajda toplanıyor.
 - Fikstür: `Pilot Restoran (fikstür)` 10 paket, `Pizza Locale (fikstür)` 3 paket (restoran gruplamasını göstermek için).
-- **Hâlâ eksik:** restoranın kendi hesabıyla uçtan uca canlı akış (3. Telegram hesabı gerekli); transfer/iptal/rapor ekranlarının Cloudflare'da canlı doğrulaması; gönderim kuyruğu/429.
+- **Yerel uçtan uca simülasyon geçti:** restoran siparişi → kurye kabul → km/ücret → teslim → havuza aktarım → iptal (telefon gerekmedi; `wrangler dev --local` + sahte sohbet kimlikleri).
+- **Hâlâ eksik:** restoranın kendi Telegram hesabıyla **gerçek cihazda** akış (hesap başına ayrı numara veya davet linki kullanacak bir kişi gerekir); transfer/iptal/rapor ekranlarının Cloudflare'da canlı doğrulaması; gönderim kuyruğu/429.
 
 **Pilot tamamlanmadı.** Otomatik izole testlerin raporu ayrı: `Test-Raporu.md`. Buradaki kayıt yalnız gerçekten gözlenen canlı adımları belirtir.
