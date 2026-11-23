@@ -20,11 +20,6 @@ export default {
       return new Response(asset.body, { status: 200, headers });
     }
     if (["/", "/index.html", "/admin", "/admin.html"].includes(url.pathname) && env.ASSETS) {
-      if (!url.searchParams.has("v")) {
-        const next = new URL(url);
-        next.searchParams.set("v", "9");
-        return Response.redirect(next.toString(), 302);
-      }
       const target = url.pathname === "/admin" || url.pathname === "/admin.html" ? "/admin" : "/";
       const asset = await env.ASSETS.fetch(new Request(new URL(target, url), request));
       const headers = new Headers(asset.headers);

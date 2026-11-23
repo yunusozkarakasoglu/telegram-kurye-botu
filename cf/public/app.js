@@ -625,7 +625,7 @@
   }
 
   function renderSistem() {
-    setHeader('Sistem', 'Fiyatlandırma · Restoranlar · Kuryeler · v9');
+    setHeader('Sistem', 'Fiyatlandırma · Restoranlar · Kuryeler · v10');
     var main = $('mn');
     var seg = '<div class="seg three">' + [['fiyat', 'Fiyatlandırma'], ['restoran', 'Restoranlar'], ['kurye', 'Kuryeler'], ['bolge', 'Bölgeler']].map(function (x) {
       return '<button data-st="' + x[0] + '" class="' + (S.sistemTab === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
@@ -760,6 +760,10 @@
       S.tab = S.role === 'restoran' ? 'talep' : 'havuz';
       var badge = document.getElementById('mode');
       if (badge) badge.textContent = (API.mode === 'real' ? 'CANLI' : 'MİMİK VERİ');
+      if (API.mode !== 'real' && API.lastError) {
+        var m = document.getElementById('mn');
+        if (m) m.insertAdjacentHTML('afterbegin', '<div class="pk-warn">Telegram kimliği alınamadı: ' + esc(API.lastError) + '</div>');
+      }
       refresh(true);
       setInterval(function () { refresh(false); }, 5000);
       setInterval(tick, 1000);

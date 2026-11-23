@@ -391,6 +391,7 @@
     mock: mock,
     feeFor: feeFor,
     feePreview: feePreview,
+    lastError: '',
     init: function () {
       var setMockRole = function () {
         mode = 'mock';
@@ -401,7 +402,12 @@
         return mock.oturum();
       };
       if (qs.get('mock') === '1') return Promise.resolve(setMockRole());
-      return real.oturum().then(function (s) { mode = 'real'; return s; }).catch(setMockRole);
+      return real.oturum().then(function (s) { mode = 'real'; return s; }).catch(function (e) {
+        Api.lastError = (e && e.message) || 'kimlik doğrulanamadı';
+        var mockSession = setMockRole();
+        mockSession.then(function (s) { s.mock_reason = Api.lastError; });
+        return mockSession;
+      });
     }
   };
   ['oturum', 'havuz', 'kabul', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
