@@ -36,7 +36,6 @@ export async function verifyInitData(initData: string, botToken: string, env?: E
   const hash = params.get("hash");
   if (!hash) throw new HttpError(401, "initData bulunamadı.");
   params.delete("hash");
-  params.delete("signature");
   const dataCheck = [...params.entries()]
     .map(([k, v]) => `${k}=${v}`)
     .sort()
