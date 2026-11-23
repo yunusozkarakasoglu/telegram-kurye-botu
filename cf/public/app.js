@@ -433,6 +433,15 @@
     });
   }
 
+  function confirmSheet(text, onYes) {
+    var sh = UI.openSheet('<h2>Onay</h2><p>' + text + '</p>' +
+      '<button class="p" id="cf-ok">Evet, onaylıyorum</button>' +
+      '<button class="d" id="cf-no">Vazgeç</button>');
+    sh.querySelector('#cf-no').onclick = function () { UI.closeSheet(); };
+    sh.querySelector('#cf-ok').onclick = function () { sh.querySelector('#cf-ok').disabled = true; onYes(); };
+    return sh;
+  }
+
   function transferSheet(p) {
     if (!p) return;
     var count = (S.mine && S.mine.packages) ? S.mine.packages.length : 1;
@@ -448,14 +457,18 @@
     );
     sh.querySelector('#tr-no').onclick = function () { UI.closeSheet(); };
     sh.querySelector('#tr-pool').onclick = function () {
-      API.aktar(p.id, { hedef: 'havuz' }).then(function () {
-        UI.closeSheet(); UI.toast('Paket havuza geri verildi', 'success'); refresh(true);
-      }).catch(function (e) { UI.toast(e.message || 'İşlem başarısız', 'error'); });
+      confirmSheet('#' + p.batch + '-' + p.number + ' paketi havuza geri verilsin mi?', function () {
+        API.aktar(p.id, { hedef: 'havuz' }).then(function () {
+          UI.closeSheet(); UI.toast('Paket havuza geri verildi', 'success'); refresh(true);
+        }).catch(function (e) { UI.toast(e.message || 'İşlem başarısız', 'error'); });
+      });
     };
     var allPool = sh.querySelector('#tr-allpool'); if (allPool) allPool.onclick = function () {
-      API.aktarTumu({ hedef: 'havuz' }).then(function (r) {
-        UI.closeSheet(); UI.toast(r.message || 'Havuza aktarıldı', 'success'); refresh(true);
-      }).catch(function (e) { UI.toast(e.message || 'Aktarılamadı', 'error'); });
+      confirmSheet('Üzerinizdeki ' + count + ' paketin tamamı havuza verilsin mi?', function () {
+        API.aktarTumu({ hedef: 'havuz' }).then(function (r) {
+          UI.closeSheet(); UI.toast(r.message || 'Havuza aktarıldı', 'success'); refresh(true);
+        }).catch(function (e) { UI.toast(e.message || 'Aktarılamadı', 'error'); });
+      });
     };
     var allCour = sh.querySelector('#tr-allcour'); if (allCour) allCour.onclick = function () {
       API.aktarimKuryeler().then(function (r) {
@@ -467,9 +480,12 @@
         }).join(''), { onClose: function () { render(); } });
         Array.prototype.forEach.call(sh3.querySelectorAll('[data-ac]'), function (b) {
           b.onclick = function () {
-            API.aktarTumu({ hedef: 'kurye', courier_id: Number(b.getAttribute('data-ac')) }).then(function (r) {
-              UI.closeSheet(); UI.toast(r.message || 'Teklif gönderildi', 'success'); refresh(true);
-            }).catch(function (e) { UI.toast(e.message || 'Aktarılamadı', 'error'); });
+            var cname = b.innerText;
+            confirmSheet('Üzerinizdeki ' + count + ' paketin tamamı <b>' + esc(cname) + '</b> kuryesine aktarılsın mı?', function () {
+              API.aktarTumu({ hedef: 'kurye', courier_id: Number(b.getAttribute('data-ac')) }).then(function (r) {
+                UI.closeSheet(); UI.toast(r.message || 'Teklif gönderildi', 'success'); refresh(true);
+              }).catch(function (e) { UI.toast(e.message || 'Aktarılamadı', 'error'); });
+            });
           };
         });
       }).catch(function (e) { UI.toast(e.message || 'Kurye listesi alınamadı', 'error'); });
@@ -484,9 +500,12 @@
           { onClose: function () { render(); } });
         Array.prototype.forEach.call(sh2.querySelectorAll('[data-c]'), function (b) {
           b.onclick = function () {
-            API.aktar(p.id, { hedef: 'kurye', courier_id: Number(b.getAttribute('data-c')) }).then(function (r) {
-              UI.closeSheet(); UI.toast(r.message || 'Teklif gönderildi', 'success'); refresh(true);
-            }).catch(function (e) { UI.toast(e.message || 'Aktarılamadı', 'error'); });
+            var cname = b.innerText;
+            confirmSheet('#' + p.batch + '-' + p.number + ' paketi <b>' + esc(cname) + '</b> kuryesine aktarılsın mı?', function () {
+              API.aktar(p.id, { hedef: 'kurye', courier_id: Number(b.getAttribute('data-c')) }).then(function (r) {
+                UI.closeSheet(); UI.toast(r.message || 'Teklif gönderildi', 'success'); refresh(true);
+              }).catch(function (e) { UI.toast(e.message || 'Aktarılamadı', 'error'); });
+            });
           };
         });
       }).catch(function (e) { UI.toast(e.message || 'Kurye listesi alınamadı', 'error'); });

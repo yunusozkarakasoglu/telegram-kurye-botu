@@ -153,9 +153,9 @@ export async function configureLimit(bot: Bot, chat: number, value: string): Pro
 
 export async function showTariff(bot: Bot, chat: number) {
   const tariff = await bot.tariff();
-  const rows = TARIFF_INTERVALS.map((interval, i) => `${interval} km · ${tariff.slice(0, i + 1).reduce((a, b) => a + b, 0)} TL`);
-  await bot.send(chat, `Güncel ücret tarifesi\n${rows.join("\n")}\n\nNasıl çalışır?\n· İlk sayı **taban ücret**: 0–3 km arası sabit ücret.\n· Sonraki 8 sayı **kademe farkı**: her km adımında tabana eklenen tutar.\n· Örnek: taban 120, ilk fark 30 ise 3 km 120 TL, 4 km 150 TL olur.\n\nDüzenlemek için düğmeleri kullanın veya tek satırda yazın:\n/tarife ${tariff.join(" ")}`,
-    keyboard([[["Taban Ücreti Değiştir", "tar:base"], ["Kademe Farkı Değiştir", "tar:list"]]]));
+  const rows = TARIFF_INTERVALS.map((interval, i) => `${interval} km · ${tariff[i] ?? 0} TL`);
+  await bot.send(chat, `Güncel ücret tarifesi\n${rows.join("\n")}\n\nHer km aralığı için **sabit ücret** geçerlidir.\nÖrnek: 2 km → ${tariff[0]} TL, 4,5 km → ${tariff[2]} TL.\n\nDüzenlemek için düğmeleri kullanın veya tek satırda yazın:\n/tarife ${tariff.join(" ")}`,
+    keyboard([[["0–3 km Ücreti", "tar:base"], ["Aralık Ücreti", "tar:list"]]]));
 }
 
 export async function tariffAction(bot: Bot, user: Account, args: string[]): Promise<any> {
@@ -164,18 +164,18 @@ export async function tariffAction(bot: Bot, user: Account, args: string[]): Pro
   if (sub === "base") {
     await bot.db.run("INSERT OR REPLACE INTO tariff_edit VALUES (?,?,?)", user.id, 0, bot.nowF() + 300);
     const tariff = await bot.tariff();
-    await bot.send(user.id, `taban ücret (0–3 km) için yeni tutarı TL olarak yazın.\nŞu anki değer: ${tariff[0]} TL\nÖrnek: 150`);
+    await bot.send(user.id, `0–3 km sabit ücreti için yeni tutarı TL olarak yazın.\nŞu anki değer: ${tariff[0]} TL\nÖrnek: 120`);
     return "Tutar bekleniyor.";
   }
   if (sub === "list") {
-    await bot.send(user.id, "Hangi kademenin farkını değiştireceksiniz?", keyboard(
-      TARIFF_INTERVALS.slice(1).map((interval, i) => [[`${interval} km farkı`, `tar:pos:${i + 1}`]])));
+    await bot.send(user.id, "Hangi km aralığının ücretini değiştireceksiniz?", keyboard(
+      TARIFF_INTERVALS.slice(1).map((interval, i) => [[`${interval} km`, `tar:pos:${i + 1}`]])));
     return null;
   }
   if (sub === "pos" && pos != null) {
     await bot.db.run("INSERT OR REPLACE INTO tariff_edit VALUES (?,?,?)", user.id, Number(pos), bot.nowF() + 300);
     const tariff = await bot.tariff();
-    await bot.send(user.id, `${TARIFF_INTERVALS[Number(pos)]} km kademe farkı için yeni tutarı yazın.\nŞu anki değer: ${tariff[Number(pos)]} TL`);
+    await bot.send(user.id, `${TARIFF_INTERVALS[Number(pos)]} km aralığı için sabit ücreti yazın.\nŞu anki değer: ${tariff[Number(pos)]} TL`);
     return "Tutar bekleniyor.";
   }
   return "Bu işlem kullanılamıyor.";
@@ -331,7 +331,7 @@ export async function tariffCommand(bot: Bot, chat: number, args: string): Promi
   if (args.trim()) {
     const values = args.trim().split(/\s+/);
     if (values.length !== 9 || values.some((v) => !/^[0-9]{1,6}$/.test(v))) {
-      return bot.send(chat, "9 sayı gerekir: taban ücret + 8 kademe farkı. Örnek: /tarife 120 30 40 50 60 70 80 90 100");
+      return bot.send(chat, "9 sayı gerekir: 9 km aralığının sabit ücretleri. Örnek: /tarife 120 150 190 240 300 370 450 540 640");
     }
     for (let i = 0; i < 9; i++) await bot.db.run("UPDATE tariff SET amount=? WHERE position=?", Number(values[i]), i);
   }

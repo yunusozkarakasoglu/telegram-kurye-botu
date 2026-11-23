@@ -210,7 +210,7 @@ class OperationTests(BotCase):
         self.message(ADMIN, "/tarife 200 1 1 1 1 1 1 1 1")
         self.pickup(b)
         self.assertEqual(self.package(a)["courier_fee"], 190)
-        self.assertEqual(self.package(b)["courier_fee"], 202)
+        self.assertEqual(self.package(b)["courier_fee"], 1)
 
     def test_invalid_tariff_leaves_old_values(self):
         original = self.bot.tariff()

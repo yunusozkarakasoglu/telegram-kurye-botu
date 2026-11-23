@@ -22,17 +22,16 @@ class TariffEditorTests(BotCase):
     def test_tariff_screen_explains_how_it_works(self):
         self.message(ADMIN, "/tarife")
         text, buttons = self.screen()
-        self.assertIn("İlk sayı **taban ücret**", text)
-        self.assertIn("Sonraki 8 sayı **kademe farkı**", text)
-        self.assertIn("3 km 120 TL, 4 km 150 TL", text)
-        self.assertIn("/tarife 120 30 40 50 60 70 80 90 100", text)
-        self.assertEqual([b["text"] for b in buttons], ["Taban Ücreti Değiştir", "Kademe Farkı Değiştir"])
+        self.assertIn("Her km aralığı için **sabit ücret**", text)
+        self.assertIn("2 km → 120 TL, 4,5 km → 190 TL", text)
+        self.assertIn("/tarife 120 150 190 240 300 370 450 540 640", text)
+        self.assertEqual([b["text"] for b in buttons], ["0–3 km Ücreti", "Aralık Ücreti"])
 
     def test_base_fee_can_be_changed_with_buttons(self):
         self.message(ADMIN, "/tarife")
         self.click(ADMIN, "tar:base")
         self.flush()
-        self.assertIn("taban ücret", self.texts(ADMIN))
+        self.assertIn("0–3 km sabit ücret", self.texts(ADMIN))
         self.message(ADMIN, "200")
         self.flush()
         self.assertEqual(self.bot.tariff()[0], 200)
@@ -42,10 +41,10 @@ class TariffEditorTests(BotCase):
         self.message(ADMIN, "/tarife")
         self.click(ADMIN, "tar:list")
         text, buttons = self.screen()
-        self.assertIn("Hangi kademenin farkını değiştireceksiniz?", text)
-        kademe = [b for b in buttons if "km farkı" in b["text"]]
+        self.assertIn("Hangi km aralığının ücretini değiştireceksiniz?", text)
+        kademe = [b for b in buttons if b["text"].startswith(">")]
         self.assertEqual(len(kademe), 8)
-        self.assertEqual(kademe[0]["text"], ">3–4 km farkı")
+        self.assertEqual(kademe[0]["text"], ">3–4 km")
 
     def test_single_kademe_change_updates_totals(self):
         self.message(ADMIN, "/tarife")
@@ -53,8 +52,8 @@ class TariffEditorTests(BotCase):
         self.message(ADMIN, "100")
         self.flush()
         self.assertEqual(self.bot.tariff()[1], 100)
-        self.assertIn(">3–4 km · 220 TL", self.texts(ADMIN))
-        self.assertIn(">4–5 km · 260 TL", self.texts(ADMIN))
+        self.assertIn(">3–4 km · 100 TL", self.texts(ADMIN))
+        self.assertIn(">4–5 km · 190 TL", self.texts(ADMIN))
 
     def test_invalid_amount_keeps_old_value_and_waits(self):
         self.message(ADMIN, "/tarife")
@@ -97,14 +96,14 @@ class TariffEditorTests(BotCase):
         self.click(ADMIN, "cmd:tarife")
         text, buttons = self.screen()
         self.assertIn("Güncel ücret tarifesi", text)
-        self.assertIn("Taban Ücreti Değiştir", [b["text"] for b in buttons])
+        self.assertIn("0–3 km Ücreti", [b["text"] for b in buttons])
 
     def test_recorded_fee_uses_edited_tariff(self):
         self.message(ADMIN, "/tarife 200 10 20 30 40 50 60 70 80")
         ids = self.batch()
         self.click(COURIER, f"claim:{ids[0]}")
         self.pickup(ids[0], distance="4,5")
-        self.assertEqual(self.package(ids[0])["courier_fee"], 230)
+        self.assertEqual(self.package(ids[0])["courier_fee"], 20)
 
 
 class LimitCommandTests(BotCase):

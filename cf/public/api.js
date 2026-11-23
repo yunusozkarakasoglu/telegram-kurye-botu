@@ -9,11 +9,11 @@
 
   /* ---------------- ortak ücret hesabı (Worker'daki feeFor ile aynı) ---------------- */
   var TARIFF_BOUNDS = [3, 4, 5, 6, 7, 8, 9, 10];
-  var DEFAULT_TARIFF = [120, 30, 40, 50, 60, 70, 80, 90, 100];
+  var DEFAULT_TARIFF = [120, 150, 190, 240, 300, 370, 450, 540, 640];
   function feeFor(tariff, distance) {
-    var fee = tariff[0];
-    for (var i = 0; i < TARIFF_BOUNDS.length; i++) if (distance > TARIFF_BOUNDS[i]) fee += tariff[i + 1];
-    return fee;
+    var band = 0;
+    while (band < TARIFF_BOUNDS.length && distance > TARIFF_BOUNDS[band]) band++;
+    return tariff[band] != null ? tariff[band] : tariff[tariff.length - 1];
   }
   function feePreview(tariff, distance) {
     return feeFor(tariff, distance) + ' TL';

@@ -14,8 +14,8 @@ class PricingMixin:
         if args.strip():
             values = args.split()
             if len(values) != 9 or any(not re.fullmatch(r"[0-9]{1,6}", value) for value in values):
-                self.send(chat, "9 sayı gerekir: taban ücret + 8 kademe farkı. "
-                                "Örnek: /tarife 120 30 40 50 60 70 80 90 100")
+                self.send(chat, "9 sayı gerekir: 9 km aralığının sabit ücretleri. "
+                                "Örnek: /tarife 120 150 190 240 300 370 450 540 640")
                 return
             self.db.executemany("UPDATE tariff SET amount=? WHERE position=?",
                                 [(int(value), position) for position, value in enumerate(values)])
@@ -23,24 +23,22 @@ class PricingMixin:
 
     def show_tariff(self, chat):
         tariff = self.tariff()
-        rows = [f"{interval} km · {sum(tariff[:position + 1])} TL"
+        rows = [f"{interval} km · {tariff[position] if position < len(tariff) else 0} TL"
                 for position, interval in enumerate(TARIFF_INTERVALS)]
         command = "/tarife " + " ".join(map(str, tariff))
         self.send(chat, (
             "Güncel ücret tarifesi\n"
             + "\n".join(rows)
-            + "\n\nNasıl çalışır?\n"
-            "· İlk sayı **taban ücret**: 0–3 km arası sabit ücret.\n"
-            "· Sonraki 8 sayı **kademe farkı**: her km adımında tabana eklenen tutar.\n"
-            "· Örnek: taban 120, ilk fark 30 ise 3 km 120 TL, 4 km 150 TL olur.\n\n"
+            + "\n\nHer km aralığı için **sabit ücret** geçerlidir.\n"
+            "· Örnek: 2 km → 120 TL, 4,5 km → 190 TL.\n\n"
             "Düzenlemek için aşağıdaki düğmeleri kullanın veya tek satırda yazın:\n"
             f"{command}"
-        ), keyboard([[("Taban Ücreti Değiştir", "tar:base"), ("Kademe Farkı Değiştir", "tar:list")]]))
+        ), keyboard([[("0–3 km Ücreti", "tar:base"), ("Aralık Ücreti", "tar:list")]]))
 
     def tariff_kademeler(self, chat):
-        buttons = [[(f"{TARIFF_INTERVALS[position]} km farkı", f"tar:pos:{position}")]
+        buttons = [[(f"{TARIFF_INTERVALS[position]} km", f"tar:pos:{position}")]
                    for position in range(1, len(TARIFF_INTERVALS))]
-        self.send(chat, "Hangi kademenin farkını değiştireceksiniz?", keyboard(buttons))
+        self.send(chat, "Hangi km aralığının ücretini değiştireceksiniz?", keyboard(buttons))
 
     def start_tariff_edit(self, chat, position):
         if not 0 <= position < 9:
@@ -48,7 +46,7 @@ class PricingMixin:
         self.reset_admin_edits(chat, keep='tariff_edit')
         self.db.execute("INSERT OR REPLACE INTO tariff_edit VALUES (?,?,?)",
                         (chat, position, self.now() + TARIFF_EDIT_SECONDS))
-        label = "taban ücret (0–3 km)" if position == 0 else f"{TARIFF_INTERVALS[position]} km kademe farkı"
+        label = "0–3 km sabit ücret" if position == 0 else f"{TARIFF_INTERVALS[position]} km sabit ücret"
         current = self.tariff()[position]
         self.send(chat, f"{label} için yeni tutarı TL olarak yazın.\nŞu anki değer: {current} TL\n"
                         "Örnek: 150")
@@ -141,8 +139,10 @@ class PricingMixin:
             return True
         distance = Decimal(match[1].replace(",", "."))
         tariff = self.tariff()
-        fee = tariff[0] + sum(extra for boundary, extra in zip(TARIFF_BOUNDS, tariff[1:], strict=True)
-                              if distance > boundary)
+        band = 0
+        while band < len(TARIFF_BOUNDS) and distance > TARIFF_BOUNDS[band]:
+            band += 1
+        fee = tariff[band] if band < len(tariff) else tariff[-1]
         row = self.db.execute("SELECT courier_fee FROM packages WHERE id=?", (pending["package"],)).fetchone()
         old_fee = row["courier_fee"]
         self.db.execute("UPDATE packages SET distance_km=?, courier_fee=? WHERE id=? AND courier=? "
@@ -179,7 +179,10 @@ class PricingMixin:
             return
         distance = Decimal(match[1].replace(",", "."))
         tariff = self.tariff()
-        fee = tariff[0] + sum(extra for boundary, extra in zip(TARIFF_BOUNDS, tariff[1:], strict=True) if distance > boundary)
+        band = 0
+        while band < len(TARIFF_BOUNDS) and distance > TARIFF_BOUNDS[band]:
+            band += 1
+        fee = tariff[band] if band < len(tariff) else tariff[-1]
         package_id = pending["package"]
         updated = self.db.execute("""
             UPDATE packages SET picked_up_at=?,distance_km=?,courier_fee=?

@@ -60,7 +60,7 @@ class DurabilityTests(BotCase):
         self.assertEqual(self.account(COURIER)["locked"], 1)
         self.assertEqual(self.bot.active_limit(), 1)
         self.message(COURIER, "4,5")
-        self.assertEqual(self.package(p)["courier_fee"], 202)
+        self.assertEqual(self.package(p)["courier_fee"], 1)
 
     def test_two_connections_cannot_claim_the_same_package(self):
         p = self.batch()[0]

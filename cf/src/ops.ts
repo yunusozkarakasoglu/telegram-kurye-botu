@@ -15,9 +15,9 @@ export function parseKm(value: string): number | null {
 }
 
 function feeFor(tariff: number[], distance: number) {
-  let fee = tariff[0];
-  for (let i = 0; i < TARIFF_BOUNDS.length; i++) if (distance > TARIFF_BOUNDS[i]) fee += tariff[i + 1];
-  return fee;
+  let band = 0;
+  while (band < TARIFF_BOUNDS.length && distance > TARIFF_BOUNDS[band]) band++;
+  return tariff[band] ?? tariff[tariff.length - 1] ?? 0;
 }
 
 export async function startKm(bot: Bot, user: Account, packageId: number): Promise<any> {

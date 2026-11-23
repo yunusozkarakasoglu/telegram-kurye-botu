@@ -160,7 +160,7 @@ class NavigationTests(BotCase):
         self.flush()
         text = self.texts(ADMIN)
         self.assertIn("Güncel ücret tarifesi", text)
-        self.assertIn("/tarife 120 30 40 50 60 70 80 90 100", text)
+        self.assertIn("/tarife 120 150 190 240 300 370 450 540 640", text)
 
     def test_command_parameters_still_work(self):
         self.message(ADMIN, "/limit 5")

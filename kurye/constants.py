@@ -6,7 +6,7 @@ TURKIYE = timezone(timedelta(hours=3))
 PAYMENTS = ("Nakit", "Kart", "Ödendi")
 UNSPECIFIED = "Belirtilmedi"
 DEFAULT_ACTIVE_LIMIT = 3
-DEFAULT_TARIFF = (120, 30, 40, 50, 60, 70, 80, 90, 100)
+DEFAULT_TARIFF = (120, 150, 190, 240, 300, 370, 450, 540, 640)
 TARIFF_BOUNDS = (3, 4, 5, 6, 7, 8, 9, 10)
 TARIFF_INTERVALS = ("0–3", ">3–4", ">4–5", ">5–6", ">6–7", ">7–8", ">8–9", ">9–10", ">10")
 TARIFF_EDIT_SECONDS = 300

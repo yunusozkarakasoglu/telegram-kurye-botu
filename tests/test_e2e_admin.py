@@ -61,7 +61,7 @@ class AdminEndToEndTests(BotCase):
         self.pickup(ids[0], distance="7")
         self.click(COURIER, f"deliver:{ids[0]}")
         self.flush()
-        self.assertEqual(self.package(ids[0])["courier_fee"], 380)
+        self.assertEqual(self.package(ids[0])["courier_fee"], 300)
         # 7) Kurye durumu
         self.clear_messages()
         self.message(ADMIN, "Kurye Durumu")
@@ -76,7 +76,7 @@ class AdminEndToEndTests(BotCase):
         self.flush()
         report = self.texts(ADMIN)
         self.assertIn("Teslim edildi", report)
-        self.assertIn("Kurye ücreti · 380 TL", report)
+        self.assertIn("Kurye ücreti · 300 TL", report)
         # 9) Sipariş verilerini temizle, ayarlar korunur
         self.message(ADMIN, "Sipariş Verilerini Temizle")
         token = self.db.execute("SELECT token FROM reset_confirmation").fetchone()[0]

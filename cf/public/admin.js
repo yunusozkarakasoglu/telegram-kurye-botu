@@ -213,16 +213,16 @@
   }
 
   function viewTarife() {
-    head('Ücret Tarifesi', 'Taban ücreti ve 8 kademe farkı');
+    head('Ücret Tarifesi', 'Km aralığı başına sabit ücret');
     API.yonetim('tarife').then(function (d) {
       var tariff = d.tariff || [];
       var bounds = d.tariff_bounds || [];
       var labels = d.tariff_intervals || [];
-      panel('<div class="fld" style="max-width:280px"><label>Taban ücreti (TL)</label>' +
+      panel('<div class="fld" style="max-width:280px"><label>0–3 km sabit ücret (TL)</label>' +
         '<input id="t0" type="number" value="' + (tariff[0] || 0) + '"></div>' +
-        '<h3 style="font-size:15px;margin:14px 0 8px">Kademe farkları</h3>' +
+        '<h3 style="font-size:15px;margin:14px 0 8px">Sabit ücretler</h3>' +
         tariff.slice(1).map(function (v, i) {
-          return '<div class="tier-row"><span>' + esc(labels[i + 1] || ('kademe ' + (i + 1))) + ' km</span>' +
+          return '<div class="tier-row"><span>' + esc(labels[i + 1] || ((i + 1) + ' km')) + ' km</span>' +
             '<input type="number" data-t="' + (i + 1) + '" value="' + v + '"></div>';
         }).join('') +
         '<button class="p" id="tsave" style="margin-top:12px">Kaydet</button>');

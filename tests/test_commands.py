@@ -51,7 +51,7 @@ class CommandMenuTests(BotCase):
         self.open_menu()
         self.click(ADMIN, "cmd:tarife")
         self.flush()
-        self.assertIn("/tarife 120 30 40 50 60 70 80 90 100", self.texts(ADMIN))
+        self.assertIn("/tarife 120 150 190 240 300 370 450 540 640", self.texts(ADMIN))
 
     def test_invite_command_button_shows_usage(self):
         self.open_menu()
