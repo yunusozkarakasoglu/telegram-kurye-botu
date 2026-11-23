@@ -36,6 +36,13 @@ export function dialNumber(phone: string | null | undefined): string {
   else return `+${digits}`;
   return `+90${national}`;
 }
+export function validFullName(value: string): boolean {
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2 || parts.length > 5) return false;
+  if (value.trim().length < 5 || value.trim().length > 80) return false;
+  return parts.every((part) => /^[A-Za-zÇĞİÖŞÜçğıöşü]{2,}$/.test(part));
+}
+
 export function validPhone(phone: string): boolean {
   return /^\+?[0-9][0-9 ()\-]{5,19}$/.test(phone.trim());
 }

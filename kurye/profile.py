@@ -15,6 +15,7 @@ from .validation import call_number, dial_number, parse_location, valid_coordina
 
 STEPS = ("contact", "phone", "location")
 PHONE_RE = re.compile(r"^\+?[0-9][0-9 ()\-]{5,19}$")
+FULL_NAME_RE = re.compile(r"^[A-Za-zÇĞİÖŞÜçğıöşü]{2,}(?:\s+[A-Za-zÇĞİÖŞÜçğıöşü]{2,}){1,4}$")
 
 
 def normalize_phone(value):
@@ -58,8 +59,14 @@ class ProfileMixin:
             return None
         if row["step"] == "contact":
             if text == "Atla":
+                if row["kind"] == "register":
+                    self.send(chat, "Ad ve soyad zorunludur. Örnek: Ahmet Yılmaz")
+                    return "Ad bekleniyor."
                 return self.skip_step(chat)
-            name = text.strip()
+            name = " ".join(text.split())
+            if row["kind"] == "register" and not FULL_NAME_RE.fullmatch(name):
+                self.send(chat, "Lütfen adınızı ve soyadınızı birlikte yazın. Örnek: Ahmet Yılmaz")
+                return "Ad bekleniyor."
             if not 1 <= len(name) <= 80:
                 self.send(chat, "Yetkili adı 1–80 karakter olmalı.")
                 return "Geçersiz ad."

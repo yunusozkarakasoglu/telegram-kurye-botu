@@ -5,6 +5,7 @@
 - [x] Mini App yayını (`e1e02837…`): statik arayüz + `/api/*`, menü düğmesi "Kurye", initData 1 saat.
 - [x] Mini App menü düğmesi geçici olarak kapatıldı (`commands`); botu tam düzenleme turu başladı.
 - [x] Bot: havuz özeti (restoran/paket/kapasite), admin 3 sütun menü + alt satırlar, kabul sonrası kart yerine liste + `card:` düğmesi.
+- [x] Kayıt adı doğrulaması: kurye kaydında ad+soyad zorunlu (tek kelime/"Slm" reddedilir); CF + Python.
 - [ ] Bot profilleri: kurye ad/telefon, restoran ad/yetkili/telefon düzenleme (bot içi).
 - [ ] Bot `Paketlerim`: liste/kart görünüm seçimi (kurye tercihi saklanır).
 - [ ] Python'a aynı değişikliklerin tam portu (kabul listesi, profiller, görünüm tercihi).

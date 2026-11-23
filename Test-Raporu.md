@@ -120,6 +120,13 @@ Bilinen mesaj kimliğiyle yapılan güncellemeler çökme sonrası aynı mesajı
 - Yerel D1 + `DEV_AUTH` ile API zinciri: oturum → havuz → kabul `[6001]` → km `3,5` → **150 TL** → teslim → yönetici özeti (teslim 2, toplam 340 TL).
 - **Bekleyen:** gerçek Telegram `initData` ile cihaz testi (kurye/restoran/yönetici).
 
+### Kayıt adı doğrulaması
+
+- Kurye/restoran kaydında `Adınızı ve soyadınızı yazın` adımı zorunlu; `Atla` reddediliyor.
+- Kural: 2–5 kelime, her kelime ≥2 harf, toplam 5–80 karakter (Türkçe harfler dahil).
+- CF: `validFullName` (`cf/src/util.ts`) + `profile.ts`; Python: `FULL_NAME_RE` (`kurye/profile.py`).
+- Testler: **382/382 OK**, `ruff` temiz; CF `tsc` temiz ve yayınlandı (`bb8c0be0…`).
+
 ## Kanıtlar ve tekrar çalıştırma
 
 ```bash

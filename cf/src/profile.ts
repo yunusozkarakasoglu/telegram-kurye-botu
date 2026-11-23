@@ -2,7 +2,7 @@ import type { Bot } from "./core";
 import type { Account } from "./types";
 import { CALL_HINT, LOCATION_SCOPE_SECONDS, MAP_URL, REGION_NAME_MAX } from "./constants";
 import { keyboard } from "./views";
-import { dialNumber, parseLocation, validCoordinates, validPhone } from "./util";
+import { dialNumber, parseLocation, validCoordinates, validFullName, validPhone } from "./util";
 
 const STEPS = ["contact", "phone", "location"];
 
@@ -33,8 +33,15 @@ export async function profileText(bot: Bot, chat: number, text: string): Promise
   const row = await bot.db.first<any>("SELECT * FROM profile_setup WHERE admin=? AND expires>?", chat, bot.nowF());
   if (!row) return false;
   if (row.step === "contact") {
-    if (text === "Atla") { await skip(bot, chat); return true; }
-    const name = text.trim().slice(0, 80);
+    if (text === "Atla") {
+      if (row.kind === "register") { await bot.send(chat, "Ad ve soyad zorunludur. Örnek: Ahmet Yılmaz"); return true; }
+      await skip(bot, chat); return true;
+    }
+    const name = text.trim().replace(/\s+/g, " ").slice(0, 80);
+    if (row.kind === "register" && !validFullName(name)) {
+      await bot.send(chat, "Lütfen adınızı ve soyadınızı birlikte yazın. Örnek: Ahmet Yılmaz");
+      return true;
+    }
     if (!name) { await bot.send(chat, "Ad 1–80 karakter olmalı."); return true; }
     if (row.kind === "register") await bot.db.run("UPDATE accounts SET name=? WHERE id=?", name, row.ref);
     await bot.db.run("UPDATE profile_setup SET contact=?,step='phone' WHERE admin=?", name, chat);
