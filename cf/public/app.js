@@ -42,7 +42,7 @@
     location.replace(location.pathname + '?' + q.toString() + location.hash);
   }
 
-  function setHeader(title, sub) { $('ttl').textContent = title; $('sub').textContent = sub || ''; }
+  function setHeader(title, sub) { $('ttl').textContent = title; $('sub').textContent = sub || ''; var hr = $('hdr-right'); if (hr) hr.innerHTML = ''; }
 
   function nav(items, counts) {
     var nv = $('nv');
@@ -435,11 +435,14 @@
 
   function transferSheet(p) {
     if (!p) return;
+    var count = (S.mine && S.mine.packages) ? S.mine.packages.length : 1;
     var sh = UI.openSheet(
       '<h2>Aktar · #' + p.batch + '-' + p.number + '</h2>' +
       '<p>Paketi havuza bırakabilir veya uygun bir kuryeye teklif edebilirsiniz.</p>' +
-      '<button class="p" id="tr-pool">Havuza geri ver</button>' +
-      '<button class="p" id="tr-cour" style="margin-top:8px">Kuryeye aktar</button>' +
+      '<button class="p" id="tr-pool">Bu paketi havuza ver</button>' +
+      '<button class="p" id="tr-cour" style="margin-top:8px">Bu paketi kuryeye aktar</button>' +
+      (count > 1 ? '<button class="p" id="tr-allpool" style="margin-top:8px">Tümünü havuza aktar (' + count + ')</button>' +
+        '<button class="p" id="tr-allcour" style="margin-top:8px">Tümünü kuryeye aktar (' + count + ')</button>' : '') +
       '<button class="d" id="tr-no">Vazgeç</button>',
       { onClose: function () { render(); } }
     );
@@ -448,6 +451,28 @@
       API.aktar(p.id, { hedef: 'havuz' }).then(function () {
         UI.closeSheet(); UI.toast('Paket havuza geri verildi', 'success'); refresh(true);
       }).catch(function (e) { UI.toast(e.message || 'İşlem başarısız', 'error'); });
+    };
+    var allPool = sh.querySelector('#tr-allpool'); if (allPool) allPool.onclick = function () {
+      API.aktarTumu({ hedef: 'havuz' }).then(function (r) {
+        UI.closeSheet(); UI.toast(r.message || 'Havuza aktarıldı', 'success'); refresh(true);
+      }).catch(function (e) { UI.toast(e.message || 'Aktarılamadı', 'error'); });
+    };
+    var allCour = sh.querySelector('#tr-allcour'); if (allCour) allCour.onclick = function () {
+      API.aktarimKuryeler().then(function (r) {
+        var list = r.couriers || [];
+        if (!list.length) { UI.toast('Aktarım için uygun kurye yok', 'error'); return; }
+        UI.closeSheet();
+        var sh3 = UI.openSheet('<h2>Tümünü aktar · kurye seç</h2>' + list.map(function (c) {
+          return '<button class="opt" data-ac="' + c.id + '">' + esc(c.name) + '</button>';
+        }).join(''), { onClose: function () { render(); } });
+        Array.prototype.forEach.call(sh3.querySelectorAll('[data-ac]'), function (b) {
+          b.onclick = function () {
+            API.aktarTumu({ hedef: 'kurye', courier_id: Number(b.getAttribute('data-ac')) }).then(function (r) {
+              UI.closeSheet(); UI.toast(r.message || 'Teklif gönderildi', 'success'); refresh(true);
+            }).catch(function (e) { UI.toast(e.message || 'Aktarılamadı', 'error'); });
+          };
+        });
+      }).catch(function (e) { UI.toast(e.message || 'Kurye listesi alınamadı', 'error'); });
     };
     sh.querySelector('#tr-cour').onclick = function () {
       API.aktarimKuryeler().then(function (r) {
@@ -561,16 +586,19 @@
         '<input id="p-name" value="' + esc(u.name || '') + '"></div>' +
       (isRest ? '<div class="fld"><label>Yetkili adı</label><input id="p-contact" value="' + esc(u.contact_name || '') + '"></div>' : '') +
       '<div class="fld"><label>Telefon</label><input id="p-phone" inputmode="tel" value="' + esc(u.phone || '') + '" placeholder="0546 208 99 00"></div>' +
-      (!isRest ? '<label class="sw"><input type="checkbox" id="p-online"' + (u.online ? ' checked' : '') + '> Çevrimiçi (yeni iş al)</label>' : '') +
       '<div class="err" id="p-err"></div>' +
       '<button class="p" id="p-save" style="width:100%">Kaydet</button>' +
       (isRest ? '<p class="note">Konum, kuryeye gönderilen pakette <b>Yetkili</b> bilgisi olarak görünür.</p>' : '') +
       '</div>';
-    if (!isRest) {
+    var hr = $('hdr-right');
+    if (hr && !isRest) {
+      hr.innerHTML = '<label class="hdr-sw"><input type="checkbox" id="p-online"' + (u.online ? ' checked' : '') + '><span>' + (u.online ? 'Açık' : 'Kapalı') + '</span></label>';
       $('p-online').onchange = function () {
         var on = $('p-online').checked;
         API.durum(on).then(function () {
           S.session.user.online = on;
+          var sp = document.querySelector('#hdr-right .hdr-sw span');
+          if (sp) sp.textContent = on ? 'Açık' : 'Kapalı';
           UI.toast(on ? 'Çevrimiçi oldunuz' : 'Çevrimdışı oldunuz', 'success');
           refresh(true);
         }).catch(function (e) { $('p-online').checked = !on; UI.toast(e.message || 'Durum değişmedi', 'error'); });

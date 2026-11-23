@@ -371,6 +371,7 @@
     aktarimKuryeler: function () { return req('GET', '/api/aktarim/kuryeler'); },
     aktarimTeklifler: function () { return req('GET', '/api/aktarim/teklifler'); },
     aktarimKarar: function (token, kabul) { return req('POST', '/api/aktarim/' + token + (kabul ? '/kabul' : '/reddet')); },
+    aktarTumu: function (payload) { return req('POST', '/api/aktarim/tumu', payload || {}); },
     yonetim: function (what, arg) {
       if (what === 'davet') return req('POST', '/api/yonetim/davet', arg || { role: 'kurye' });
       if (what === 'hesap') return req('POST', '/api/yonetim/hesap', arg || {});
@@ -422,7 +423,7 @@
     }
   };
   ['oturum', 'havuz', 'kabul', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
-    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'yonetim'].forEach(function (m) {
+    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);
         var target = mode === 'real' ? real : mock;

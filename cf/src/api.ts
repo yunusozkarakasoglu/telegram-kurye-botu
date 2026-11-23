@@ -157,6 +157,19 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       return json({ couriers: (await apiCourier.eligibleTargets(bot, user.id)).map((c) => ({ id: c.id, name: c.name })) });
     }
 
+    if (path === "/aktarim/tumu" && method === "POST") {
+      if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const body = await readBody(request);
+      if (String(body.hedef || "") === "kurye") {
+        const courierId = Number(body.courier_id);
+        if (!courierId) return fail("Kurye seçilmedi.", 422, "invalid");
+        const r = await apiCourier.transferAllToCourier(bot, user, courierId);
+        return r.ok ? json(r) : fail(r.error || "Aktarılamadı.", 409, "conflict");
+      }
+      const r = await apiCourier.transferAllToPool(bot, user);
+      return r.ok ? json(r) : fail(r.error || "Aktarılamadı.", 409, "conflict");
+    }
+
     if (path === "/aktarim/teklifler" && method === "GET") {
       if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
       return json({ offers: await apiCourier.offersFor(bot, user.id) });
