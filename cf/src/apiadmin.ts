@@ -66,7 +66,7 @@ export async function adminRoutes(
   }
 
   if (path === "/yonetim/kuryeler" && method === "GET") {
-    const rows = await bot.db.all<Account>("SELECT * FROM accounts WHERE role='kurye' ORDER BY name");
+    const rows = await bot.db.all<Account>("SELECT * FROM accounts WHERE role='kurye' AND deleted=0 ORDER BY name");
     const counts = await bot.db.all<{ courier: number; n: number }>(
       "SELECT courier, count(*) AS n FROM packages WHERE courier IS NOT NULL AND delivered_at IS NULL AND cancelled_at IS NULL GROUP BY courier");
     return json({
@@ -79,7 +79,7 @@ export async function adminRoutes(
   }
 
   if (path === "/yonetim/restoranlar" && method === "GET") {
-    const rows = await bot.db.all<Account>("SELECT * FROM accounts WHERE role='restoran' ORDER BY name");
+    const rows = await bot.db.all<Account>("SELECT * FROM accounts WHERE role='restoran' AND deleted=0 ORDER BY name");
     return json({
       restaurants: rows.map((r) => ({
         id: r.id, name: r.name, phone: r.phone || null, contact_name: r.contact_name || null,

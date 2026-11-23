@@ -31,7 +31,7 @@ async function logAuthFailure(env: Env, initData: string, computed: string, hash
   } catch {}
 }
 
-export async function verifyInitData(initData: string, botToken: string, env?: Env): Promise<{ id: number; name: string; username: string }> {
+export async function verifyInitData(initData: string, botToken: string, env?: Env): Promise<{ id: number; name: string; username: string; startParam: string }> {
   const params = new URLSearchParams(initData);
   const hash = params.get("hash");
   if (!hash) throw new HttpError(401, "initData bulunamadı.");
@@ -57,25 +57,30 @@ export async function verifyInitData(initData: string, botToken: string, env?: E
   }
   if (!user.id) throw new HttpError(401, "Kullanıcı bulunamadı.");
   const name = [user.first_name, user.last_name].filter(Boolean).join(" ").trim();
-  return { id: Number(user.id), name, username: user.username || "" };
+  return { id: Number(user.id), name, username: user.username || "", startParam: params.get("start_param") || "" };
 }
 
 /**
  * Oturum çözümü: Mini App başlığından initData; yoksa yalnızca `DEV_AUTH` secret'ı tanımlıysa
  * geliştirme başlığı (X-Dev-Auth + X-Dev-Tg). Üretimde DEV_AUTH tanımlı değilse bu yol kapalıdır.
  */
-export async function authenticate(request: Request, env: Env): Promise<Account | null> {
+export async function identity(request: Request, env: Env): Promise<{ id: number; name: string; startParam: string }> {
   const initData = request.headers.get("x-telegram-init-data") || "";
-  let telegramId = 0;
   if (initData) {
     const verified = await verifyInitData(initData, env.BOT_TOKEN, env);
-    telegramId = verified.id;
-  } else if (env.DEV_AUTH && request.headers.get("x-dev-auth") === env.DEV_AUTH) {
-    telegramId = Number(request.headers.get("x-dev-tg") || 0);
-    if (!telegramId) throw new HttpError(401, "Geliştirme kimliği eksik.");
-  } else {
-    throw new HttpError(401, "Yetkilendirme başlığı yok.");
+    return { id: verified.id, name: verified.name, startParam: verified.startParam };
   }
+  if (env.DEV_AUTH && request.headers.get("x-dev-auth") === env.DEV_AUTH) {
+    const id = Number(request.headers.get("x-dev-tg") || 0);
+    if (!id) throw new HttpError(401, "Geliştirme kimliği eksik.");
+    return { id, name: "Geliştirme", startParam: "" };
+  }
+  throw new HttpError(401, "Yetkilendirme başlığı yok.");
+}
+
+export async function authenticate(request: Request, env: Env): Promise<Account | null> {
+  const ident = await identity(request, env);
+  const telegramId = ident.id;
   const account = await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(telegramId).first<Account>();
   if (!account) throw new HttpError(403, "Bu Telegram hesabı tanımlı değil. Davet bağlantısını kullanın.");
   return account;

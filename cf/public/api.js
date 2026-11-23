@@ -247,6 +247,7 @@
     });
   };
 
+  Mock.prototype.kayit = function () { return this.delay(function () { return { ok: true }; }); };
   Mock.prototype.durum = function (online) {
     this.me.online = !!online;
     return this.delay(function () { return { ok: true, online: !!online }; });
@@ -370,6 +371,7 @@
     paketlerimRestoran: function (filter) { return req('GET', '/api/restoran/paketlerim?filter=' + encodeURIComponent(filter || 'all')); },
     profil: function (data) { return req('PATCH', '/api/profil', data); },
     durum: function (online) { return req('POST', '/api/durum', { online: !!online }); },
+    kayit: function (data) { return req('POST', '/api/kayit', data); },
     sistem: function () { return req('GET', '/api/sistem'); },
     bildirimler: function () { return req('GET', '/api/bildirimler'); },
     bildirimOkundu: function (upto) { return req('POST', '/api/bildirimler/okundu', { upto: upto }); },
@@ -435,7 +437,7 @@
     }
   };
   ['oturum', 'havuz', 'kabul', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
-    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'yonetim'].forEach(function (m) {
+    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);
         var target = mode === 'real' ? real : mock;

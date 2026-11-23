@@ -1,12 +1,12 @@
 import { Bot } from "./core";
 import type { Account, Env, PackageRow } from "./types";
-import { authenticate, HttpError } from "./auth";
+import { authenticate, HttpError, identity } from "./auth";
 import { adminRoutes } from "./apiadmin";
 import { json, fail, pkgDto, settings, statesFor } from "./apidto";
 export { json, fail } from "./apidto";
 import * as apiCourier from "./apicourier";
 import * as forms from "./forms";
-import { dialNumber, validPhone } from "./util";
+import { dialNumber, validFullName, validPhone } from "./util";
 import { CANCEL_REASONS, PAYMENTS, MAX_PACKAGES, UNSPECIFIED } from "./constants";
 
 /**
@@ -36,13 +36,40 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
   }
   bot.ignoreNotifyErrors = true; // Mini App akışında bildirim hatası isteği bozmasın.
   let user: Account;
+  let ident: { id: number; name: string; startParam: string };
   try {
-    const account = await authenticate(request, env);
-    if (!account) return fail("Yetkisiz", 401, "unauthorized");
-    user = account;
+    ident = await identity(request, env);
   } catch (e: any) {
     return fail(e.message || "Yetkilendirme hatası", e instanceof HttpError ? e.status : 401, "unauthorized");
   }
+  const existing = await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(ident.id).first<Account>();
+  const path0 = url.pathname.replace(/^\/api/, "") || "/";
+  if (!existing) {
+    if (path0 === "/oturum") {
+      const code = ident.startParam || "";
+      const invite = code ? await env.DB.prepare("SELECT code,role FROM invites WHERE code=? AND expires>?").bind(code, Math.floor(Date.now() / 1000)).first<any>() : null;
+      return json({ need_register: true, invite: invite ? { code: invite.code, role: invite.role } : null, user: { id: ident.id, name: ident.name } });
+    }
+    if (path0 === "/kayit" && request.method === "POST") {
+      const body = await readBody(request);
+      const code = String(body.code || ident.startParam || "");
+      const invite = code ? await env.DB.prepare("SELECT * FROM invites WHERE code=? AND expires>?").bind(code, Math.floor(Date.now() / 1000)).first<any>() : null;
+      if (!invite) return fail("Davet geçersiz veya süresi dolmuş.", 403, "forbidden");
+      const role = invite.role === "restoran" ? "restoran" : "kurye";
+      const name = String(body.name || "").trim();
+      const phone = String(body.phone || "").trim().replace(/[ ()\-]/g, "");
+      if (role === "kurye" && !validFullName(name)) return fail("Ad ve soyadı birlikte yazın. Örnek: Ahmet Yılmaz", 422, "invalid");
+      if (role === "restoran" && (name.length < 2 || name.length > 80)) return fail("Restoran adı geçersiz.", 422, "invalid");
+      if (!validPhone(phone)) return fail("Telefon numarası geçersiz.", 422, "invalid");
+      const contact = String(body.contact_name || "").trim();
+      await env.DB.prepare("INSERT INTO accounts(id,role,name,phone,contact_name) VALUES (?,?,?,?,?)")
+        .bind(ident.id, role, name, phone, contact || null).run();
+      await env.DB.prepare("DELETE FROM invites WHERE code=?").bind(code).run();
+      return json({ ok: true, role });
+    }
+    return fail("Bu Telegram hesabı tanımlı değil. Davet bağlantısını kullanın.", 403, "forbidden");
+  }
+  user = existing;
   if (user.deleted || !user.active) return fail("Hesabınız pasif veya silinmiş.", 403, "forbidden");
 
   const path = url.pathname.replace(/^\/api/, "") || "/";
@@ -54,7 +81,10 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
   try {
     // ---------- oturum ----------
     if (path === "/oturum" && method === "GET") {
+      const incomplete = !user.phone || (user.role === "kurye" && !validFullName(user.name)) ||
+        (user.role === "restoran" && (!user.contact_name || !user.phone));
       return json({
+        incomplete,
         role: user.role,
         user: {
           id: user.id, name: user.name, phone: user.phone || null,

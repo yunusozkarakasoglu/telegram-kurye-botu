@@ -992,8 +992,54 @@
   }
 
   /* ---------------- başlat ---------------- */
+  function renderRegister(s) {
+    var inv = s.invite || {};
+    var isRest = inv.role === 'restoran';
+    setHeader('Kayıt', isRest ? 'Restoran kaydı' : 'Kurye kaydı');
+    $('hdr-right').innerHTML = '';
+    $('nv').innerHTML = '';
+    $('mn').innerHTML = '<div class="card" style="padding:12px">' +
+      '<p class="note">Davet bağlantısıyla kayıt. Bilgilerinizi girin.</p>' +
+      '<div class="fld"><label>' + (isRest ? 'Restoran adı' : 'Ad Soyad') + '</label><input id="rg-name" value="' + esc(s.user && s.user.name || '') + '"></div>' +
+      (isRest ? '<div class="fld"><label>Yetkili adı</label><input id="rg-contact"></div>' : '') +
+      '<div class="fld"><label>Telefon</label><input id="rg-phone" inputmode="tel" placeholder="0546 208 99 00"></div>' +
+      '<div class="err" id="rg-err"></div>' +
+      '<button class="p" id="rg-save" style="width:100%">Kayıt Ol</button></div>';
+    $('rg-save').onclick = function () {
+      var body = { code: inv.code, name: $('rg-name').value.trim(), phone: $('rg-phone').value.trim() };
+      if (isRest) body.contact_name = $('rg-contact').value.trim();
+      API.kayit(body).then(function () {
+        UI.toast('Kayıt tamamlandı', 'success');
+        hardReload();
+      }).catch(function (e) { $('rg-err').textContent = e.message || 'Kayıt başarısız'; });
+    };
+  }
+
+  function renderIncomplete(s) {
+    var u = s.user || {};
+    var isRest = s.role === 'restoran';
+    setHeader('Bilgilerinizi tamamlayın', isRest ? 'Restoran bilgileri' : 'Kurye bilgileri');
+    $('hdr-right').innerHTML = '';
+    $('nv').innerHTML = '';
+    $('mn').innerHTML = '<div class="card" style="padding:12px">' +
+      '<p class="note">Devam etmek için ad soyad ve telefon zorunludur.</p>' +
+      '<div class="fld"><label>' + (isRest ? 'Restoran adı' : 'Ad Soyad') + '</label><input id="ci-name" value="' + esc(u.name && /^[A-Za-zÇĞİÖŞÜçğıöşü]+\s+[A-Za-zÇĞİÖŞÜçğıöşü]+/.test(u.name) ? u.name : '') + '"></div>' +
+      (isRest ? '<div class="fld"><label>Yetkili adı</label><input id="ci-contact" value="' + esc(u.contact_name || '') + '"></div>' : '') +
+      '<div class="fld"><label>Telefon</label><input id="ci-phone" inputmode="tel" value="' + esc(u.phone || '') + '" placeholder="0546 208 99 00"></div>' +
+      '<div class="err" id="ci-err"></div>' +
+      '<button class="p" id="ci-save" style="width:100%">Kaydet ve Devam</button></div>';
+    $('ci-save').onclick = function () {
+      var body = { name: $('ci-name').value.trim(), phone: $('ci-phone').value.trim() };
+      if (isRest) body.contact_name = $('ci-contact').value.trim();
+      API.profil(body).then(function () { hardReload(); })
+        .catch(function (e) { $('ci-err').textContent = e.message || 'Kaydedilemedi'; });
+    };
+  }
+
   function boot() {
     API.init().then(function (s) {
+      if (s && s.need_register) { renderRegister(s); return; }
+      if (s && s.incomplete) { renderIncomplete(s); return; }
       S.session = s;
       S.role = s.role || 'courier';
       if (S.role === 'yonetici') { location.replace('/admin' + location.hash); return; }
