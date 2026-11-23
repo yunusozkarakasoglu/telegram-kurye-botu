@@ -136,6 +136,25 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       return json({ ok: true, online });
     }
 
+    if (path === "/bildirimler" && method === "GET") {
+      await bot.db.run("CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, created_at REAL NOT NULL)");
+      await bot.db.run("CREATE TABLE IF NOT EXISTS notif_targets(notif INTEGER NOT NULL, account INTEGER NOT NULL, PRIMARY KEY(notif,account))");
+      await bot.db.run("CREATE TABLE IF NOT EXISTS notif_read(account INTEGER PRIMARY KEY, last_id INTEGER NOT NULL)");
+      const rows = await bot.db.all<{ id: number; text: string; created_at: number }>(
+        `SELECT n.id, n.text, n.created_at FROM notifications n JOIN notif_targets t ON t.notif=n.id
+         WHERE t.account=? ORDER BY n.id DESC LIMIT 50`, user.id);
+      const read = await bot.db.first<{ last_id: number }>("SELECT last_id FROM notif_read WHERE account=?", user.id);
+      const lastId = read?.last_id ?? 0;
+      return json({ items: rows, unread: rows.filter((r) => r.id > lastId).length });
+    }
+
+    if (path === "/bildirimler/okundu" && method === "POST") {
+      const body = await readBody(request);
+      const upto = Number(body.upto) || 0;
+      await bot.db.run("INSERT INTO notif_read(account,last_id) VALUES (?,?) ON CONFLICT(account) DO UPDATE SET last_id=max(last_id,?)", user.id, upto, upto);
+      return json({ ok: true });
+    }
+
     if (path === "/sistem" && method === "GET") {
       const restaurants = await bot.db.all<Account>("SELECT * FROM accounts WHERE role='restoran' AND deleted=0 AND active=1 ORDER BY name");
       const couriers = await bot.db.all<Account>("SELECT * FROM accounts WHERE role='kurye' AND deleted=0 AND active=1 ORDER BY name");

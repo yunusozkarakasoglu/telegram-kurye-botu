@@ -164,6 +164,29 @@ export async function adminRoutes(
     return json({ ok: true });
   }
 
+  if (path === "/yonetim/mesaj" && method === "POST") {
+    const body = await readBody(request);
+    const text = String(body.text ?? "").trim();
+    if (text.length < 2 || text.length > 1000) return fail("Mesaj 2–1000 karakter olmalı.", 422, "invalid");
+    const role = body.role === "restoran" ? "restoran" : "kurye";
+    const audience = ["all", "online", "offline"].includes(String(body.audience)) ? String(body.audience) : "all";
+    await bot.db.run("CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, created_at REAL NOT NULL)");
+    await bot.db.run("CREATE TABLE IF NOT EXISTS notif_targets(notif INTEGER NOT NULL, account INTEGER NOT NULL, PRIMARY KEY(notif,account))");
+    await bot.db.run("INSERT INTO notifications(text,created_at) VALUES (?,?)", text, bot.nowF());
+    const last = await bot.db.first<{ id: number }>("SELECT last_insert_rowid() AS id");
+    const notifId = last?.id ?? 0;
+    let where = "role=? AND active=1 AND deleted=0";
+    const params: unknown[] = [role];
+    if (role === "kurye" && audience === "online") where += " AND online=1";
+    if (role === "kurye" && audience === "offline") where += " AND online=0";
+    const rows = await bot.db.all<Account>(`SELECT * FROM accounts WHERE ${where}`, ...params);
+    for (const row of rows) {
+      await bot.db.run("INSERT OR IGNORE INTO notif_targets(notif,account) VALUES (?,?)", notifId, row.id);
+      await bot.send(row.id, `📢 Yönetici mesajı\n\n${text}`);
+    }
+    return json({ ok: true, count: rows.length });
+  }
+
   if (path === "/yonetim/bolgeler" && method === "GET") {
     return json({ regions: await bot.regionList() });
   }

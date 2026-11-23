@@ -256,3 +256,9 @@ header{position:relative}
 .offeritem{border-top:1px dashed #e6c34a;padding:8px 0}
 .offeritem small{display:block;color:var(--t2)}
 .offeritem .act{display:flex;gap:6px;margin-top:6px}
+
+.hicons{display:flex;gap:6px;align-items:center}
+.ico{position:relative;border:1px solid var(--ln);background:var(--el);border-radius:10px;width:38px;height:38px;font-size:18px;cursor:pointer}
+.ico em{position:absolute;top:-4px;right:-4px;background:var(--er);color:#fff;font-style:normal;font-size:11px;font-weight:700;border-radius:99px;padding:1px 5px}
+.notif{border-bottom:1px solid var(--ln);padding:8px 0}
+.notif small{color:var(--t2);display:block;font-size:11px}

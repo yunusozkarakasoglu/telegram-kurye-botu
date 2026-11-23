@@ -12,7 +12,7 @@
     ['ozet', 'Özet'], ['havuz', 'Havuz'], ['sontalepler', 'Son Talepler'],
     ['limit', 'Kurye Paket Limiti'], ['tarife', 'Ücret Tarifesi'], ['bolgeler', 'Bölgeler'],
     ['restoranlar', 'Restoranlar'], ['kuryeler', 'Kuryeler'], ['iptaller', 'İptal Siparişler'],
-    ['kuryedurum', 'Kurye Durumu'], ['rapor', 'Raporlar'], ['davet', 'Davet']
+    ['kuryedurum', 'Kurye Durumu'], ['rapor', 'Raporlar'], ['davet', 'Davet'], ['mesaj', 'Mesaj']
   ];
 
   function head(t, s) { $('adm-title').textContent = t; $('adm-sub').textContent = s || ''; }
@@ -552,6 +552,29 @@
     });
   }
 
+  function viewMesaj() {
+    head('Mesaj', 'Kurye ve restoranlara toplu bildirim');
+    panel('<div class="fld"><label>Kime</label><select id="m-role"><option value="kurye">Kuryeler</option><option value="restoran">Restoranlar</option></select></div>' +
+      '<div class="fld" id="m-aud-wrap"><label>Kurye filtresi</label><select id="m-aud">' +
+      '<option value="all">Tümü</option><option value="online">Sadece online</option><option value="offline">Sadece offline</option></select></div>' +
+      '<div class="fld"><label>Mesaj</label><textarea id="m-text" rows="5" style="width:100%" placeholder="Bildirim metni…"></textarea></div>' +
+      '<button class="p" id="m-send">Gönder</button>' +
+      '<p class="note">Mesaj hem Telegram sohbetine hem Mini App bildirimlerine (🔔) düşer.</p>');
+    $('m-role').onchange = function () {
+      $('m-aud-wrap').style.display = $('m-role').value === 'kurye' ? '' : 'none';
+    };
+    $('m-send').onclick = function () {
+      var text = $('m-text').value.trim();
+      if (text.length < 2) { UI.toast('Mesaj yazın', 'error'); return; }
+      $('m-send').disabled = true;
+      API.yonetim('mesaj', { role: $('m-role').value, audience: $('m-aud').value, text: text }).then(function (r) {
+        UI.toast(r.count + ' kişiye gönderildi', 'success');
+        $('m-text').value = '';
+      }).catch(function (e) { UI.toast(e.message || 'Gönderilemedi', 'error'); })
+        .then(function () { $('m-send').disabled = false; });
+    };
+  }
+
   function viewDavet() {
     head('Davet', 'Kurye / restoran daveti');
     API.yonetim('davet', { role: 'courier' }).then(function (d) {
@@ -598,7 +621,7 @@
     ({
       ozet: viewOzet, havuz: viewHavuz, kuryeler: viewKuryeler, restoranlar: viewRestoranlar,
       bolgeler: viewBolgeler, tarife: viewTarife, rapor: viewRapor, iptaller: viewIptaller, davet: viewDavet,
-      limit: viewLimit, sontalepler: viewSonTalepler, kuryedurum: viewKuryeDurum
+      limit: viewLimit, sontalepler: viewSonTalepler, kuryedurum: viewKuryeDurum, mesaj: viewMesaj
     })[S.tab]();
   }
 
