@@ -212,12 +212,12 @@
     '</div>';
   }
 
-  function bindPkgActions(root) {
+  function bindPkgActions(root, list) {
     Array.prototype.forEach.call(root.querySelectorAll('button[data-a]'), function (b) {
       b.onclick = function () {
         var a = b.getAttribute('data-a'), id = b.getAttribute('data-i');
+        var p = (list || []).filter(function (x) { return String(x.id) === String(id); })[0] || findPkg(id);
         if (a === 'harita') {
-          var p = findPkg(id);
           if (p && p.map_url) TG.openLink(p.map_url);
           else if (p) TG.map((p.restaurant || '') + ' ' + (p.region || ''));
         } else if (a === 'km') kmSheet(findPkg(id));
@@ -228,7 +228,7 @@
     });
   }
   function deliverConfirm(p) {
-    if (!p) return;
+    if (!p) { UI.toast('Paket bulunamadı, listeyi yenileyin', 'error'); return; }
     var sh = UI.openSheet(
       '<h2>Teslim onayı</h2>' +
       '<p><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) + '</b><br>' +
@@ -280,7 +280,7 @@
         }).join('') + '</div>';
     } else {
       main.innerHTML = seg + L.map(function (p) { return pkgCard(p, { own: true }); }).join('');
-      bindPkgActions(main);
+      bindPkgActions(main, L);
     }
     Array.prototype.forEach.call(main.querySelectorAll('button[data-v]'), function (b) {
       b.onclick = function () {
@@ -301,7 +301,7 @@
     var p = findPkg(id);
     if (!p) return;
     var sh = UI.openSheet(pkgCard(p, { own: true }), { onClose: function () { render(); } });
-    bindPkgActions(sh);
+    bindPkgActions(sh, [p]);
   }
 
   function dayBounds(offset) {
@@ -353,10 +353,10 @@
         var p = items.filter(function (x) { return String(x.id) === b.getAttribute('data-hopen'); })[0];
         if (!p) return;
         var sh = UI.openSheet(pkgCard(p, {}), { onClose: function () { render(); } });
-        bindPkgActions(sh);
+        bindPkgActions(sh, [p]);
       };
     });
-    if (S.histView === 'card') bindPkgActions(main);
+    if (S.histView === 'card') bindPkgActions(main, items);
     $('cta').innerHTML = '';
     nav(courierTabs(), { havuz: S.pool ? S.pool.packages.length : 0 });
   }
