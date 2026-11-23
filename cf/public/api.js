@@ -389,6 +389,7 @@
       if (what === 'sontalepler') return req('GET', '/api/yonetim/sontalepler');
       if (what === 'rapor') return req('GET', '/api/yonetim/rapor' + (arg && arg.date ? '?date=' + encodeURIComponent(arg.date) : ''));
       if (what === 'mesaj') return req('POST', '/api/yonetim/mesaj', arg || {});
+      if (what === 'mesajlar') return req('GET', '/api/yonetim/mesajlar');
       if (what === 'kuryeAta') return req('POST', '/api/yonetim/ata', arg || {});
       if (what === 'bildirimTemizle') return req('POST', '/api/bildirimler/temizle');
       if (what === 'temizle') return req('POST', '/api/yonetim/temizle', arg || {});

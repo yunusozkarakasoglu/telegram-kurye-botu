@@ -186,7 +186,10 @@ export async function adminRoutes(
     const audience = ["all", "online", "offline"].includes(String(body.audience)) ? String(body.audience) : "all";
     await bot.db.run("CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, created_at REAL NOT NULL)");
     await bot.db.run("CREATE TABLE IF NOT EXISTS notif_targets(notif INTEGER NOT NULL, account INTEGER NOT NULL, PRIMARY KEY(notif,account))");
-    await bot.db.run("INSERT INTO notifications(text,created_at) VALUES (?,?)", text, bot.nowF());
+    for (const col of ["role TEXT", "audience TEXT", "delivered INTEGER DEFAULT 0"]) {
+      try { await bot.db.run(`ALTER TABLE notifications ADD COLUMN ${col}`); } catch {}
+    }
+    await bot.db.run("INSERT INTO notifications(text,created_at,role,audience) VALUES (?,?,?,?)", text, bot.nowF(), role, audience);
     const last = await bot.db.first<{ id: number }>("SELECT last_insert_rowid() AS id");
     const notifId = last?.id ?? 0;
     let where = "role=? AND active=1 AND deleted=0";
@@ -194,11 +197,26 @@ export async function adminRoutes(
     if (role === "kurye" && audience === "online") where += " AND online=1";
     if (role === "kurye" && audience === "offline") where += " AND online=0";
     const rows = await bot.db.all<Account>(`SELECT * FROM accounts WHERE ${where}`, ...params);
+    let delivered = 0;
     for (const row of rows) {
       await bot.db.run("INSERT OR IGNORE INTO notif_targets(notif,account) VALUES (?,?)", notifId, row.id);
-      await bot.send(row.id, `📢 Yönetici mesajı\n\n${text}`);
+      const sent = await bot.send(row.id, `📢 Yönetici mesajı\n\n${text}`);
+      if (sent) delivered++;
     }
-    return json({ ok: true, count: rows.length });
+    await bot.db.run("UPDATE notifications SET delivered=? WHERE id=?", delivered, notifId);
+    return json({ ok: true, count: rows.length, delivered });
+  }
+
+  if (path === "/yonetim/mesajlar" && method === "GET") {
+    try {
+      const rows = await bot.db.all<any>(
+        `SELECT n.id, n.text, n.created_at, n.role, n.audience, n.delivered,
+           (SELECT count(*) FROM notif_targets t WHERE t.notif=n.id) AS targets
+         FROM notifications n WHERE n.role IS NOT NULL ORDER BY n.id DESC LIMIT 30`);
+      return json({ items: rows });
+    } catch {
+      return json({ items: [] });
+    }
   }
 
   if (path === "/yonetim/bolgeler" && method === "GET") {

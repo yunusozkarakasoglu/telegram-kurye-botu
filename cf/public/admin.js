@@ -468,10 +468,23 @@
       '<div class="fld"><label>Mesaj</label><textarea id="m-text" rows="5" style="width:100%" placeholder="Bildirim metni…"></textarea></div>' +
       '<button class="p" id="m-send">Gönder</button>' +
       '<p class="note">Mesaj hem Telegram sohbetine hem Mini App bildirimlerine (🔔) düşer.</p>' +
-      '<button class="d" id="m-clear" style="margin-top:10px">Bildirimleri Temizle</button>');
+      '<button class="d" id="m-clear" style="margin-top:10px">Bildirimleri Temizle</button>' +
+      '<h3 style="font-size:15px;margin:18px 0 6px">Gönderilen mesajlar</h3><div id="m-hist">Yükleniyor…</div>');
     $('m-role').onchange = function () {
       $('m-aud-wrap').style.display = $('m-role').value === 'kurye' ? '' : 'none';
     };
+    function loadHistory() {
+      API.yonetim('mesajlar').then(function (d) {
+        var rows = (d.items || []).map(function (n) {
+          return '<tr><td>#' + n.id + '</td><td>' + esc(n.text.slice(0, 60)) + (n.text.length > 60 ? '…' : '') + '</td>' +
+            '<td>' + esc(n.role || '') + (n.audience && n.audience !== 'all' ? '/' + esc(n.audience) : '') + '</td>' +
+            '<td class="num">' + (n.targets || 0) + '</td><td>' + dt(new Date(n.created_at * 1000).toISOString()) + '</td></tr>';
+        }).join('');
+        $('m-hist').innerHTML = '<table class="tbl"><thead><tr><th>#</th><th>Mesaj</th><th>Kime</th><th class="num">Kişi</th><th>Tarih</th></tr></thead>' +
+          '<tbody>' + (rows || '<tr><td colspan="5">Henüz mesaj gönderilmedi</td></tr>') + '</tbody></table>';
+      }).catch(function (e) { $('m-hist').textContent = 'Yüklenemedi'; });
+    }
+    loadHistory();
     $('m-clear').onclick = function () {
       if (!confirm('Tüm bildirimler silinsin mi?')) return;
       API.yonetim('bildirimTemizle').then(function () { UI.toast('Bildirimler temizlendi', 'success'); })
@@ -482,8 +495,9 @@
       if (text.length < 2) { UI.toast('Mesaj yazın', 'error'); return; }
       $('m-send').disabled = true;
       API.yonetim('mesaj', { role: $('m-role').value, audience: $('m-aud').value, text: text }).then(function (r) {
-        UI.toast(r.count + ' kişiye gönderildi', 'success');
+        UI.toast(r.count + ' kişiye gönderildi (Telegram: ' + (r.delivered || 0) + ')', 'success');
         $('m-text').value = '';
+        loadHistory();
       }).catch(function (e) { UI.toast(e.message || 'Gönderilemedi', 'error'); })
         .then(function () { $('m-send').disabled = false; });
     };
