@@ -478,8 +478,8 @@
         'restoran ayrıca konum ister.</p>' +
         '<div class="filters"><input id="tk" value="' + esc(d.token || '') + '" style="flex:1;min-width:260px"></div>' +
         '<div class="fld" style="max-width:520px"><label>Bağlantı</label><input id="lk" value="' + esc(link) + '" readonly></div>' +
-        '<div class="acts" style="gap:8px;flex-wrap:wrap"><button class="p" id="sh">Bağlantıyı Paylaş</button>' +
-        '<button class="sm" id="cp">Kopyala</button></div>');
+        '<div class="acts" style="gap:8px;flex-wrap:nowrap"><button class="p" id="sh" style="flex:1">Bağlantıyı Paylaş</button>' +
+        '<button class="p" id="cp" style="flex:1">Kopyala</button></div>');
       $('cp').onclick = function () {
         var msg = 'Kurye Paket Bot sistemine kayıt olmak için verilen linkteki bağlantıdan ulaşabilirsiniz.\n' +
           'Bağlantı Linki : ' + link + '\n\n' +
