@@ -625,7 +625,7 @@
   }
 
   function renderSistem() {
-    setHeader('Sistem', 'Fiyatlandırma · Restoranlar · Kuryeler · v7');
+    setHeader('Sistem', 'Fiyatlandırma · Restoranlar · Kuryeler · v8');
     var main = $('mn');
     var seg = '<div class="seg three">' + [['fiyat', 'Fiyatlandırma'], ['restoran', 'Restoranlar'], ['kurye', 'Kuryeler'], ['bolge', 'Bölgeler']].map(function (x) {
       return '<button data-st="' + x[0] + '" class="' + (S.sistemTab === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
@@ -701,8 +701,9 @@
         b.onclick = function () { S.sistemTab = b.getAttribute('data-st'); render(); };
       });
     }
+    if (S.sistem) { draw(); return; }
     draw(); bindSeg();
-    API.sistem().then(function (d) { S.sistem = d; render(); }).catch(function () {});
+    API.sistem().then(function (d) { S.sistem = d; renderSistem(); }).catch(function () {});
   }
 
   /* ---------------- yönlendirme ---------------- */
