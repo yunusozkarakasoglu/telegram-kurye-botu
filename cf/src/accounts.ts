@@ -35,7 +35,7 @@ export async function showAccounts(bot: Bot, user: Account, role: string, page =
   if (!rows.length) lines.push("Bu filtrede kayıt yok.");
   const searchRow: any[] = [["İsimle Ara", "acc:s"]];
   if (query) searchRow.push(["Aramayı Temizle", "acc:clr"]);
-  buttons.push([searchRow]);
+  buttons.push(searchRow);
   const nav: [string, string][] = [];
   if (page) nav.push(["Önceki", `acc:f:${mode}:${page - 1}`]);
   if (rows.length > 8) nav.push(["Sonraki", `acc:f:${mode}:${page + 1}`]);
