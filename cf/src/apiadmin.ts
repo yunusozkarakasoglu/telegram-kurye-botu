@@ -33,6 +33,12 @@ export async function adminRoutes(
       "SELECT sum(courier_fee) AS total FROM packages WHERE delivered_at IS NOT NULL");
     const oldest = await bot.db.first<{ at: number | null }>(
       "SELECT min(b.created_at) AS at FROM packages p JOIN batches b ON b.id=p.batch WHERE p.courier IS NULL AND p.cancelled_at IS NULL");
+    const activeRest = await bot.db.first<{ n: number }>("SELECT count(*) AS n FROM accounts WHERE role='restoran' AND active=1 AND deleted=0");
+    const activeCour = await bot.db.first<{ n: number }>("SELECT count(*) AS n FROM accounts WHERE role='kurye' AND active=1 AND deleted=0");
+    const nowSec0 = bot.now();
+    const dayStart = Math.floor((nowSec0 + 3 * 3600) / 86400) * 86400 - 3 * 3600;
+    const todayPkgs = await bot.db.first<{ n: number }>(
+      "SELECT count(*) AS n FROM packages p JOIN batches b ON b.id=p.batch WHERE b.created_at>=?", dayStart);
     const waitingRows = await bot.db.all<any>(
       `SELECT p.id, p.batch, p.number, p.region, p.courier, r.name AS restaurant, b.created_at
        FROM packages p JOIN batches b ON b.id=p.batch JOIN accounts r ON r.id=b.owner
@@ -46,6 +52,9 @@ export async function adminRoutes(
       .map((row) => ({ id: row.id, label: `#${row.batch}-${row.number}`, restaurant: row.restaurant, region: row.region || "", minutes: row.minutes, courier: row.courier || null }));
     return json({
       waiting,
+      active_restaurants: activeRest?.n ?? 0,
+      active_couriers: activeCour?.n ?? 0,
+      today_packages: todayPkgs?.n ?? 0,
       pool_count: pool?.n ?? 0,
       active_count: active?.n ?? 0,
       delivered_count: delivered?.n ?? 0,

@@ -246,3 +246,7 @@ header{position:relative}
 
 .hactions{display:flex;align-items:center;gap:6px}
 .hactions .sm{padding:4px 10px}
+
+.kpis.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.wrow{width:100%;background:none;border:0;border-bottom:1px solid var(--ln);text-align:left;cursor:pointer;padding:9px 4px}
+.wrow:last-child{border-bottom:0}

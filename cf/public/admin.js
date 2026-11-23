@@ -33,21 +33,47 @@
     API.yonetim('ozet').then(function (d) {
       var waiting = d.waiting || [];
       var list = waiting.length ? waiting.map(function (w) {
-        return '<div class="brow"><span><b>' + esc(w.label) + '</b> · ' + esc(w.restaurant) +
+        return '<button class="brow wrow" data-w="' + w.id + '"><span><b>' + esc(w.label) + '</b> · ' + esc(w.restaurant) +
           (w.region ? ' · ' + esc(w.region) : '') + (w.courier ? ' · Kuryede' : ' · Havuzda') + '</span>' +
-          '<b class="late">' + w.minutes + ' dk</b></div>';
+          '<b class="late">' + w.minutes + ' dk</b></button>';
       }).join('') : '<div class="empty">10 dakikayı geçen paket yok.</div>';
-      panel('<div class="kpis">' +
-        kpi('Havuzda paket', d.pool_count) +
-        kpi('Kuryede', d.active_count) +
-        kpi('Teslim edilen', d.delivered_count) +
+      panel('<div class="kpis k3">' +
+        kpi('Aktif restoran', d.active_restaurants) +
+        kpi('Aktif kurye', d.active_couriers) +
+        kpi('Toplam paket (bugün)', d.today_packages) +
         '</div>' +
         '<h3 style="font-size:15px;margin:16px 0 6px">10 dakikayı geçen bekleyenler</h3>' +
         '<div class="card" style="padding:6px 10px">' + list + '</div>' +
         '<p class="note">Bölgeler: ' + esc((d.regions || []).join(', ')) + '</p>');
+      Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-w]'), function (b) {
+        b.onclick = function () { waitingSheet(Number(b.getAttribute('data-w')), waiting); };
+      });
     });
   }
   function kpi(l, v) { return '<div class="kpi"><div class="v">' + esc(v) + '</div><div class="l">' + esc(l) + '</div></div>'; }
+
+  function waitingSheet(id, waiting) {
+    var w = waiting.filter(function (x) { return x.id === id; })[0];
+    if (!w) return;
+    API.yonetim('kuryeler').then(function (d) {
+      var free = (d.couriers || []).filter(function (c) { return c.online && c.active && !c.locked && (c.active_packages || 0) === 0; });
+      var opts = free.map(function (c) { return '<option value="' + c.id + '">' + esc(c.name) + '</option>'; }).join('');
+      var sh = UI.openSheet('<h2>' + esc(w.label) + '</h2>' +
+        '<p><b>' + esc(w.restaurant) + '</b>' + (w.region ? ' · ' + esc(w.region) : '') + '<br>' +
+        'Bekleme: <b class="late">' + w.minutes + ' dk</b></p>' +
+        (opts ? '<div class="fld"><label>Boştaki kurye</label><select id="wsel" class="at">' + opts + '</select></div>' +
+          '<button class="p" id="wata" style="width:100%">Kuryeye Ata</button>'
+        : '<p class="note">Boşta (üzerinde paket olmayan, online) kurye yok.</p>') +
+        '<button class="d" id="wclose" style="width:100%;margin-top:6px">Kapat</button>');
+      sh.querySelector('#wclose').onclick = function () { UI.closeSheet(); };
+      var ata = sh.querySelector('#wata');
+      if (ata) ata.onclick = function () {
+        API.yonetim('kuryeAta', { pkgId: w.id, courierId: Number(sh.querySelector('#wsel').value) }).then(function () {
+          UI.closeSheet(); UI.toast('Kurye atandı', 'success'); render();
+        }).catch(function (e) { UI.toast(e.message || 'Atanamadı', 'error'); });
+      };
+    }).catch(function (e) { UI.toast(e.message || 'Kurye listesi alınamadı', 'error'); });
+  }
 
   function viewHavuz() {
     head('Havuz', 'Satır bazlı kurye atama');
