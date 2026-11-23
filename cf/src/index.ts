@@ -13,10 +13,16 @@ export default {
       return Response.json({ ok: true, accounts: row?.n ?? 0 });
     }
     if (url.pathname.startsWith("/api/")) return handleApi(request, env);
+    if (["/app", "/app/"].includes(url.pathname) && env.ASSETS) {
+      const asset = await env.ASSETS.fetch(new Request(new URL("/?v=9", url), request));
+      const headers = new Headers(asset.headers);
+      headers.set("cache-control", "no-store, max-age=0");
+      return new Response(asset.body, { status: 200, headers });
+    }
     if (["/", "/index.html", "/admin", "/admin.html"].includes(url.pathname) && env.ASSETS) {
       if (!url.searchParams.has("v")) {
         const next = new URL(url);
-        next.searchParams.set("v", "8");
+        next.searchParams.set("v", "9");
         return Response.redirect(next.toString(), 302);
       }
       const target = url.pathname === "/admin" || url.pathname === "/admin.html" ? "/admin" : "/";

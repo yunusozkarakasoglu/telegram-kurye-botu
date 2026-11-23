@@ -625,7 +625,7 @@
   }
 
   function renderSistem() {
-    setHeader('Sistem', 'Fiyatlandırma · Restoranlar · Kuryeler · v8');
+    setHeader('Sistem', 'Fiyatlandırma · Restoranlar · Kuryeler · v9');
     var main = $('mn');
     var seg = '<div class="seg three">' + [['fiyat', 'Fiyatlandırma'], ['restoran', 'Restoranlar'], ['kurye', 'Kuryeler'], ['bolge', 'Bölgeler']].map(function (x) {
       return '<button data-st="' + x[0] + '" class="' + (S.sistemTab === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
