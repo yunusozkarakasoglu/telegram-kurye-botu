@@ -334,6 +334,11 @@
     paketlerimRestoran: function (filter) { return req('GET', '/api/restoran/paketlerim?filter=' + encodeURIComponent(filter || 'all')); },
     yonetim: function (what, arg) {
       if (what === 'davet') return req('POST', '/api/yonetim/davet', arg || { role: 'kurye' });
+      if (what === 'hesap') return req('POST', '/api/yonetim/hesap', arg || {});
+      if (what === 'limit') return req('PUT', '/api/yonetim/limit', arg || {});
+      if (what === 'bolge') return req('POST', '/api/yonetim/bolge', arg || {});
+      if (what === 'sontalepler') return req('GET', '/api/yonetim/sontalepler');
+      if (what === 'temizle') return req('POST', '/api/yonetim/temizle', arg || {});
       return req('GET', '/api/yonetim/' + what);
     }
   };

@@ -59,7 +59,7 @@
       Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-ata]'), function (b) {
         b.onclick = function () {
           var id = b.getAttribute('data-ata');
-          var sel = panel.querySelector('.at[data-p="' + id + '"]');
+          var sel = $("adm-body").querySelector('.at[data-p="' + id + '"]');
           API.yonetim('kuryeAta', { pkgId: Number(id), courierId: Number(sel.value) }).then(function () {
             UI.toast('Kurye atandı', 'success'); render();
           }).catch(function (e) { UI.toast(e.message || 'İşlem başarısız', 'error'); });
@@ -77,9 +77,11 @@
       var rows = (d.couriers || []).map(function (c) {
         return '<tr><td>' + esc(c.name) + '</td><td>' + esc(c.phone || '') + '</td>' +
           '<td>' + (c.online ? '<span class="tag ok">Online</span>' : '<span class="tag">Offline</span>') + '</td>' +
-          '<td>' + (c.status === 'active' ? '<span class="tag ok">Aktif</span>' : '<span class="tag er">Pasif</span>') + '</td>' +
+          '<td>' + (c.active ? '<span class="tag ok">Aktif</span>' : '<span class="tag er">Pasif</span>') + '</td>' +
           '<td class="num">' + (c.active_packages || 0) + '</td>' +
-          '<td><a class="btn sm" href="tel:' + esc(c.phone || '') + '">Ara</a></td></tr>';
+          '<td><a class="btn sm" href="tel:' + esc(c.phone || '') + '">Ara</a> ' +
+          '<button class="sm" data-acc="' + c.id + '" data-act="toggle">' + (c.active ? 'Pasif' : 'Aktif') + '</button> ' +
+          '<button class="sm d" data-acc="' + c.id + '" data-act="delete">Sil</button></td></tr>';
       }).join('');
       panel('<div class="filters"><input id="q" placeholder="İsimle ara…"><select id="f"><option value="all">Tümü</option>' +
         '<option value="online">Online</option><option value="offline">Offline</option></select></div>' +
@@ -97,6 +99,15 @@
         });
       }
       $('q').oninput = apply; $('f').onchange = apply;
+      Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-acc]'), function (b) {
+        b.onclick = function () {
+          var act = b.getAttribute('data-act');
+          if (act === 'delete' && !confirm('Hesap silinsin mi? (soft delete)')) return;
+          API.yonetim('hesap', { id: Number(b.getAttribute('data-acc')), action: act }).then(function () {
+            UI.toast('Kaydedildi', 'success'); render();
+          }).catch(function (e) { UI.toast(e.message || 'İşlem başarısız', 'error'); });
+        };
+      });
     });
   }
 
@@ -104,16 +115,23 @@
     head('Restoranlar', 'Hesap yönetimi');
     API.yonetim('restoranlar').then(function (d) {
       var rows = (d.restaurants || []).map(function (r) {
-        return '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.auth || '') + '</td><td>' + esc(r.phone || '') + '</td>' +
-          '<td>' + esc(r.contact_name || '—') + '</td>' +
-          '<td>' + (r.status === 'active' ? '<span class="tag ok">Aktif</span>' : '<span class="tag er">Pasif</span>') + '</td>' +
-          '<td><button class="sm" data-tgl="' + r.id + '">' + (r.status === 'active' ? 'Pasif Yap' : 'Aktif Yap') + '</button></td></tr>';
+        return '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.contact_name || '—') + '</td><td>' + esc(r.phone || '') + '</td>' +
+          '<td>' + (r.latitude != null ? 'var' : '—') + '</td>' +
+          '<td>' + (r.active ? '<span class="tag ok">Aktif</span>' : '<span class="tag er">Pasif</span>') + '</td>' +
+          '<td><button class="sm" data-acc="' + r.id + '" data-act="toggle">' + (r.active ? 'Pasif Yap' : 'Aktif Yap') + '</button> ' +
+          '<button class="sm d" data-acc="' + r.id + '" data-act="delete">Sil</button></td></tr>';
       }).join('');
       panel('<table class="tbl"><thead><tr><th>Restoran</th><th>Yetkili</th><th>Telefon</th><th>Konum</th><th>Durum</th><th></th></tr></thead>' +
         '<tbody>' + (rows || '<tr><td colspan="6">Kayıt yok</td></tr>') + '</tbody></table>' +
         '<p class="note">Pasif yapılan hesap giriş yapamaz; raporlar korunur (soft delete).</p>');
-      Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-tgl]'), function (b) {
-        b.onclick = function () { UI.toast('İşlem Worker API ile yapılır'); };
+      Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-acc]'), function (b) {
+        b.onclick = function () {
+          var act = b.getAttribute('data-act');
+          if (act === 'delete' && !confirm('Restoran silinsin mi? (soft delete)')) return;
+          API.yonetim('hesap', { id: Number(b.getAttribute('data-acc')), action: act }).then(function () {
+            UI.toast('Kaydedildi', 'success'); render();
+          }).catch(function (e) { UI.toast(e.message || 'İşlem başarısız', 'error'); });
+        };
       });
     });
   }

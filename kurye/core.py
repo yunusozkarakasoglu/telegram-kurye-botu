@@ -69,10 +69,9 @@ class Bot(AcceptanceMixin, AccountsAdminMixin, CancelMixin, AdminMixin, AutoOffe
             labels.append("Çevrimdışı Ol" if user["online"] else "Çevrimiçi Ol")
         tail = []
         if user["role"] == "yonetici":
-            # Yönetici Numarası ve Raporlar her zaman en altta tek satırda dursun.
+            # 3x4 ızgara: Raporlar ızgarada, Yönetici Numarası tek satır en altta.
             labels.remove("Yönetici Numarası")
-            labels.remove("Raporlar")
-            tail = ["Yönetici Numarası", "Raporlar"]
+            tail = ["Yönetici Numarası"]
         solo = {"Yöneticiyi Ara"}
         per_row = 3 if user["role"] == "yonetici" else 2
         rows, group = [], []
@@ -85,9 +84,7 @@ class Bot(AcceptanceMixin, AccountsAdminMixin, CancelMixin, AdminMixin, AutoOffe
                 group = []
         if group:
             rows.append(group)
-        if user["role"] == "yonetici":
-            rows.append([{"text": "Yöneticiyi Ara"}])
-        elif solo:
+        if user["role"] != "yonetici" and solo:
             rows.append([{"text": label} for label in solo])
         if tail:
             rows.append([{"text": label} for label in tail])

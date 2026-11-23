@@ -44,34 +44,30 @@ export class Bot {
       const count = await this.incomingCount(user.id);
       if (count) text += `\n\n🔔 ${count} aktarım dikkatinizi bekliyor.`;
     }
-    const labels = [...(MENUS[user.role] || []), "Raporlar"];
+    const isAdmin = user.role === "yonetici";
+    let labels = [...(MENUS[user.role] || [])];
     if (user.role === "kurye") labels.push(user.online ? "Çevrimdışı Ol" : "Çevrimiçi Ol");
-    const tail: string[] = [];
-    if (user.role === "yonetici") {
-      const idx = labels.indexOf("Yönetici Numarası");
-      if (idx >= 0) labels.splice(idx, 1);
-      const r = labels.indexOf("Raporlar");
-      if (r >= 0) labels.splice(r, 1);
-      tail.push("Yönetici Numarası", "Raporlar");
-    }
-    const solo = new Set(["Yöneticiyi Ara", "Yönetici Numarası"]);
-    const rows: { text: string }[][] = [];
-    const perRow = user.role === "yonetici" ? 3 : 2;
-    let pair: { text: string }[] = [];
-    for (const label of labels) {
-      if (solo.has(label)) continue;
-      pair.push({ text: label });
-      if (pair.length === perRow) { rows.push(pair); pair = []; }
-    }
-    if (pair.length) rows.push(pair);
-    if (user.role === "yonetici") {
-      rows.push([{ text: "Yöneticiyi Ara" }]);
-      rows.push([{ text: "Yönetici Numarası" }]);
+    if (isAdmin) {
+      labels = labels.filter((l) => l !== "Yönetici Numarası");
+      labels.push("Raporlar");
     } else {
-      const soloLabels = labels.filter((l) => solo.has(l));
-      if (soloLabels.length) rows.push(soloLabels.map((text) => ({ text })));
+      labels.push("Raporlar");
     }
-    if (tail.length) rows.push(tail.map((text) => ({ text })));
+    const solo = new Set(["Yöneticiyi Ara"]);
+    const perRow = isAdmin ? 3 : 2;
+    const rows: { text: string }[][] = [];
+    let group: { text: string }[] = [];
+    for (const label of labels) {
+      if (!isAdmin && solo.has(label)) {
+        if (group.length) { rows.push(group); group = []; }
+        rows.push([{ text: label }]);
+        continue;
+      }
+      group.push({ text: label });
+      if (group.length === perRow) { rows.push(group); group = []; }
+    }
+    if (group.length) rows.push(group);
+    if (isAdmin) rows.push([{ text: "Yönetici Numarası" }]);
     await this.send(user.id, text, { keyboard: rows, resize_keyboard: true });
   }
 
@@ -194,6 +190,7 @@ export class Bot {
     if (text === "Havuz" && user.role === "yonetici") return pool.showPoolFilters(this, user);
     if (text === "Açık Paketler" && user.role === "kurye") return pool.showAssigned(this, user, 0);
     if (text === "Paketlerim") return forms.showPaketlerim(this, user);
+    if (text === "Profil") return (await import("./profile")).selfProfile(this, user);
     if (text === "Raporlar" || command === "/rapor") return adminops.reportPeriods(this, user);
     if (text === "Analiz" && user.role === "restoran") return adminops.analysisPeriods(this, user);
     if (text === "Komutlar") return adminops.showCommands(this, user);
@@ -270,6 +267,7 @@ export class Bot {
     if (action === "cxl") return ops.showCancelledOrders(this, user, args[0] || "all", Number(args[1] || 0));
     if (action === "coa" || action === "cod") return accept.claimOfferStep(this, user, action, args[0]);
     if (action === "aoa" || action === "aod") return ops.autoOfferStep(this, user, action, Number(args[0]));
+    if (action === "prof") return (await import("./profile")).selfProfile(this, user, args[0] || "");
     if (action === "card" && args[0]) {
       const rows = await this.packages("p.id=?", [Number(args[0])]);
       if (!rows.length) return "Paket bulunamadı.";

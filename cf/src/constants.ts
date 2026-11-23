@@ -35,7 +35,7 @@ export const CALL_HINT = "Aramak için numaraya dokunun.";
 export const MAP_URL = (lat: number, lng: number) => `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 export const CANCEL_REASONS = ["Müşteri iptal etti", "Adres yanlış", "Restoran kapandı", "Gecikme", "Paket hasarlı", "Müşteriye ulaşılamadı", "Diğer"];
 export const MENUS: Record<string, string[]> = {
-  restoran: ["Kurye Çağır", "Paketlerim", "Analiz", "Komutlar", "Yöneticiyi Ara"],
-  kurye: ["Havuz", "Açık Paketler", "Paketlerim", "Komutlar", "Yöneticiyi Ara"],
+  restoran: ["Kurye Çağır", "Paketlerim", "Profil", "Analiz", "Komutlar", "Yöneticiyi Ara"],
+  kurye: ["Havuz", "Açık Paketler", "Paketlerim", "Profil", "Komutlar", "Yöneticiyi Ara"],
   yonetici: ["Havuz", "Son Talepler", "Kurye Paket Limiti", "Ücret Tarifesi", "Bölgeler", "Restoranlar", "Kuryeler", "İptal Siparişler", "Yönetici Numarası", "Komutlar", "Sipariş Verilerini Temizle", "Kurye Durumu"],
 };

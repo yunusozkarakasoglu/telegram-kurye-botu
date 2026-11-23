@@ -184,12 +184,10 @@ class AdminMenuLayoutTests(BotCase):
         rows = [p["reply_markup"]["keyboard"] for _m, p in self.api.calls
                 if p.get("chat_id") == ADMIN and isinstance(p.get("reply_markup"), dict)
                 and "keyboard" in p["reply_markup"]][-1]
-        self.assertEqual([b["text"] for b in rows[-1]], ["Yönetici Numarası", "Raporlar"])
-        self.assertEqual([b["text"] for b in rows[-2]], ["Yöneticiyi Ara"])
-        grid = rows[:-2]
-        self.assertTrue(all(len(row) == 3 for row in grid[:-1]))
-        self.assertTrue(1 <= len(grid[-1]) <= 3)
+        self.assertEqual([b["text"] for b in rows[-1]], ["Yönetici Numarası"])
+        grid = rows[:-1]
+        self.assertTrue(all(len(row) == 3 for row in grid))
         labels = [b["text"] for row in rows for b in row]
         self.assertEqual(labels.count("Raporlar"), 1)
         self.assertEqual(labels.count("Yönetici Numarası"), 1)
-        self.assertEqual(labels.count("Yöneticiyi Ara"), 1)
+        self.assertNotIn("Yöneticiyi Ara", labels)

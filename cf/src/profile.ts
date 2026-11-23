@@ -2,6 +2,7 @@ import type { Bot } from "./core";
 import type { Account } from "./types";
 import { CALL_HINT, LOCATION_SCOPE_SECONDS, MAP_URL, REGION_NAME_MAX } from "./constants";
 import { keyboard } from "./views";
+import { section } from "./util";
 import { dialNumber, parseLocation, validCoordinates, validFullName, validPhone } from "./util";
 
 const STEPS = ["contact", "phone", "location"];
@@ -32,6 +33,33 @@ async function askStep(bot: Bot, chat: number) {
 export async function profileText(bot: Bot, chat: number, text: string): Promise<boolean> {
   const row = await bot.db.first<any>("SELECT * FROM profile_setup WHERE admin=? AND expires>?", chat, bot.nowF());
   if (!row) return false;
+  if (row.step === "value" && String(row.kind).startsWith("self_")) {
+    if (["Vazgeç", "/iptal", "iptal"].includes(text.trim())) {
+      await bot.db.run("DELETE FROM profile_setup WHERE admin=?", chat);
+      await bot.send(chat, "Düzenleme iptal edildi.");
+      return true;
+    }
+    const field = String(row.kind).slice(5);
+    const value = text.trim().replace(/\s+/g, " ");
+    const account = await bot.db.first<Account>("SELECT * FROM accounts WHERE id=?", row.ref);
+    if (!account) return true;
+    if (field === "phone") {
+      if (!validPhone(value)) { await bot.send(chat, "Telefon numarası geçersiz. Örnek: 0546 208 99 00"); return true; }
+      await bot.db.run("UPDATE accounts SET phone=? WHERE id=?", value.replace(/[ ()\-]/g, ""), account.id);
+    } else if (field === "name") {
+      if (account.role === "kurye" && !validFullName(value)) { await bot.send(chat, "Ad ve soyadı birlikte yazın. Örnek: Ahmet Yılmaz"); return true; }
+      if (value.length < 2 || value.length > 80) { await bot.send(chat, "Ad 2–80 karakter olmalı."); return true; }
+      await bot.db.run("UPDATE accounts SET name=? WHERE id=?", value, account.id);
+    } else if (field === "contact") {
+      if (value.length < 2 || value.length > 80) { await bot.send(chat, "Yetkili adı 2–80 karakter olmalı."); return true; }
+      await bot.db.run("UPDATE accounts SET contact_name=? WHERE id=?", value, account.id);
+    }
+    await bot.db.run("DELETE FROM profile_setup WHERE admin=?", chat);
+    await bot.send(chat, "Bilgiler kaydedildi.");
+    const fresh = (await bot.account(account.id))!;
+    await selfProfile(bot, fresh);
+    return true;
+  }
   if (row.step === "contact") {
     if (text === "Atla") {
       if (row.kind === "register") { await bot.send(chat, "Ad ve soyad zorunludur. Örnek: Ahmet Yılmaz"); return true; }
@@ -89,6 +117,31 @@ async function savePhone(bot: Bot, chat: number, phone: string) {
   }
   await bot.db.run("UPDATE profile_setup SET phone=?,step='location' WHERE admin=?", clean, chat);
   await askStep(bot, chat);
+}
+
+export async function selfProfile(bot: Bot, user: Account, field = ""): Promise<any> {
+  if (field) {
+    const allowed = user.role === "kurye" ? ["name", "phone"] : user.role === "restoran" ? ["name", "contact", "phone"] : [];
+    if (!allowed.includes(field)) return "Bu alan düzenlenemez.";
+    await bot.db.run("INSERT OR REPLACE INTO profile_setup VALUES (?,?,?,?,?,?,?)",
+      user.id, `self_${field}`, user.id, "value", null, null, bot.nowF() + LOCATION_SCOPE_SECONDS);
+    const prompts: Record<string, string> = {
+      name: user.role === "kurye" ? "Yeni adınızı ve soyadınızı yazın. Örnek: Ahmet Yılmaz" : "Restoranın yeni adını yazın.",
+      contact: "Restoran yetkilisinin yeni adını yazın.",
+      phone: "Yeni telefon numarasını yazın. Örnek: 0546 208 99 00",
+    };
+    await bot.send(user.id, prompts[field] + "\n\nVazgeçmek için /iptal yazın.", { keyboard: [[{ text: "Vazgeç" }]], resize_keyboard: true });
+    return null;
+  }
+  const lines = ["Profil", ""];
+  if (user.role === "kurye") {
+    lines.push(`Ad Soyad : ${user.name || "—"}`, `Telefon : ${dialNumber(user.phone) || "—"}`);
+  } else {
+    lines.push(`Restoran : ${user.name || "—"}`, `Yetkili : ${user.contact_name || "—"}`, `Telefon : ${dialNumber(user.phone) || "—"}`);
+  }
+  const buttons: [string, string][] = [["Adı Düzenle", "prof:name"], ["Telefonu Düzenle", "prof:phone"]];
+  if (user.role === "restoran") buttons.splice(1, 0, ["Yetkili Adı", "prof:contact"]);
+  await bot.send(user.id, section(lines.join("\n")), keyboard([buttons]));
 }
 
 export async function saveLocation(bot: Bot, chat: number, lat: number, lng: number): Promise<any> {

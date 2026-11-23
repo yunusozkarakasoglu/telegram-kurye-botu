@@ -381,20 +381,32 @@ export async function showByRestaurant(bot: Bot, user: Account) {
 
 export async function showAssigned(bot: Bot, user: Account, page: number) {
   if (user.role !== "kurye") return "Bu işlem kullanılamıyor.";
-  await showPackageCards(bot, user, "p.courier=? AND p.delivered_at IS NULL AND p.cancelled_at IS NULL", [user.id], page, "active");
-  const rows = await bot.activePackages(user.id);
-  if (!rows.length) return;
-  const sorted = rows.sort((a, b) => a.batch - b.batch || a.number - b.number);
-  const ready = sorted.filter((r) => r.picked_up_at);
-  const lines = [`Aktif paket sayınız: ${sorted.length}`, `Kuryede / Yolda: ${ready.length} · Km bekleyen: ${sorted.length - ready.length}`, ""];
-  sorted.slice(0, 20).forEach((row, index) => {
-    const km = row.distance_km ? `${row.distance_km.replace(".", ",")} km` : "—";
-    const fee = row.courier_fee != null ? `${row.courier_fee} TL` : "—";
-    const state = row.picked_up_at ? "Kuryede / Yolda" : "Kabul edildi · Km bekliyor";
-    lines.push(`Paket ${index + 1} : Talep #${row.batch}-${row.number} · ${row.region || UNSPECIFIED} · ${km} · ${fee} · ${state}`);
-  });
-  if (sorted.length > 20) lines.push(`… ve ${sorted.length - 20} paket daha`);
-  await bot.send(user.id, section(lines.join("\n")));
+  const pref = await bot.db.first<{ value: string }>("SELECT value FROM settings WHERE key=?", `view_${user.id}`);
+  const view = pref?.value === "card" ? "card" : "list";
+  const rows = (await bot.activePackages(user.id)).sort((a, b) => a.batch - b.batch || a.number - b.number);
+  if (!rows.length) {
+    await bot.send(user.id, "Üzerinizde açık paket yok. Havuzdan paket alabilirsiniz.",
+      keyboard([[["Havuza Git", "pv:regions"]]]));
+    return;
+  }
+  const ready = rows.filter((r) => r.picked_up_at);
+  if (view === "card") {
+    await showPackageCards(bot, user, "p.courier=? AND p.delivered_at IS NULL AND p.cancelled_at IS NULL", [user.id], page, "active");
+    await bot.send(user.id, section(`Aktif paket sayınız: ${rows.length}\nKuryede / Yolda: ${ready.length} · Km bekleyen: ${rows.length - ready.length}`),
+      keyboard([[["Liste görünümü", "page:view:list"], ["Teslim Geçmişi", "page:delivered:0"]]]));
+  } else {
+    const lines = [`Aktif paket sayınız: ${rows.length}`, `Kuryede / Yolda: ${ready.length} · Km bekleyen: ${rows.length - ready.length}`, ""];
+    rows.forEach((row, index) => {
+      const km = row.distance_km ? `${row.distance_km.replace(".", ",")} km` : "—";
+      const fee = row.courier_fee != null ? `${row.courier_fee} TL` : "—";
+      const state = row.picked_up_at ? "Yolda" : "Km bekliyor";
+      lines.push(`${index + 1}. Talep #${row.batch}-${row.number} · ${row.restaurant} · ${row.region || UNSPECIFIED} · ${km} · ${fee} · ${state}`);
+    });
+    lines.push("", "Detay ve işlemler için paket düğmesine dokunun.");
+    const buttons: any[] = rows.slice(0, 10).map((row) => [[`📦 Talep #${row.batch}-${row.number}`, `card:${row.id}`]]);
+    buttons.push([["Kart görünümü", "page:view:card"], ["Teslim Geçmişi", "page:delivered:0"]]);
+    await bot.send(user.id, section(lines.join("\n")), keyboard(buttons));
+  }
   for (const row of rows) if (row.incoming) await bot.db.run("UPDATE packages SET incoming=0,incoming_from=NULL,incoming_at=NULL WHERE id=?", row.id);
 }
 
@@ -467,6 +479,11 @@ export async function pageAction(bot: Bot, user: Account, args: string[]): Promi
   const mode = args[0];
   const page = Number(args[1] || 0);
   if (mode === "active" && user.role === "kurye") { await showAssigned(bot, user, page); return null; }
+  if (mode === "view" && user.role === "kurye") {
+    await bot.db.run("INSERT OR REPLACE INTO settings(key,value) VALUES (?,?)", `view_${user.id}`, args[1] === "card" ? "card" : "list");
+    await showAssigned(bot, user, 0);
+    return null;
+  }
   if (mode === "delivered" && user.role === "kurye") {
     await showPackageCards(bot, user, "p.courier=? AND p.delivered_at IS NOT NULL", [user.id], page, "delivered");
     return null;
