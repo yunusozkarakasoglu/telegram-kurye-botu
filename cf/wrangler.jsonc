@@ -1,0 +1,11 @@
+{
+  "name": "telegram-kurye-botu",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-22",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "kurye-db", "database_id": "10d3a231-84d0-48e6-9ac1-50791afc55ab" }
+  ],
+  "triggers": { "crons": ["*/1 * * * *"] }
+}

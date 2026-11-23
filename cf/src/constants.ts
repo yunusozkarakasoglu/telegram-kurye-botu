@@ -1,0 +1,41 @@
+export const TURKIYE_OFFSET = 3;
+export const PAYMENTS = ["Nakit", "Kart", "Ödendi"] as const;
+export const UNSPECIFIED = "Belirtilmedi";
+export const DEFAULT_ACTIVE_LIMIT = 3;
+export const DEFAULT_TARIFF = [120, 30, 40, 50, 60, 70, 80, 90, 100];
+export const TARIFF_BOUNDS = [3, 4, 5, 6, 7, 8, 9, 10];
+export const TARIFF_INTERVALS = ["0–3", ">3–4", ">4–5", ">5–6", ">6–7", ">7–8", ">8–9", ">9–10", ">10"];
+export const PERIODS: Record<number, string> = { 1: "Bugün", 7: "Son 7 Gün", 30: "Son 30 Gün" };
+export const REPORT_PERIODS: Record<number, string> = { ...PERIODS, 0: "Tüm Zamanlar" };
+export const PRIORITY_SECONDS = 10;
+export const MAX_PACKAGES = 10;
+export const MAX_CALLBACK_BYTES = 64;
+export const MAX_PAGE = 9999999;
+export const MEDIA_KEYS = ["photo", "video", "video_note", "animation", "document", "audio", "voice", "sticker"];
+export const MEDIA_NOTICE_SECONDS = 600;
+export const TRANSFER_SCOPE_SECONDS = 120;
+export const TRANSFER_OFFER_SECONDS = 300;
+export const LOCATION_SCOPE_SECONDS = 300;
+export const MAX_REGIONS = 50;
+export const REGION_NAME_MAX = 50;
+export const REGION_EDIT_SECONDS = 300;
+export const MAX_ADMIN_PHONES = 5;
+export const ADMIN_PHONE_EDIT_SECONDS = 300;
+export const ACCOUNT_SEARCH_SECONDS = 300;
+export const INCOMING_HOLD_SECONDS = 600;
+export const CANCEL_FLOW_SECONDS = 1800;
+export const CANCEL_BASE_FEE_MINUTES = 10;
+export const POOL_VIEW_SECONDS = 900;
+export const WAIT_WARN_SECONDS = 600;
+export const AUTO_OFFER_AFTER = 1200;
+export const AUTO_OFFER_TTL = 120;
+export const AUTO_OFFER_RETRY = 300;
+export const WARN_COOLDOWN = 600;
+export const CALL_HINT = "Aramak için numaraya dokunun.";
+export const MAP_URL = (lat: number, lng: number) => `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+export const CANCEL_REASONS = ["Müşteri iptal etti", "Adres yanlış", "Restoran kapandı", "Gecikme", "Paket hasarlı", "Müşteriye ulaşılamadı", "Diğer"];
+export const MENUS: Record<string, string[]> = {
+  restoran: ["Kurye Çağır", "Paketlerim", "Analiz", "Komutlar", "Yöneticiyi Ara"],
+  kurye: ["Havuz", "Açık Paketler", "Paketlerim", "Komutlar", "Yöneticiyi Ara"],
+  yonetici: ["Havuz", "Son Talepler", "Kurye Paket Limiti", "Ücret Tarifesi", "Bölgeler", "Restoranlar", "Kuryeler", "İptal Siparişler", "Yönetici Numarası", "Komutlar", "Sipariş Verilerini Temizle", "Kurye Durumu"],
+};

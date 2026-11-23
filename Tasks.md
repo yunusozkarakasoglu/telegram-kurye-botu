@@ -1,6 +1,9 @@
 # Görevler
 
 ## Açık
+- [ ] Cloudflare canlı doğrulama: restoran/kurye davet kabulü ve uçtan uca sipariş akışını gerçek Telegram hesaplarıyla tamamla.
+- [ ] Cloudflare paritesini kapat: transfer kabul bildirimindeki "Gönderen kurye" alanı, tek kart görünümü, gönderim kuyruğu/429, komut eksikleri.
+- [ ] Cloudflare yayın öncesi otomatik `d1 export` yedeğini scriptle ve rollback tatbikatı yap.
 - [ ] Canlı pilotu bitir (phase-5): bölge gruplama/10 paket, iptal akışları, kurye onaylı atama, Hesap listeleri, İptal Siparişler ve Havuz özetlerini telefonda doğrula.
 - [ ] Phase-4 (iki hesap kurye, 10 paket, limit 6) ile kurye–kurye aktarım ve 10/6/4 senaryosunu tamamla.
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.

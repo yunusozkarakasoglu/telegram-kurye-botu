@@ -7,3 +7,7 @@ __pycache__/
 ayarlar.json
 *.sqlite3
 *.sqlite3-*
+cf/node_modules/
+cf/.wrangler/
+cf/package-lock.json
+.wrangler/

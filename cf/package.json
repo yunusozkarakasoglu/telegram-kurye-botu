@@ -1,0 +1,17 @@
+{
+  "name": "telegram-kurye-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "check": "tsc --noEmit",
+    "db:local": "wrangler d1 execute kurye-db --local --file=src/schema.sql",
+    "db:remote": "wrangler d1 execute kurye-db --remote --file=src/schema.sql"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "typescript": "^5.7.2",
+    "wrangler": "^4.42.0"
+  }
+}

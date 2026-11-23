@@ -62,6 +62,12 @@ Mantık dosyaları 300 satır altında tutulur. UI metinleri ve tekrar eden say�
 - İleti sipariş bağı oluşturulurken açıkça işaretlenir; silinip tekrar kullanılabilen kuyruk kimliği aralığına güvenilmez.
 - Gönderim/yerel kayıt arasında tam atomiklik yoktur: ilk `sendMessage` çökme sonrası tekrarlanabilir. Bilinen mesajların `editMessageText` tekrarları etkisel olarak güvenlidir; bu sınır raporlanır, tam-bir-kez garantisi verilmez.
 
+## Cloudflare sürümü
+
+- `cf/`: TypeScript Worker, `fetch /webhook` + `scheduled` cron, D1 (`kurye-db`). Şema `cf/src/schema.sql` (Python şemasının birebir portu; `claim_offers`, `cancel_flow`, `pool_*`, `auto_offers` dahil).
+- Yayın akışı: `d1 execute schema` (eklemeli) → `wrangler deploy` → webhook zaten ayarlı. Kullanıcı güncellemesi gerekmez; rollback `wrangler rollback`, yedek `wrangler d1 export`.
+- Farklar: gönderim kuyruğu yerine doğrudan `sendMessage` (429 riski), tek kart yerine paket kartları, bazı komut/rapor detayları Python sürümüne göre eksik.
+
 ## Tablolar (özet)
 
 `accounts(active,deleted) · invites · drafts · batches · packages(cancelled_*,incoming_*) · outbox · cards · batch_cards · tariff · tariff_edit · reservations · pending_distance · reset_confirmation · settings · checkpoint · media_notice · transfer_scope · transfer_offers · transfer_log · profile_setup · regions · region_edit · admin_phones · admin_phone_edit · km_edit · account_search · claim_offers · cancel_flow · pool_view · pool_select · auto_offers`

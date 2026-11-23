@@ -171,4 +171,11 @@ Cloudflare öncesi rollerin tamamı için uçtan uca senaryolar yazıldı ve ge�
 
 Kullanıcının **Bölgeler** ekranında tanımladığı listeden 4 bölge seçilerek **10 paketlik fikstür talep** (`batch 5000002`, fikstür restoran) oluşturuldu: Yenişehir 3, Havaalanı (Yolcu) 4, Şeyhli 2, Sülüntepe 1. Önceki 2 fikstür havuz paketi, sayının tam 10 kalması için **iptal** işaretlendi (gerçek sipariş değil). Havuzda şu an 4 bölge grubu ve 10 bekleyen paket var; kurye **Havuz → Bölgeye Göre Grupla** ekranında görecek.
 
+### Cloudflare yayını (23.11.2026)
+
+- Worker: `https://telegram-kurye-botu.packonexpress.workers.dev` (D1: `kurye-db`, id `10d3a231…55ab`), cron `*/1 * * * *`.
+- Python long-polling servisi **durduruldu**; Telegram webhook aynı pilot bota ayarlandı. `/saglik` yerel ağda TLS engeli nedeniyle çağrılamadı; Telegram güncellemeleri işlendiği D1 ile doğrulandı.
+- Canlı doğrulanan (gerçek Telegram, `yunusozkar`): `/yonetici` ile D1'de yönetici oluştu; `/bolgeler` listesi; `/davet kurye CF Test Kurye` + telefon → davet kaydı; `/kuryepaketlimiti 5` → setting 5; `/tarife 130 35 …` → tarife güncellendi.
+- **Henüz doğrulanmadı:** restoran/kurye davet kabulü, talep formu, havuz/kabul/km/teslim/iptal akışlarının Cloudflare üzerinde gerçek hesaplarla çalışması. Yerel ağ `*.workers.dev` TLS'ini engellediği için webhook'a dışarıdan sentetik istek atılamadı.
+
 **Pilot tamamlanmadı.** Otomatik izole testlerin raporu ayrı: `Test-Raporu.md`. Buradaki kayıt yalnız gerçekten gözlenen canlı adımları belirtir.

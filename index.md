@@ -9,6 +9,7 @@
 - Dosya haritası: form `kurye/forms.py` · kabul/öncelik `kurye/acceptance.py` · aktarım `kurye/transfer.py` · kartlar `kurye/batch_views.py` + `kurye/views.py` · kuyruk `kurye/outbox.py` · göç `kurye/database.py` · servis döngüsü `kurye/runner.py`.
 - Menü adları: kurye `Havuz` → **Bölgeye Göre Grupla** + `Talebe göre göster`, `Açık Paketler` (üzerindeki işler), `Paketlerim`; yönetici `Havuz` → Tümü/Bekleyenler/Kuryede + Özet, `İptal Siparişler`, `Restoranlar`, `Kuryeler`, `Kurye Paket Limiti`.
 - Paket görünen adı `Talep #<batch>-<number>`; grup ortak, toplu kabul aynı grupta.
+- Cloudflare sürümü: `cf/` (TypeScript Worker + D1). Yayın `cd cf && npx wrangler deploy`; yedek `npx wrangler d1 export kurye-db --remote --output=yedek.sql`; geri alma `npx wrangler rollback`. Ayrıntı `cf/README.md`. Webhook Python long-polling ile aynı anda çalışmaz.
 - Eski sürüm `Telegram-Kurye-Botu.zip` değiştirilmez; güncel dağıtım `Telegram-Kurye-Botu-v2.zip` (token/sqlite içermez).
 - İptal: kart altı `İptal` → neden → onay; 10 dk altı taban, üstü tam ücret; 🔴 kart, yönetici bildirimi.
 - Kayıt: `/davet kurye|restoran` isimsiz → kişi kendi ad/telefonunu (restoran ayrıca konum) girer; isim verilirse yönetici girer.
