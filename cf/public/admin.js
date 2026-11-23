@@ -6,7 +6,7 @@
   'use strict';
   var $ = UI.$, esc = UI.esc, money = UI.money, kmf = UI.km, dt = UI.dt;
 
-  var S = { tab: 'ozet', data: {}, session: null };
+  var S = { tab: 'ozet', data: {}, session: null, ozetGroup: '' };
 
   var TABS = [
     ['ozet', 'Özet'], ['havuz', 'Havuz'], ['sontalepler', 'Son Talepler'],
@@ -32,21 +32,48 @@
     head('Özet', 'Sistem durumu');
     API.yonetim('ozet').then(function (d) {
       var waiting = d.waiting || [];
-      var list = waiting.length ? waiting.map(function (w) {
+      function wrow(w) {
         return '<button class="brow wrow" data-w="' + w.id + '"><span><b>' + esc(w.label) + '</b> · ' + esc(w.restaurant) +
           (w.region ? ' · ' + esc(w.region) : '') + (w.courier ? ' · Kuryede' : ' · Havuzda') + '</span>' +
           '<b class="late">' + w.minutes + ' dk</b></button>';
-      }).join('') : '<div class="empty">10 dakikayı geçen paket yok.</div>';
+      }
+      var list;
+      if (!waiting.length) {
+        list = '<div class="empty">10 dakikayı geçen paket yok.</div>';
+      } else if (!S.ozetGroup) {
+        list = waiting.map(wrow).join('');
+      } else {
+        var key = S.ozetGroup === 'region' ? 'region' : 'restaurant';
+        var groups = {};
+        waiting.forEach(function (w) { var k = w[key] || 'Belirtilmedi'; (groups[k] = groups[k] || []).push(w); });
+        list = Object.keys(groups).sort().map(function (k) {
+          var arr = groups[k].slice().sort(function (a, b) { return b.minutes - a.minutes; });
+          return '<div class="ghead" style="margin-top:6px"><span class="gname">' + esc(k) + '</span>' +
+            '<span class="gcount">' + arr.length + ' paket</span></div>' + arr.map(wrow).join('');
+        }).join('');
+      }
+      var groupBtns = '<div class="filters" style="margin-bottom:8px">' +
+        '<button class="sm ' + (S.ozetGroup === 'region' ? 'p' : '') + '" data-og="region">Bölgeye göre</button>' +
+        '<button class="sm ' + (S.ozetGroup === 'restaurant' ? 'p' : '') + '" data-og="restaurant">Restorana göre</button>' +
+        '</div>';
       panel('<div class="kpis k3">' +
         kpi('Aktif restoran', d.active_restaurants) +
         kpi('Aktif kurye', d.active_couriers) +
         kpi('Toplam paket (bugün)', d.today_packages) +
         '</div>' +
         '<h3 style="font-size:15px;margin:16px 0 6px">10 dakikayı geçen bekleyenler</h3>' +
+        groupBtns +
         '<div class="card" style="padding:6px 10px">' + list + '</div>' +
         '<p class="note">Bölgeler: ' + esc((d.regions || []).join(', ')) + '</p>');
       Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-w]'), function (b) {
         b.onclick = function () { waitingSheet(Number(b.getAttribute('data-w')), waiting); };
+      });
+      Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-og]'), function (b) {
+        b.onclick = function () {
+          var g = b.getAttribute('data-og');
+          S.ozetGroup = S.ozetGroup === g ? '' : g;
+          viewOzet();
+        };
       });
     });
   }
