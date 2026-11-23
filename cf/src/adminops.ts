@@ -65,7 +65,7 @@ export async function runCommand(bot: Bot, user: Account, key: string): Promise<
   switch (key) {
     case "start": await bot.menu(user, `Hoş geldiniz, ${user.name}.`); break;
     case "rapor": await reports.reportPeriods(bot, user); break;
-    case "davet": await bot.send(chat, "Kullanım\n/davet restoran Ertaş Döner\n/davet kurye Ahmet Yılmaz"); break;
+    case "davet": await davetMenu(bot, chat); break;
     case "limit": await configureLimit(bot, chat, ""); break;
     case "tarife": await showTariff(bot, chat); break;
     case "bilgi": await profile.profileTargets(bot, chat); break;
@@ -76,8 +76,8 @@ export async function runCommand(bot: Bot, user: Account, key: string): Promise<
     case "mesafe": await kmHint(bot, user); break;
     case "mesafeguncelle": await kmUpdateChoices(bot, user); break;
     case "havuz": {
-      const { showRegions: regions } = await import("./pool");
-      await regions(bot, user); break;
+      const { showPoolChooser } = await import("./pool");
+      await showPoolChooser(bot, user); break;
     }
     case "acik": { const { showAssigned } = await import("./pool"); await showAssigned(bot, user, 0); break; }
     case "paketlerim": {
@@ -306,6 +306,10 @@ export async function rejectionLog(bot: Bot, user: Account): Promise<any> {
 export async function callRestaurant(bot: Bot, user: Account, packageId: number) { return profile.sendRestaurantContact(bot, user.id, packageId); }
 export async function callCourier(bot: Bot, user: Account, packageId: number) { return profile.sendCourierContact(bot, user.id, packageId); }
 export async function callAdmin(bot: Bot, user: Account, index: number) { return accounts.callAdminByIndex(bot, user, index); }
+export async function davetMenu(bot: Bot, chat: number): Promise<any> {
+  await bot.send(chat, "Kim için davet oluşturacaksınız?", keyboard([[["Kurye Davet Et", "dav:kurye"], ["Restoran Davet Et", "dav:restoran"]]]));
+}
+
 export async function createInvite(bot: Bot, chat: number, args: string): Promise<any> {
   const [role, ...nameParts] = args.trim().split(/\s+/);
   const name = nameParts.join(" ").slice(0, 80);

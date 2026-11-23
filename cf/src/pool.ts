@@ -2,14 +2,19 @@ import type { Bot } from "./core";
 import type { Account, PackageRow } from "./types";
 import { UNSPECIFIED, POOL_VIEW_SECONDS } from "./constants";
 import { details, packageStatus, keyboard } from "./views";
-import { escapeHtml } from "./util";
+import { escapeHtml, fmtHM, section } from "./util";
 
 export async function cardMarkup(bot: Bot, p: PackageRow, role: string): Promise<any> {
   if (p.cancelled_at || p.delivered_at) return undefined;
   if (role === "kurye" && p.courier) {
     const label = p.picked_up_at ? "Teslim Ettim" : "Restorandan Aldım";
     const action = p.picked_up_at ? "deliver" : "pickup";
-    return keyboard([[[label, `${action}:${p.id}`]], [["Aktar", `tr:${p.id}`], ["İptal", `cx:${p.id}`]]]);
+    const rows: any[] = [[[label, `${action}:${p.id}`]], [["Aktar", `tr:${p.id}`], ["İptal", `cx:${p.id}`]]];
+    if (!p.picked_up_at && p.restaurant_lat != null && p.restaurant_lng != null) {
+      rows.push([["Haritada Aç", `https://www.google.com/maps/dir/?api=1&destination=${p.restaurant_lat},${p.restaurant_lng}`]]);
+    }
+    if (p.restaurant_phone) rows.push([["Restoranı Ara", `call:${p.id}`]]);
+    return keyboard(rows);
   }
   if (role === "restoran" && p.courier) {
     const rows: [string, string][][] = [];
@@ -19,6 +24,107 @@ export async function cardMarkup(bot: Bot, p: PackageRow, role: string): Promise
   }
   if (role === "yonetici" && p.courier) return keyboard([ [["İptal", `cx:${p.id}`]] ]);
   return undefined;
+}
+
+async function timeSelectAction(bot: Bot, user: Account, args: string[]): Promise<any> {
+  const [sub, arg] = args;
+  if (sub === "t" && arg) {
+    const pid = Number(arg);
+    const row = await bot.db.first("SELECT 1 FROM pool_select WHERE courier=? AND package=?", user.id, pid);
+    if (row) await bot.db.run("DELETE FROM pool_select WHERE courier=? AND package=?", user.id, pid);
+    else await bot.db.run("INSERT OR IGNORE INTO pool_select VALUES (?,?)", user.id, pid);
+    await showByTime(bot, user);
+    return null;
+  }
+  if (sub === "go") {
+    const rows = await bot.db.all<{ id: number }>(`SELECT p.id FROM packages p WHERE p.courier IS NULL AND p.delivered_at IS NULL
+      AND p.cancelled_at IS NULL AND p.id IN (SELECT package FROM pool_select WHERE courier=?)`, user.id);
+    const { takePackages } = await import("./accept");
+    return takePackages(bot, user, rows.map((r) => r.id));
+  }
+  if (sub === "take") {
+    const rows = (await bot.packages("p.courier IS NULL AND p.delivered_at IS NULL AND p.cancelled_at IS NULL"))
+      .sort((a, b) => (a.created_at || 0) - (b.created_at || 0) || a.batch - b.batch || a.number - b.number)
+      .slice(0, await bot.capacity(user.id));
+    const { takePackages } = await import("./accept");
+    return takePackages(bot, user, rows.map((r) => r.id));
+  }
+  return "Bu işlem kullanılamıyor.";
+}
+
+async function regionSelectAction(bot: Bot, user: Account, args: string[]): Promise<any> {
+  const [sub, arg] = args;
+  if (sub === "t" && arg) {
+    const pid = Number(arg);
+    const row = await bot.db.first("SELECT 1 FROM pool_select WHERE courier=? AND package=?", user.id, pid);
+    if (row) await bot.db.run("DELETE FROM pool_select WHERE courier=? AND package=?", user.id, pid);
+    else await bot.db.run("INSERT OR IGNORE INTO pool_select VALUES (?,?)", user.id, pid);
+    await showRegionGroups(bot, user);
+    return null;
+  }
+  if (sub === "go" && arg) {
+    const region = await regionFromCode(bot, arg);
+    if (!region) return "Bölge bulunamadı.";
+    const rows = await selected(bot, user.id, region);
+    const { takePackages } = await import("./accept");
+    return takePackages(bot, user, rows.map((r) => r.id));
+  }
+  if (sub === "take" && arg) {
+    const region = await regionFromCode(bot, arg);
+    if (!region) return "Bölge bulunamadı.";
+    const rows = (await groupRows(bot, region, user.id)).slice(0, await bot.capacity(user.id));
+    const { takePackages } = await import("./accept");
+    return takePackages(bot, user, rows.map((r) => r.id));
+  }
+  return "Bu işlem kullanılamıyor.";
+}
+
+async function restaurantSelectAction(bot: Bot, user: Account, args: string[]): Promise<any> {
+  const [sub, arg] = args;
+  if (sub === "t" && arg) {
+    const pid = Number(arg);
+    const row = await bot.db.first("SELECT 1 FROM pool_select WHERE courier=? AND package=?", user.id, pid);
+    if (row) await bot.db.run("DELETE FROM pool_select WHERE courier=? AND package=?", user.id, pid);
+    else await bot.db.run("INSERT OR IGNORE INTO pool_select VALUES (?,?)", user.id, pid);
+    await showByRestaurant(bot, user);
+    return null;
+  }
+  if (sub === "go" && arg) {
+    const owner = Number(arg);
+    const rows = await bot.packages(`b.owner=? AND p.courier IS NULL AND p.delivered_at IS NULL AND p.cancelled_at IS NULL
+      AND p.id IN (SELECT package FROM pool_select WHERE courier=?)`, [owner, user.id]);
+    const { takePackages } = await import("./accept");
+    return takePackages(bot, user, rows.map((r) => r.id));
+  }
+  if (sub === "take" && arg) {
+    const owner = Number(arg);
+    const rows = (await bot.packages("b.owner=? AND p.courier IS NULL AND p.delivered_at IS NULL AND p.cancelled_at IS NULL", [owner]))
+      .sort((a, b) => a.batch - b.batch || a.number - b.number)
+      .slice(0, await bot.capacity(user.id));
+    const { takePackages } = await import("./accept");
+    return takePackages(bot, user, rows.map((r) => r.id));
+  }
+  return "Bu işlem kullanılamıyor.";
+}
+
+async function batchSelectAction(bot: Bot, user: Account, args: string[]): Promise<any> {
+  const [sub, arg] = args;
+  if (sub === "t" && arg) {
+    const pid = Number(arg);
+    const row = await bot.db.first("SELECT 1 FROM pool_select WHERE courier=? AND package=?", user.id, pid);
+    if (row) await bot.db.run("DELETE FROM pool_select WHERE courier=? AND package=?", user.id, pid);
+    else await bot.db.run("INSERT OR IGNORE INTO pool_select VALUES (?,?)", user.id, pid);
+    await showByTime(bot, user);
+    return null;
+  }
+  if (sub === "go" && arg) {
+    const batch = Number(arg);
+    const rows = await bot.packages(`p.batch=? AND p.courier IS NULL AND p.delivered_at IS NULL AND p.cancelled_at IS NULL
+      AND p.id IN (SELECT package FROM pool_select WHERE courier=?)`, [batch, user.id]);
+    const { takePackages } = await import("./accept");
+    return takePackages(bot, user, rows.map((r) => r.id));
+  }
+  return "Bu işlem kullanılamıyor.";
 }
 
 export async function card(bot: Bot, chat: number, pkg: PackageRow, role: string) {
@@ -36,7 +142,7 @@ export async function showPackageCards(bot: Bot, user: Account, where: string, p
   const nav: [string, string][] = [];
   if (page) nav.push(["Önceki", `page:${mode}:${page - 1}`]);
   if (rows.length > 8) nav.push(["Sonraki", `page:${mode}:${page + 1}`]);
-  if (nav.length) await bot.send(user.id, `Sayfa ${page + 1}`, keyboard([nav]));
+  if (nav.length) await bot.send(user.id, `Sayfa ${page + 1}`, keyboard([nav as any]));
 }
 
 export async function regionGroups(bot: Bot) {
@@ -49,27 +155,41 @@ export async function regionGroups(bot: Bot) {
   return groups;
 }
 
-export async function showRegions(bot: Bot, user: Account) {
+export async function showPoolChooser(bot: Bot, user: Account) {
+  if (user.role !== "kurye") return "Bu işlem kullanılamıyor.";
+  if (!user.online) return bot.send(user.id, "Havuzu görmek için çevrimiçi olun.");
+  if (user.locked) return bot.send(user.id, "Yeni işler için üzerinizdeki tüm paketleri teslim edin.");
+  const groups = await regionGroups(bot);
+  const total = [...groups.values()].reduce((n, arr) => n + arr.length, 0);
+  await bot.send(user.id, section(`Havuz\nBekleyen ${total} paket · Boş kapasiteniz: ${await bot.capacity(user.id)}`), keyboard([
+    [["Bölgeye Göre Grupla", "pv:regions"]],
+    [["Restorana Göre Grupla", "pv:rests"]],
+    [["Sipariş Zamanına Göre", "pv:time"]],
+  ]));
+}
+
+export async function showRegionGroups(bot: Bot, user: Account) {
   if (user.role !== "kurye") return "Bu işlem kullanılamıyor.";
   if (!user.online) return bot.send(user.id, "Havuzu görmek için çevrimiçi olun.");
   if (user.locked) return bot.send(user.id, "Yeni işler için üzerinizdeki tüm paketleri teslim edin.");
   const groups = await regionGroups(bot);
   if (!groups.size) return bot.send(user.id, "Havuzda bekleyen paket yok.");
   const capacity = await bot.capacity(user.id);
-  const total = [...groups.values()].reduce((n, arr) => n + arr.length, 0);
-  const lines = ["Bölgeye Göre Grupla", `Toplam ${total} paket · Boş kapasiteniz: ${capacity}`, ""];
-  const buttons: [string, string][][] = [];
+  const chosen = new Set((await bot.db.all<{ package: number }>("SELECT package FROM pool_select WHERE courier=?", user.id)).map((r) => r.package));
   const sorted = [...groups.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], "tr"));
-  for (const [region, packages] of sorted) {
+  for (const [region, packages] of sorted.slice(0, 8)) {
     const code = await regionCode(bot, region);
-    lines.push(`📍 ${region} · ${packages.length} paket`);
-    for (const row of packages.slice(0, 4)) lines.push(`   #${row.batch}-${row.number} · ${row.restaurant}`);
-    if (packages.length > 4) lines.push(`   … +${packages.length - 4} paket`);
-    if (capacity) buttons.push([`📍 ${region}: Tümünü Al (${Math.min(capacity, packages.length)})`, `pv:takeall:${code}`] as any);
-    buttons.push([`📍 ${region}: Paket Seç (${packages.length})`, `pv:sel:${code}`] as any);
+    const picked = packages.filter((p) => chosen.has(p.id)).length;
+    const buttons: any[] = packages.slice(0, 6).map((p) => [[
+      `${chosen.has(p.id) ? "✅" : "⬜"} #${p.batch}-${p.number} · ${p.restaurant} · ${p.payment || UNSPECIFIED} · ${fmtHM(p.created_at)}`,
+      `pvg:t:${p.id}`,
+    ]]);
+    const actionRow: [string, string][] = [[`Seçilenleri Kabul Et (${picked})`, `pvg:go:${code}`]];
+    if (capacity) actionRow.push([`Tümünü Al (${Math.min(capacity, packages.length)})`, `pvg:take:${code}`]);
+    buttons.push(actionRow);
+    buttons.push([["Bölgeler", "pv:regions"], ["Restoranlar", "pv:rests"], ["Talepler", "pv:batch"]]);
+    await bot.send(user.id, section(`BÖLGEYE GÖRE GRUPLANDIRMA LİSTESİ ${fmtHM(bot.now())}\n📍 ${region.toUpperCase()} · ${packages.length} paket · boş kapasite ${capacity}`), keyboard(buttons));
   }
-  buttons.push([["Talebe göre göster", "pv:batch"]] as any);
-  await bot.send(user.id, lines.join("\n"), keyboard(buttons));
 }
 
 async function regionCode(bot: Bot, region: string): Promise<string> {
@@ -90,15 +210,17 @@ async function groupRows(bot: Bot, region: string, courier?: number) {
     sql += ` AND NOT EXISTS (SELECT 1 FROM reservations r WHERE r.package=p.id AND r.expires>? AND r.courier<>?)`;
     params.push(bot.nowF(), courier);
   }
-  return bot.packages(sql, params, "ORDER BY p.batch, p.number");
+  const rows = await bot.packages(sql, params);
+  return rows.sort((a, b) => a.batch - b.batch || a.number - b.number);
 }
 async function setPoolRegion(bot: Bot, courier: number, region: string) {
   await bot.db.run("INSERT OR REPLACE INTO pool_view VALUES (?,?,?)", courier, region, bot.nowF() + POOL_VIEW_SECONDS);
 }
 async function selected(bot: Bot, courier: number, region: string) {
-  return bot.packages(`p.courier IS NULL AND p.delivered_at IS NULL AND p.cancelled_at IS NULL
+  const rows = await bot.packages(`p.courier IS NULL AND p.delivered_at IS NULL AND p.cancelled_at IS NULL
       AND coalesce(nullif(p.region,''), ?)=? AND p.id IN (SELECT package FROM pool_select WHERE courier=?)`,
-    [UNSPECIFIED, region, courier], "ORDER BY p.batch, p.number");
+    [UNSPECIFIED, region, courier]);
+  return rows.sort((a, b) => a.batch - b.batch || a.number - b.number);
 }
 
 export async function showGroup(bot: Bot, user: Account, code: string) {
@@ -106,18 +228,18 @@ export async function showGroup(bot: Bot, user: Account, code: string) {
   if (!region) return "Bölge bulunamadı.";
   await setPoolRegion(bot, user.id, region);
   const rows = await groupRows(bot, region, user.id);
-  if (!rows.length) return showRegions(bot, user);
+  if (!rows.length) return showRegionGroups(bot, user);
   const capacity = await bot.capacity(user.id);
   const lines = [`${region} · ${rows.length} paket`, `Boş kapasiteniz: ${capacity} paket`, ""];
-  for (const row of rows.slice(0, 15)) lines.push(`#${row.batch}-${row.number} · ${row.restaurant} · ${row.payment || UNSPECIFIED}`);
+  for (const row of rows.slice(0, 15)) lines.push(`#${row.batch}-${row.number} · ${row.restaurant} · ${row.payment || UNSPECIFIED} · ${fmtHM(row.created_at)}`);
   if (rows.length > 15) lines.push(`… ve ${rows.length - 15} paket daha`);
   const buttons: any[] = [];
   if (capacity) {
-    buttons.push([`Tümünü Al (${Math.min(capacity, rows.length)} Paket)`, `pv:takeall:${code}`]);
-    buttons.push(["Seçerek Al", `pv:sel:${code}`]);
+    buttons.push([[`Tümünü Al (${Math.min(capacity, rows.length)} Paket)`, `pv:takeall:${code}`]]);
+    buttons.push([["Seçerek Al", `pv:sel:${code}`]]);
   }
-  buttons.push(["Bölgeler", "pv:regions"]);
-  await bot.send(user.id, lines.join("\n"), keyboard(buttons));
+  buttons.push([["Bölgeler", "pv:regions"]]);
+  await bot.send(user.id, section(lines.join("\n")), keyboard(buttons));
 }
 
 export async function showSelection(bot: Bot, user: Account, code: string) {
@@ -128,20 +250,23 @@ export async function showSelection(bot: Bot, user: Account, code: string) {
   const chosen = new Set((await selected(bot, user.id, region)).map((r) => r.id));
   const buttons: any[] = [];
   for (const row of rows.slice(0, 15)) {
-    buttons.push([`${chosen.has(row.id) ? "✅" : "⬜"} #${row.batch}-${row.number} · ${row.restaurant}`, `pv:t:${row.id}`]);
+    buttons.push([[`${chosen.has(row.id) ? "✅" : "⬜"} #${row.batch}-${row.number} · ${row.restaurant} · ${fmtHM(row.created_at)}`, `pv:t:${row.id}`]]);
   }
   const capacity = await bot.capacity(user.id);
   const lines = [`${region} · seçim`, "Almak istediğiniz paketlere dokunun.", "", `Seçilen: ${chosen.size} paket · Boş kapasite: ${capacity}`];
-  buttons.push(["Tümünü Seç", `pv:all:${code}`], ["Temizle", `pv:none:${code}`]);
-  buttons.push([`Seçilenleri Al (${chosen.size})`, `pv:go:${code}`]);
-  buttons.push(["Geri", `pv:g:${code}`]);
-  await bot.send(user.id, lines.join("\n"), keyboard(buttons));
+  buttons.push([["Tümünü Seç", `pv:all:${code}`], ["Temizle", `pv:none:${code}`]]);
+  buttons.push([[`Seçilenleri Al (${chosen.size})`, `pv:go:${code}`]]);
+  buttons.push([["Geri", `pv:g:${code}`]]);
+  await bot.send(user.id, section(lines.join("\n")), keyboard(buttons));
 }
 
 export async function action(bot: Bot, user: Account, args: string[]): Promise<any> {
+  if (args[0] === "pvb") return batchSelectAction(bot, user, args.slice(1));
   const sub = args[0];
-  if (sub === "regions") { await showRegions(bot, user); return null; }
-  if (sub === "batch") { await showAssigned(bot, user, 0); return null; }
+  if (sub === "regions") { await showRegionGroups(bot, user); return null; }
+  if (sub === "rests") { await showByRestaurant(bot, user); return null; }
+  if (sub === "batch" || sub === "time") { await showByTime(bot, user); return null; }
+  if (sub === "pvr") return restaurantSelectAction(bot, user, args.slice(1));
   const code = args[1];
   if (sub === "g" && code) { await showGroup(bot, user, code); return null; }
   if (sub === "sel" && code) { await showSelection(bot, user, code); return null; }
@@ -181,6 +306,52 @@ export async function action(bot: Bot, user: Account, args: string[]): Promise<a
   return "Bu işlem kullanılamıyor.";
 }
 
+export async function showByTime(bot: Bot, user: Account) {
+  if (user.role !== "kurye") return "Bu işlem kullanılamıyor.";
+  if (!user.online) return bot.send(user.id, "Havuzu görmek için çevrimiçi olun.");
+  if (user.locked) return bot.send(user.id, "Yeni işler için üzerinizdeki tüm paketleri teslim edin.");
+  const rows = (await bot.packages("p.courier IS NULL AND p.delivered_at IS NULL AND p.cancelled_at IS NULL"))
+    .sort((a, b) => (b.created_at || 0) - (a.created_at || 0) || b.batch - a.batch || b.number - a.number);
+  if (!rows.length) return bot.send(user.id, "Havuzda bekleyen paket yok.");
+  const capacity = await bot.capacity(user.id);
+  const chosen = new Set((await bot.db.all<{ package: number }>("SELECT package FROM pool_select WHERE courier=?", user.id)).map((r) => r.package));
+  const picked = rows.filter((p) => chosen.has(p.id)).length;
+  const buttons: any[] = rows.slice(0, 8).map((p) => [[
+    `${chosen.has(p.id) ? "✅" : "⬜"} #${p.batch}-${p.number} · ${p.restaurant} · ${p.region || UNSPECIFIED} · ${p.payment || UNSPECIFIED} · ${fmtHM(p.created_at)}`,
+    `pvt:t:${p.id}`,
+  ]]);
+  const actionRow: [string, string][] = [[`Seçilenleri Kabul Et (${picked})`, "pvt:go"]];
+  if (capacity) actionRow.push([`Tümünü Al (${Math.min(capacity, rows.length)})`, "pvt:take"]);
+  buttons.push(actionRow);
+  buttons.push([["Bölgeler", "pv:regions"], ["Restoranlar", "pv:rests"]]);
+  await bot.send(user.id, section(`SİPARİŞ ZAMANINA GÖRE LİSTE ${fmtHM(bot.now())}\n${rows.length} paket · boş kapasite ${capacity}`), keyboard(buttons));
+}
+
+export async function showByRestaurant(bot: Bot, user: Account) {
+  if (user.role !== "kurye") return "Bu işlem kullanılamıyor.";
+  if (!user.online) return bot.send(user.id, "Havuzu görmek için çevrimiçi olun.");
+  if (user.locked) return bot.send(user.id, "Yeni işler için üzerinizdeki tüm paketleri teslim edin.");
+  const rows = (await bot.packages("p.courier IS NULL AND p.delivered_at IS NULL AND p.cancelled_at IS NULL"))
+    .sort((a, b) => a.owner - b.owner || a.batch - b.batch || a.number - b.number);
+  if (!rows.length) return bot.send(user.id, "Havuzda bekleyen paket yok.");
+  const capacity = await bot.capacity(user.id);
+  const chosen = new Set((await bot.db.all<{ package: number }>("SELECT package FROM pool_select WHERE courier=?", user.id)).map((r) => r.package));
+  const byOwner = new Map<number, PackageRow[]>();
+  for (const row of rows) byOwner.set(row.owner, [...(byOwner.get(row.owner) || []), row]);
+  for (const [owner, packages] of [...byOwner.entries()].slice(0, 8)) {
+    const picked = packages.filter((p) => chosen.has(p.id)).length;
+    const buttons: any[] = packages.slice(0, 6).map((p) => [[
+      `${chosen.has(p.id) ? "✅" : "⬜"} #${p.batch}-${p.number} · ${p.region || UNSPECIFIED} · ${p.payment || UNSPECIFIED} · ${fmtHM(p.created_at)}`,
+      `pvr:t:${p.id}`,
+    ]]);
+    const actionRow: [string, string][] = [[`Seçilenleri Kabul Et (${picked})`, `pvr:go:${owner}`]];
+    if (capacity) actionRow.push([`Tümünü Al (${Math.min(capacity, packages.length)})`, `pvr:take:${owner}`]);
+    buttons.push(actionRow);
+    buttons.push([["Restoranlar", "pv:rests"], ["Bölgeler", "pv:regions"]]);
+    await bot.send(user.id, section(`RESTORANA GÖRE GRUPLANDIRMA LİSTESİ ${fmtHM(bot.now())}\n${packages[0].restaurant} · ${packages.length} paket · boş kapasite ${capacity}`), keyboard(buttons));
+  }
+}
+
 export async function showAssigned(bot: Bot, user: Account, page: number) {
   if (user.role !== "kurye") return "Bu işlem kullanılamıyor.";
   await showPackageCards(bot, user, "p.courier=? AND p.delivered_at IS NULL AND p.cancelled_at IS NULL", [user.id], page, "active");
@@ -196,7 +367,7 @@ export async function showAssigned(bot: Bot, user: Account, page: number) {
     lines.push(`Paket ${index + 1} : Talep #${row.batch}-${row.number} · ${row.region || UNSPECIFIED} · ${km} · ${fee} · ${state}`);
   });
   if (sorted.length > 20) lines.push(`… ve ${sorted.length - 20} paket daha`);
-  await bot.send(user.id, lines.join("\n"));
+  await bot.send(user.id, section(lines.join("\n")));
   for (const row of rows) if (row.incoming) await bot.db.run("UPDATE packages SET incoming=0,incoming_from=NULL,incoming_at=NULL WHERE id=?", row.id);
 }
 
@@ -212,10 +383,10 @@ export async function showPool(bot: Bot, user: Account, mode: string, page: numb
   if (mode === "courier") where += " AND p.courier IS NOT NULL";
   const rows = await bot.packages(where, [page * 8], "LIMIT 9 OFFSET ?");
   for (const row of rows.slice(0, 8)) {
-    const buttons: any[] = [];
-    if (row.courier == null) buttons.push(["Kurye Ata", `assign:${row.id}`], ["İptal", `cx:${row.id}`]);
-    else buttons.push(["İptal", `cx:${row.id}`]);
-    await bot.send(user.id, await details(bot.db, row, true), keyboard([buttons]), "HTML");
+    const rowButtons: any[] = [];
+    if (row.courier == null) rowButtons.push(["Kurye Ata", `assign:${row.id}`], ["İptal", `cx:${row.id}`]);
+    else rowButtons.push(["İptal", `cx:${row.id}`]);
+    await bot.send(user.id, await details(bot.db, row, true), keyboard([rowButtons]), "HTML");
   }
   if (!rows.length) await bot.send(user.id, "Bu filtrede paket yok.");
   const stats = await bot.db.first<any>(`SELECT count(*) AS total, count(*) FILTER (WHERE p.courier IS NULL) AS waiting,
@@ -225,11 +396,11 @@ export async function showPool(bot: Bot, user: Account, mode: string, page: numb
   const lines = ["", "Özet", `Toplam : ${stats.total} paket · ${stats.regions} bölge`, `Havuzda bekleyen : ${stats.waiting} · Kuryede : ${stats.on_courier}`];
   if (mode === "courier") lines.push(`Kayıtlı kurye ücreti toplamı : ${stats.fees} TL`);
   if (oldest?.oldest) lines.push(`En eski paket : ${Math.floor((bot.now() - oldest.oldest) / 60)} dk önce oluşturuldu`);
-  await bot.send(user.id, lines.join("\n"));
+  await bot.send(user.id, section(lines.join("\n")));
   const nav: [string, string][] = [];
   if (page) nav.push(["Önceki", `pool:${mode}:${page - 1}`]);
   if (rows.length > 8) nav.push(["Sonraki", `pool:${mode}:${page + 1}`]);
-  if (nav.length) await bot.send(user.id, `Sayfa ${page + 1}`, keyboard([nav]));
+  if (nav.length) await bot.send(user.id, `Sayfa ${page + 1}`, keyboard([nav as any]));
 }
 
 export async function chooseCourier(bot: Bot, user: Account, packageId: number, page: number) {
@@ -273,7 +444,8 @@ export async function pageAction(bot: Bot, user: Account, args: string[]): Promi
     await showPackageCards(bot, user, "p.courier=? AND p.delivered_at IS NOT NULL", [user.id], page, "delivered");
     return null;
   }
-  if (mode === "open" && (user.role === "kurye" || user.role === "yonetici")) { await showRegions(bot, user as Account); return null; }
+  if (mode === "open" && user.role === "kurye") { await showPoolChooser(bot, user); return null; }
+  if (mode === "open" && user.role === "yonetici") { await showPoolFilters(bot, user); return null; }
   if (mode === "recent" && user.role === "yonetici") { await showRecent(bot, user); return null; }
   if (mode === "mine" && user.role === "restoran") {
     const { orderFilters } = await import("./adminops");

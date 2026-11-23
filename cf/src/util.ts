@@ -1,5 +1,8 @@
 import { TURKIYE_OFFSET, UNSPECIFIED } from "./constants";
 
+export const SEPARATOR = "==========================";
+export const section = (text: string) => `${SEPARATOR}\n${text}`;
+
 export const now = () => Math.floor(Date.now() / 1000);
 export const nowF = () => Date.now() / 1000;
 export function trUpper(value: string | null | undefined): string {
@@ -14,6 +17,13 @@ export function fmtTime(ts: number | null): string {
   const p = (n: number) => String(n).padStart(2, "0");
   return `${p(d.getUTCDate())}.${p(d.getUTCMonth() + 1)}.${d.getUTCFullYear()} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`;
 }
+export function fmtHM(ts: number | null): string {
+  if (!ts) return "--:--";
+  const d = new Date((ts + TURKIYE_OFFSET * 3600) * 1000);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
+}
+
 export function dialNumber(phone: string | null | undefined): string {
   let digits = (phone || "").replace(/\D/g, "");
   if (!digits) return "";

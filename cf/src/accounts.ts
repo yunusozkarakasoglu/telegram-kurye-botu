@@ -2,7 +2,7 @@ import type { Bot } from "./core";
 import type { Account } from "./types";
 import { ACCOUNT_SEARCH_SECONDS, CALL_HINT } from "./constants";
 import { keyboard } from "./views";
-import { dialNumber } from "./util";
+import { dialNumber, section } from "./util";
 
 const LABEL: Record<string, string> = { restoran: "Restoranlar", kurye: "Kuryeler" };
 const FILTERS: Record<string, string> = { all: "Tümü", online: "Online", offline: "Offline" };
@@ -33,14 +33,14 @@ export async function showAccounts(bot: Bot, user: Account, role: string, page =
     buttons.push([["Ara", `acc:call:${row.id}`]]);
   }
   if (!rows.length) lines.push("Bu filtrede kayıt yok.");
-  const searchRow: [string, string][] = [["İsimle Ara", "acc:s"]];
+  const searchRow: any[] = [["İsimle Ara", "acc:s"]];
   if (query) searchRow.push(["Aramayı Temizle", "acc:clr"]);
-  buttons.push(searchRow);
+  buttons.push([searchRow]);
   const nav: [string, string][] = [];
   if (page) nav.push(["Önceki", `acc:f:${mode}:${page - 1}`]);
   if (rows.length > 8) nav.push(["Sonraki", `acc:f:${mode}:${page + 1}`]);
   if (nav.length) buttons.push(nav);
-  await bot.send(user.id, lines.join("\n"), keyboard(buttons));
+  await bot.send(user.id, section(lines.join("\n")), keyboard(buttons));
   return null;
 }
 
@@ -124,7 +124,7 @@ export async function showAdminPhones(bot: Bot, user: Account): Promise<any> {
   if (!rows.length) lines.push("Kayıt yok. Kurye ve restoran 'Yöneticiyi Ara' dediğinde numara bulamaz.");
   const buttons: any[] = [[["Numara Ekle", "adphone:add"]]];
   rows.forEach((row, i) => buttons.push([[`Sil: ${row.name}`, `adphone:del:${i}`]]));
-  await bot.send(user.id, lines.join("\n"), keyboard(buttons));
+  await bot.send(user.id, section(lines.join("\n")), keyboard(buttons));
   return null;
 }
 

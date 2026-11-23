@@ -245,8 +245,11 @@ export async function transferStep(bot: Bot, user: Account, action: string, toke
     if ((await bot.activeCount(user.id)) >= (await bot.activeLimit())) await bot.lockCourier(user.id, await bot.activeLimit());
     else await bot.db.run("UPDATE accounts SET locked=0 WHERE id=? AND locked=1 AND NOT EXISTS (SELECT 1 FROM packages WHERE courier=? AND delivered_at IS NULL AND cancelled_at IS NULL)", offer.from_courier, offer.from_courier);
     const fresh = (await bot.packages("p.id=?", [pkg.id]))[0];
+    await bot.db.run("UPDATE packages SET incoming=1,incoming_from=?,incoming_at=? WHERE id=?", offer.from_courier, bot.nowF(), pkg.id);
+    const sender = await bot.db.first<{ name: string }>("SELECT name FROM accounts WHERE id=?", offer.from_courier);
     await bot.finishAssignment([pkg.id], user.id, account!, false, pkg.batch);
-    await bot.send(user.id, [`<b>🔔 AKTARILAN SİPARİŞ</b>`, `<b>Gönderen kurye : ${fresh.courier_name ? "—" : "—"}</b>`, await details(bot.db, fresh, true)].join("\n"), undefined, "HTML");
+    await bot.send(user.id, [`<b>🔔 AKTARILAN SİPARİŞ</b>`, `<b>Gönderen kurye : ${sender?.name || "—"}</b>`,
+      await details(bot.db, fresh, true)].join("\n"), undefined, "HTML");
     return "Aktarım kabul edildi.";
   }
   return "Bu işlem kullanılamıyor.";

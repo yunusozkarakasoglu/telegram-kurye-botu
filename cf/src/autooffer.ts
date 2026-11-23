@@ -36,9 +36,11 @@ async function createOffers(bot: Bot) {
   const threshold = bot.now() - AUTO_OFFER_AFTER;
   const packages = await bot.db.all<any>(`SELECT p.id, p.batch FROM packages p JOIN batches b ON b.id=p.batch
     WHERE p.courier IS NULL AND p.delivered_at IS NULL AND p.cancelled_at IS NULL AND b.created_at IS NOT NULL AND b.created_at<=?`, threshold);
+  const pendingSends = new Map<number, { offerId: number; pkg: any }[]>();
+  const pending = pendingSends;
   for (const pkg of packages) {
-    const pending = await bot.db.first("SELECT 1 FROM auto_offers WHERE package=? AND state='pending' AND expires>?", pkg.id, bot.nowF());
-    if (pending) continue;
+    const alreadyPending = await bot.db.first("SELECT 1 FROM auto_offers WHERE package=? AND state='pending' AND expires>?", pkg.id, bot.nowF());
+    if (alreadyPending) continue;
     const recent = await bot.db.first<{ c: number }>("SELECT max(created) AS c FROM auto_offers WHERE package=? AND created>?", pkg.id, bot.nowF() - AUTO_OFFER_RETRY);
     if (recent?.c) continue;
     const tried = new Set((await bot.db.all<{ courier: number }>("SELECT DISTINCT courier FROM auto_offers WHERE package=?", pkg.id)).map((r) => r.courier));
@@ -57,8 +59,15 @@ async function createOffers(bot: Bot) {
     for (const courier of eligible) {
       const offer = await bot.db.first<{ id: number }>("SELECT id FROM auto_offers WHERE package=? AND courier=? AND state='pending' ORDER BY id DESC LIMIT 1", pkg.id, courier.id);
       if (!offer) continue;
-      await bot.send(courier.id, `Otomatik iş teklifi\n\n${await details(bot.db, rows[0], true)}\n\n${AUTO_OFFER_TTL / 60} dakika içinde ilk kabul eden alır.`,
-        keyboard([[["Kabul Et", `aoa:${offer.id}`], ["Reddet", `aod:${offer.id}`]]]), "HTML");
+      const bucket = pending.get(courier.id) || [];
+      bucket.push({ offerId: offer.id, pkg: rows[0] });
+      pending.set(courier.id, bucket);
     }
+  }
+  for (const [courierId, items] of pending) {
+    const lines = [`Otomatik iş teklifi · ${items.length} paket`, "İlk kabul eden alır; süre 2 dakika.", ""];
+    items.forEach((item) => lines.push(`#${item.pkg.batch}-${item.pkg.number} · ${item.pkg.restaurant} · ${item.pkg.region || "Belirtilmedi"}`));
+    const rows = items.slice(0, 8).map((item) => [[`Kabul Et #${item.pkg.number}`, `aoa:${item.offerId}`], [`Reddet #${item.pkg.number}`, `aod:${item.offerId}`]]);
+    await bot.send(courierId, lines.join("\n"), keyboard(rows as any));
   }
 }

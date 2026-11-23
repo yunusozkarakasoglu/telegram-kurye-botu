@@ -9,6 +9,7 @@ import * as pool from "./pool";
 import * as accept from "./accept";
 import * as ops from "./ops";
 import * as adminops from "./adminops";
+import * as profileFlow from "./profile";
 
 export class Bot {
   db: Db;
@@ -153,18 +154,32 @@ export class Bot {
           await this.db.run("DELETE FROM invites WHERE code=?", args);
           await this.db.run(`INSERT INTO accounts(id,role,name,latitude,longitude,contact_name,phone) VALUES (?,?,?,?,?,?,?)`,
             chat, invite.role, invite.name, invite.latitude, invite.longitude, invite.contact_name, invite.phone);
-          if (!invite.name) await adminops.startProfile(this, chat, "register", chat, "contact");
+          if (!invite.name) {
+            await profileFlow.startProfile(this, chat, "register", chat, "contact");
+            return;
+          }
         }
       }
       user = await this.account(chat);
       if (!user) { await this.send(chat, "Kayıt için yöneticinizden geçerli bir davet bağlantısı isteyin."); return; }
     }
+    if (!text.startsWith("/") && (await this.db.first("SELECT 1 FROM profile_setup WHERE admin=? AND expires>?", chat, this.nowF()))) {
+      if (await profileFlow.profileText(this, chat, text)) return;
+    }
     if (command === "/start" || command === "/yonetici") { await this.menu(user, `Hoş geldiniz, ${user.name}.`); return; }
     if (await ops.handlePendingText(this, chat, user, text)) return;
     if (await adminops.handleAdminText(this, chat, user, text)) return;
 
+    if (user.role === "kurye") {
+      const pending = await this.db.first<{ package: number }>("SELECT package FROM pending_distance WHERE courier=?", chat);
+      const allowed = /^[0-9]/.test(text) || ["/mesafe", "/mesafeiptal"].includes(command);
+      if (pending && !allowed) {
+        const pkg = (await this.packages("p.id=?", [pending.package]))[0];
+        if (pkg) return this.send(chat, `Önce kilometre girin: Talep #${pkg.batch}-${pkg.number}. Km'yi yazın (ör. 4,5) veya /mesafeiptal ile iptal edin.`);
+      }
+    }
     if (text === "Kurye Çağır" && user.role === "restoran") return forms.startForm(this, chat);
-    if (text === "Havuz" && user.role === "kurye") return pool.showRegions(this, user);
+    if (text === "Havuz" && user.role === "kurye") return pool.showPoolChooser(this, user);
     if (text === "Havuz" && user.role === "yonetici") return pool.showPoolFilters(this, user);
     if (text === "Açık Paketler" && user.role === "kurye") return pool.showAssigned(this, user, 0);
     if (text === "Paketlerim") return forms.showPaketlerim(this, user);
@@ -177,7 +192,9 @@ export class Bot {
       return this.send(chat, "Sohbeti temizlemek için: sohbet başlığına dokunun → Menü → **Sohbeti Temizle**. Telegram botlarının toplu sohbet silme yetkisi yoktur.");
     }
     if (command === "/redlog" && user.role === "yonetici") return adminops.rejectionLog(this, user);
-    if (command === "/davet" && user.role === "yonetici") return adminops.createInvite(this, chat, args);
+    if (command === "/davet" && user.role === "yonetici") {
+      return args.trim() ? adminops.createInvite(this, chat, args) : adminops.davetMenu(this, chat);
+    }
     if (command === "/bolgeler" && user.role === "yonetici") return adminops.showRegions(this, user);
     if (command === "/yonetici-numara" && user.role === "yonetici") return adminops.showAdminPhones(this, user);
     if (command === "/bilgi" && user.role === "yonetici") return adminops.profileTargets(this, chat);
@@ -188,7 +205,7 @@ export class Bot {
     if (command === "/siparisler" && user.role === "restoran") return adminops.orderFilters(this, user);
     if (command === "/analiz" && user.role === "restoran") return adminops.analysisPeriods(this, user);
     if (command === "/paketlerim") return forms.showPaketlerim(this, user);
-    if (command === "/havuz" && user.role === "kurye") return pool.showRegions(this, user);
+    if (command === "/havuz" && user.role === "kurye") return pool.showPoolChooser(this, user);
     if (command === "/acik" && user.role === "kurye") return pool.showAssigned(this, user, 0);
     if (command === "/yoneticiyi-ara") return adminops.callAdminMenu(this, user);
     if (text === "Kurye Durumu" && user.role === "yonetici") return adminops.courierStatus(this, user, 0);
@@ -213,7 +230,12 @@ export class Bot {
     const action = parts[0];
     const args = parts.slice(1);
     if (action === "cmd") return adminops.runCommand(this, user, args[0] || "");
+    if (action === "dav" && args[0]) return adminops.createInvite(this, user.id, args[0]);
     if (action === "pv") return pool.action(this, user, args);
+    if (action === "pvb") return pool.action(this, user, ["pvb", ...args]);
+    if (action === "pvr") return pool.action(this, user, ["pvr", ...args]);
+    if (action === "pvg") return pool.action(this, user, ["pvg", ...args]);
+    if (action === "pvt") return pool.action(this, user, ["pvt", ...args]);
     if (action === "osip" || action === "osipp") return adminops.orderListAction(this, user, args, action === "osipp");
     if (action === "report" && args.length === 2) return adminops.orderReportAction(this, user, Number(args[0]), Number(args[1]));
     if (action === "analysis" && args.length === 2) return adminops.analysisAction(this, user, Number(args[0]), Number(args[1]));

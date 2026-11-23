@@ -178,4 +178,12 @@ Kullanıcının **Bölgeler** ekranında tanımladığı listeden 4 bölge seçi
 - Canlı doğrulanan (gerçek Telegram, `yunusozkar`): `/yonetici` ile D1'de yönetici oluştu; `/bolgeler` listesi; `/davet kurye CF Test Kurye` + telefon → davet kaydı; `/kuryepaketlimiti 5` → setting 5; `/tarife 130 35 …` → tarife güncellendi.
 - **Henüz doğrulanmadı:** restoran/kurye davet kabulü, talep formu, havuz/kabul/km/teslim/iptal akışlarının Cloudflare üzerinde gerçek hesaplarla çalışması. Yerel ağ `*.workers.dev` TLS'ini engellediği için webhook'a dışarıdan sentetik istek atılamadı.
 
+### Cloudflare sürümü — güncel durum (sürüm `df60c6bf…`)
+
+- Kurye kaydı (ad+telefon) canlı doğrulandı: D1'de **Neriman Kurye / +905462089900 / online**.
+- Havuz görünümleri: **Bölgeye / Restorana / Sipariş Zamanına Göre**; her satırda checkbox + sipariş no + restoran + bölge/ödeme + **oluşturulma saati**; başlıklarda liste türü + saat; `==========================` ayracı.
+- **Seçilenleri Kabul Et** atomik çalışıyor; otomatik teklifler kurye başına tek mesajda toplanıyor.
+- Fikstür: `Pilot Restoran (fikstür)` 10 paket, `Pizza Locale (fikstür)` 3 paket (restoran gruplamasını göstermek için).
+- **Hâlâ eksik:** restoranın kendi hesabıyla uçtan uca canlı akış (3. Telegram hesabı gerekli); transfer/iptal/rapor ekranlarının Cloudflare'da canlı doğrulaması; gönderim kuyruğu/429.
+
 **Pilot tamamlanmadı.** Otomatik izole testlerin raporu ayrı: `Test-Raporu.md`. Buradaki kayıt yalnız gerçekten gözlenen canlı adımları belirtir.

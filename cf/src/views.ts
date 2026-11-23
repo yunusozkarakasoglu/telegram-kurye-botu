@@ -1,6 +1,6 @@
 import type { PackageRow, Account } from "./types";
 import { UNSPECIFIED } from "./constants";
-import { escapeHtml, fmtTime, trUpper } from "./util";
+import { escapeHtml, fmtHM, fmtTime, trUpper } from "./util";
 import type { Db } from "./db";
 
 export function statusOf(pkg: PackageRow, offers: { claim?: boolean; transfer?: boolean } = {}): string {
@@ -40,6 +40,7 @@ export async function details(db: Db, pkg: PackageRow, showFee = false): Promise
   const contact = [pkg.restaurant_contact, pkg.restaurant_phone].filter(Boolean).join(" · ");
   const fields: [string, string][] = [
     ["Sipariş no", `${pkg.batch}-${pkg.number}`],
+    ["Oluşturuldu", fmtTime(pkg.created_at)],
     ["Yetkili", contact || UNSPECIFIED],
     ["Kabul", fmtTime(pkg.accepted_at)],
   ];
@@ -65,11 +66,11 @@ export async function details(db: Db, pkg: PackageRow, showFee = false): Promise
   return lines.join("\n");
 }
 
-export function keyboard(rows: (string | [string, string])[][]) {
+export type Row = [string, string][];
+export function keyboard(rows: Row[]) {
   return {
     inline_keyboard: rows.map((row) =>
-      row.map((item) => {
-        const [label, target] = Array.isArray(item) ? item : [item, "noop"];
+      row.map(([label, target]) => {
         if (target.startsWith("http")) return { text: label, url: target };
         return { text: label, callback_data: target };
       })),
