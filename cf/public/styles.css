@@ -243,3 +243,6 @@ header{position:relative}
 .late{color:var(--er)}
 
 .tel.big{font-size:26px;margin-left:auto;line-height:1;text-decoration:none}
+
+.hactions{display:flex;align-items:center;gap:6px}
+.hactions .sm{padding:4px 10px}
