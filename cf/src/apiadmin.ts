@@ -128,6 +128,21 @@ export async function adminRoutes(
     return fail("Geçersiz işlem.", 422, "invalid");
   }
 
+  if (path === "/yonetim/hesap-guncelle" && method === "POST") {
+    const body = await readBody(request);
+    const id = Number(body.id);
+    const row = await bot.db.first<Account>("SELECT * FROM accounts WHERE id=? AND role IN ('kurye','restoran')", id);
+    if (!row) return fail("Hesap bulunamadı.", 404, "not_found");
+    const name = String(body.name ?? "").trim();
+    if (name.length < 2 || name.length > 80) return fail("Ad 2–80 karakter olmalı.", 422, "invalid");
+    const phone = String(body.phone ?? "").trim().replace(/[ ()\-]/g, "");
+    if (phone && !/^\+?[0-9]{10,13}$/.test(phone)) return fail("Telefon geçersiz. Örnek: 05462089900", 422, "invalid");
+    const contact = String(body.contact_name ?? "").trim();
+    await bot.db.run("UPDATE accounts SET name=?, phone=?, contact_name=? WHERE id=?",
+      name, phone || null, contact || null, id);
+    return json({ ok: true });
+  }
+
   if (path === "/yonetim/bolge" && method === "POST") {
     const body = await readBody(request);
     const action = String(body.action || "add");

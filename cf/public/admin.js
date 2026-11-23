@@ -71,69 +71,121 @@
     });
   }
 
+  function accountEdit(id, role, name, phone, contact) {
+    var sh = UI.openSheet(
+      '<h2>Düzenle · ' + esc(name) + '</h2>' +
+      '<div class="fld"><label>Ad</label><input id="e-name" value="' + esc(name) + '"></div>' +
+      (role === 'restoran' ? '<div class="fld"><label>Yetkili adı</label><input id="e-contact" value="' + esc(contact || '') + '"></div>' : '') +
+      '<div class="fld"><label>Telefon</label><input id="e-phone" inputmode="tel" value="' + esc(phone || '') + '"></div>' +
+      '<div class="err" id="e-err"></div>' +
+      '<button class="p" id="e-save">Kaydet</button>' +
+      '<button class="d" id="e-cancel">Vazgeç</button>');
+    sh.querySelector('#e-cancel').onclick = function () { UI.closeSheet(); };
+    sh.querySelector('#e-save').onclick = function () {
+      var body = { id: id, name: sh.querySelector('#e-name').value.trim(), phone: sh.querySelector('#e-phone').value.trim() };
+      if (role === 'restoran') body.contact_name = sh.querySelector('#e-contact').value.trim();
+      API.yonetim('hesapGuncelle', body).then(function () {
+        UI.closeSheet(); UI.toast('Kaydedildi', 'success'); render();
+      }).catch(function (e) { sh.querySelector('#e-err').textContent = e.message || 'Kaydedilemedi'; });
+    };
+  }
+
   function viewKuryeler() {
     head('Kuryeler', 'Aktif/pasif yönetimi');
     API.yonetim('kuryeler').then(function (d) {
-      var rows = (d.couriers || []).map(function (c) {
-        return '<tr><td>' + esc(c.name) + '</td><td>' + esc(c.phone || '') + '</td>' +
-          '<td>' + (c.online ? '<span class="tag ok">Online</span>' : '<span class="tag">Offline</span>') + '</td>' +
-          '<td>' + (c.active ? '<span class="tag ok">Aktif</span>' : '<span class="tag er">Pasif</span>') + '</td>' +
-          '<td class="num">' + (c.active_packages || 0) + '</td>' +
-          '<td><a class="btn sm" href="tel:' + esc(c.phone || '') + '">Ara</a> ' +
-          '<button class="sm" data-acc="' + c.id + '" data-act="toggle">' + (c.active ? 'Pasif' : 'Aktif') + '</button> ' +
-          '<button class="sm d" data-acc="' + c.id + '" data-act="delete">Sil</button></td></tr>';
-      }).join('');
-      panel('<div class="filters"><input id="q" placeholder="İsimle ara…"><select id="f"><option value="all">Tümü</option>' +
-        '<option value="online">Online</option><option value="offline">Offline</option></select></div>' +
-        '<table class="tbl"><thead><tr><th>Ad</th><th>Telefon</th><th>Bağlantı</th><th>Durum</th><th class="num">Teslim</th><th></th></tr></thead>' +
-        '<tbody>' + (rows || '<tr><td colspan="6">Kayıt yok</td></tr>') + '</tbody></table>');
-      function apply() {
-        var q = ($('q').value || '').toLocaleLowerCase('tr');
-        var f = $('f').value;
-        Array.prototype.forEach.call($('adm-body').querySelectorAll('tbody tr'), function (tr, i) {
-          var c = (d.couriers || [])[i];
-          if (!c) return;
-          var okQ = !q || (c.name || '').toLocaleLowerCase('tr').indexOf(q) >= 0;
-          var okF = f === 'all' || (f === 'online' ? c.online : !c.online);
-          tr.style.display = (okQ && okF) ? '' : 'none';
-        });
-      }
-      $('q').oninput = apply; $('f').onchange = apply;
-      Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-acc]'), function (b) {
-        b.onclick = function () {
-          var act = b.getAttribute('data-act');
-          if (act === 'delete' && !confirm('Hesap silinsin mi? (soft delete)')) return;
-          API.yonetim('hesap', { id: Number(b.getAttribute('data-acc')), action: act }).then(function () {
-            UI.toast('Kaydedildi', 'success'); render();
-          }).catch(function (e) { UI.toast(e.message || 'İşlem başarısız', 'error'); });
+      var all = d.couriers || [];
+      var filter = 'all';
+      function draw() {
+        var rows = all.filter(function (c) {
+          if (filter === 'online') return c.online;
+          if (filter === 'offline') return !c.online;
+          if (filter === 'active') return c.active;
+          if (filter === 'passive') return !c.active;
+          return true;
+        }).map(function (c) {
+          return '<tr><td>' + esc(c.name) + '</td><td>' + esc(c.phone || '') + '</td>' +
+            '<td>' + (c.online ? '<span class="tag ok">Online</span>' : '<span class="tag">Offline</span>') + '</td>' +
+            '<td>' + (c.active ? '<span class="tag ok">Aktif</span>' : '<span class="tag er">Pasif</span>') + '</td>' +
+            '<td class="num">' + (c.active_packages || 0) + '</td>' +
+            '<td><button class="sm" data-edit="' + c.id + '">Düzenle</button> ' +
+            '<a class="btn sm" href="tel:' + esc(c.phone || '') + '">Ara</a> ' +
+            '<button class="sm" data-acc="' + c.id + '" data-act="toggle">' + (c.active ? 'Pasif' : 'Aktif') + '</button> ' +
+            '<button class="sm d" data-acc="' + c.id + '" data-act="delete">Sil</button></td></tr>';
+        }).join('');
+        panel('<div class="filters"><input id="q" placeholder="İsimle ara…"><select id="f">' +
+          '<option value="all">Tümü</option><option value="online">Online</option><option value="offline">Offline</option>' +
+          '<option value="active">Aktif</option><option value="passive">Pasif</option></select></div>' +
+          '<table class="tbl"><thead><tr><th>Ad</th><th>Telefon</th><th>Bağlantı</th><th>Durum</th><th class="num">Aktif paket</th><th></th></tr></thead>' +
+          '<tbody>' + (rows || '<tr><td colspan="6">Kayıt yok</td></tr>') + '</tbody></table>');
+        $('f').value = filter;
+        $('f').onchange = function () { filter = $('f').value; draw(); };
+        $('q').oninput = function () {
+          var q = ($('q').value || '').toLocaleLowerCase('tr');
+          Array.prototype.forEach.call($('adm-body').querySelectorAll('tbody tr'), function (tr, i) {
+            tr.style.display = (!q || tr.innerText.toLocaleLowerCase('tr').indexOf(q) >= 0) ? '' : 'none';
+          });
         };
-      });
-    });
+        bindAccountActions(all);
+      }
+      draw();
+    }).catch(showError);
   }
 
   function viewRestoranlar() {
     head('Restoranlar', 'Hesap yönetimi');
     API.yonetim('restoranlar').then(function (d) {
-      var rows = (d.restaurants || []).map(function (r) {
-        return '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.contact_name || '—') + '</td><td>' + esc(r.phone || '') + '</td>' +
-          '<td>' + (r.latitude != null ? 'var' : '—') + '</td>' +
-          '<td>' + (r.active ? '<span class="tag ok">Aktif</span>' : '<span class="tag er">Pasif</span>') + '</td>' +
-          '<td><button class="sm" data-acc="' + r.id + '" data-act="toggle">' + (r.active ? 'Pasif Yap' : 'Aktif Yap') + '</button> ' +
-          '<button class="sm d" data-acc="' + r.id + '" data-act="delete">Sil</button></td></tr>';
-      }).join('');
-      panel('<table class="tbl"><thead><tr><th>Restoran</th><th>Yetkili</th><th>Telefon</th><th>Konum</th><th>Durum</th><th></th></tr></thead>' +
-        '<tbody>' + (rows || '<tr><td colspan="6">Kayıt yok</td></tr>') + '</tbody></table>' +
-        '<p class="note">Pasif yapılan hesap giriş yapamaz; raporlar korunur (soft delete).</p>');
-      Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-acc]'), function (b) {
-        b.onclick = function () {
-          var act = b.getAttribute('data-act');
-          if (act === 'delete' && !confirm('Restoran silinsin mi? (soft delete)')) return;
-          API.yonetim('hesap', { id: Number(b.getAttribute('data-acc')), action: act }).then(function () {
-            UI.toast('Kaydedildi', 'success'); render();
-          }).catch(function (e) { UI.toast(e.message || 'İşlem başarısız', 'error'); });
-        };
-      });
+      var all = d.restaurants || [];
+      var filter = 'all';
+      function draw() {
+        var rows = all.filter(function (r) {
+          if (filter === 'active') return r.active;
+          if (filter === 'passive') return !r.active;
+          return true;
+        }).map(function (r) {
+          return '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.contact_name || '—') + '</td><td>' + esc(r.phone || '') + '</td>' +
+            '<td>' + (r.active ? '<span class="tag ok">Aktif</span>' : '<span class="tag er">Pasif</span>') + '</td>' +
+            '<td><button class="sm" data-edit="' + r.id + '">Düzenle</button> ' +
+            '<button class="sm" data-acc="' + r.id + '" data-act="toggle">' + (r.active ? 'Pasif Yap' : 'Aktif Yap') + '</button> ' +
+            '<button class="sm d" data-acc="' + r.id + '" data-act="delete">Sil</button></td></tr>';
+        }).join('');
+        panel('<div class="filters"><button class="sm ' + (filter === 'all' ? 'p' : '') + '" data-f="all">Tümü</button>' +
+          '<button class="sm ' + (filter === 'active' ? 'p' : '') + '" data-f="active">Aktif</button>' +
+          '<button class="sm ' + (filter === 'passive' ? 'p' : '') + '" data-f="passive">Pasif</button></div>' +
+          '<table class="tbl"><thead><tr><th>Restoran</th><th>Yetkili</th><th>Telefon</th><th>Durum</th><th></th></tr></thead>' +
+          '<tbody>' + (rows || '<tr><td colspan="5">Kayıt yok</td></tr>') + '</tbody></table>' +
+          '<p class="note">Pasif yapılan hesap giriş yapamaz; raporlar korunur (soft delete).</p>');
+        Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-f]'), function (b) {
+          b.onclick = function () { filter = b.getAttribute('data-f'); draw(); };
+        });
+        bindAccountActions(all);
+      }
+      draw();
+    }).catch(showError);
+  }
+
+  function bindAccountActions(all) {
+    Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-acc]'), function (b) {
+      b.onclick = function () {
+        var act = b.getAttribute('data-act');
+        var id = Number(b.getAttribute('data-acc'));
+        if (act === 'delete' && !confirm('Hesap silinsin mi? (soft delete)')) return;
+        API.yonetim('hesap', { id: id, action: act }).then(function () {
+          UI.toast('Kaydedildi', 'success'); render();
+        }).catch(function (e) { UI.toast(e.message || 'İşlem başarısız', 'error'); });
+      };
     });
+    Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-edit]'), function (b) {
+      b.onclick = function () {
+        var id = Number(b.getAttribute('data-edit'));
+        var row = all.filter(function (x) { return x.id === id; })[0] || {};
+        accountEdit(id, row.latitude !== undefined || row.contact_name !== undefined ? 'restoran' : 'kurye',
+          row.name || '', row.phone || '', row.contact_name || '');
+      };
+    });
+  }
+
+  function showError(e) {
+    panel('<div class="empty"><b>Bağlantı hatası</b>' + esc(e.message || 'İstek başarısız') + '</div>');
   }
 
   function viewBolgeler() {

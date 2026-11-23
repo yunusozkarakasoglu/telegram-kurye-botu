@@ -335,6 +335,7 @@
     yonetim: function (what, arg) {
       if (what === 'davet') return req('POST', '/api/yonetim/davet', arg || { role: 'kurye' });
       if (what === 'hesap') return req('POST', '/api/yonetim/hesap', arg || {});
+      if (what === 'hesapGuncelle') return req('POST', '/api/yonetim/hesap-guncelle', arg || {});
       if (what === 'limit') return req('PUT', '/api/yonetim/limit', arg || {});
       if (what === 'bolge') return req('POST', '/api/yonetim/bolge', arg || {});
       if (what === 'sontalepler') return req('GET', '/api/yonetim/sontalepler');
