@@ -5,6 +5,7 @@
 - [x] Mini App yayını (`e1e02837…`): statik arayüz + `/api/*`, menü düğmesi "Kurye", initData 1 saat.
 - [ ] Mini App gerçek Telegram açılışı: kurye/restoran/yönetici ekranları (kullanıcı testi).
 - [ ] Bot menülerini "Uygulamayı Aç" + bildirim modeline indirgemek (tam Mini App geçişi).
+- [x] Bot görünen adı “Kurye Paket”; kullanıcı adı bilinçli olarak eski kalıyor (Telegram self-servis kaldırdı).
 - [ ] `kurye.packonexpress.com` alan adı (sonra).
 - [ ] Cloudflare canlı doğrulama (gerçek restoran Telegram hesabı): restoran/kurye davet kabulü ve uçtan uca sipariş akışını gerçek Telegram hesaplarıyla tamamla.
 - [ ] Cloudflare paritesini kapat: gönderim kuyruğu/429, tek kart görünümü, kalan rapor/aktarım ayrıntıları.
