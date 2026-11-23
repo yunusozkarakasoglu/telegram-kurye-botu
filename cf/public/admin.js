@@ -9,9 +9,10 @@
   var S = { tab: 'ozet', data: {}, session: null };
 
   var TABS = [
-    ['ozet', 'Özet'], ['havuz', 'Havuz'], ['kuryeler', 'Kuryeler'], ['restoranlar', 'Restoranlar'],
-    ['bolgeler', 'Bölgeler'], ['tarife', 'Hesaplama'], ['rapor', 'Raporlar'],
-    ['iptaller', 'İptal Siparişler'], ['davet', 'Davet']
+    ['ozet', 'Özet'], ['havuz', 'Havuz'], ['sontalepler', 'Son Talepler'],
+    ['limit', 'Kurye Paket Limiti'], ['tarife', 'Ücret Tarifesi'], ['bolgeler', 'Bölgeler'],
+    ['restoranlar', 'Restoranlar'], ['kuryeler', 'Kuryeler'], ['iptaller', 'İptal Siparişler'],
+    ['kuryedurum', 'Kurye Durumu'], ['rapor', 'Raporlar'], ['davet', 'Davet']
   ];
 
   function head(t, s) { $('adm-title').textContent = t; $('adm-sub').textContent = s || ''; }
@@ -196,33 +197,85 @@
           return '<span class="tag ac" style="margin:4px;padding:6px 12px">' + esc(r) + ' <b data-del="' + esc(r) + '" style="cursor:pointer">✕</b></span>';
         }).join('') + '</div>' +
         '<p class="note">Restoranın bölge seçimi bu listeden beslenir.</p>');
-      $('add').onclick = function () { UI.toast('Bölge ekleme Worker API ile yapılır'); };
+      $('add').onclick = function () {
+        API.yonetim('bolge', { action: 'add', name: $('nr').value.trim() }).then(function () {
+          UI.toast('Bölge eklendi', 'success'); render();
+        }).catch(function (e) { UI.toast(e.message || 'Eklenemedi', 'error'); });
+      };
+      Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-del]'), function (b) {
+        b.onclick = function () {
+          API.yonetim('bolge', { action: 'del', name: b.getAttribute('data-del') }).then(function () {
+            UI.toast('Bölge silindi', 'success'); render();
+          }).catch(function (e) { UI.toast(e.message || 'Silinemedi', 'error'); });
+        };
+      });
     });
   }
 
   function viewTarife() {
-    head('Hesaplama', 'Taban ücreti ve kademe farkları');
+    head('Ücret Tarifesi', 'Taban ücreti ve 8 kademe farkı');
     API.yonetim('tarife').then(function (d) {
-      var steps = d.steps || [];
-      panel('<div class="fld" style="max-width:260px"><label>Taban Ücreti (kuruş)</label>' +
-        '<input id="base" type="number" value="' + (d.base_kurus || 3500) + '"></div>' +
-        '<h3 style="font-size:15px;margin:14px 0 8px">Kademe Farkları (ilk sayı taban, sonraki 8 kademe)</h3>' +
-        '<div id="steps">' + steps.map(function (s, i) {
-          return '<div class="tier-row"><span>' + (i + 1) + '. kademe · ' + (s.upto_km == null ? 'sonsuz' : s.upto_km + ' km üzeri') + '</span>' +
-            '<input type="number" data-step="' + i + '" value="' + (s.add_kurus || 0) + '" placeholder="kuruş"></div>';
-        }).join('') + '</div>' +
-        '<p class="note">Ücret hesabı sunucuda yapılır. Buradaki değerler tüm kuryeler için geçerlidir.</p>' +
-        '<button class="p" id="save" style="margin-top:12px">Kaydet</button>');
-      $('save').onclick = function () {
-        var st = Array.prototype.map.call($('adm-body').querySelectorAll('[data-step]'), function (inp, i) {
-          var s = (d.steps || [])[i] || {};
-          return { upto_km: s.upto_km == null ? null : s.upto_km, add_kurus: Number(inp.value) || 0 };
+      var tariff = d.tariff || [];
+      var bounds = d.tariff_bounds || [];
+      var labels = d.tariff_intervals || [];
+      panel('<div class="fld" style="max-width:280px"><label>Taban ücreti (TL)</label>' +
+        '<input id="t0" type="number" value="' + (tariff[0] || 0) + '"></div>' +
+        '<h3 style="font-size:15px;margin:14px 0 8px">Kademe farkları</h3>' +
+        tariff.slice(1).map(function (v, i) {
+          return '<div class="tier-row"><span>' + esc(labels[i + 1] || ('kademe ' + (i + 1))) + ' km</span>' +
+            '<input type="number" data-t="' + (i + 1) + '" value="' + v + '"></div>';
+        }).join('') +
+        '<button class="p" id="tsave" style="margin-top:12px">Kaydet</button>');
+      $('tsave').onclick = function () {
+        var values = [Number($('t0').value) || 0];
+        Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-t]'), function (inp) {
+          values[Number(inp.getAttribute('data-t'))] = Number(inp.value) || 0;
         });
-        API.yonetim('tarifeKaydet', { base_kurus: Number($('base').value) || 0, steps: st }).then(function () {
-          UI.toast('Tarife kaydedildi', 'success');
+        API.yonetim('tarifeKaydet', { tariff: values })
+          .then(function () { UI.toast('Tarife kaydedildi', 'success'); })
+          .catch(function (e) { UI.toast(e.message || 'Kaydedilemedi', 'error'); });
+      };
+    }).catch(showError);
+  }
+
+  function viewLimit() {
+    head('Kurye Paket Limiti', 'Aynı anda taşınabilecek en fazla aktif paket');
+    API.yonetim('tarife').then(function (d) {
+      panel('<div class="fld" style="max-width:220px"><label>Limit (1–99)</label>' +
+        '<input id="lim" type="number" min="1" max="99" value="' + (d.limit || 3) + '"></div>' +
+        '<button class="p" id="lsave">Kaydet</button>');
+      $('lsave').onclick = function () {
+        API.yonetim('limit', { limit: Number($('lim').value) }).then(function () {
+          UI.toast('Limit kaydedildi', 'success');
         }).catch(function (e) { UI.toast(e.message || 'Kaydedilemedi', 'error'); });
       };
-    });
+    }).catch(showError);
+  }
+
+  function viewSonTalepler() {
+    head('Son Talepler', 'Son 30 talep');
+    API.yonetim('sontalepler').then(function (d) {
+      var rows = (d.batches || []).map(function (b) {
+        return '<tr><td>#' + b.id + '</td><td>' + esc(b.name) + '</td><td class="num">' + b.n + '</td>' +
+          '<td>' + dt(b.created_at) + '</td></tr>';
+      }).join('');
+      panel('<table class="tbl"><thead><tr><th>Talep</th><th>Restoran</th><th class="num">Paket</th><th>Tarih</th></tr></thead>' +
+        '<tbody>' + (rows || '<tr><td colspan="4">Kayıt yok</td></tr>') + '</tbody></table>');
+    }).catch(showError);
+  }
+
+  function viewKuryeDurum() {
+    head('Kurye Durumu', 'Canlı bağlantı ve yük');
+    API.yonetim('kuryeler').then(function (d) {
+      var rows = (d.couriers || []).map(function (c) {
+        return '<tr><td>' + esc(c.name) + '</td>' +
+          '<td>' + (c.online ? '<span class="tag ok">Online</span>' : '<span class="tag">Offline</span>') + '</td>' +
+          '<td>' + (c.locked ? '<span class="tag er">Kilitli</span>' : '—') + '</td>' +
+          '<td class="num">' + (c.active_packages || 0) + '</td></tr>';
+      }).join('');
+      panel('<table class="tbl"><thead><tr><th>Kurye</th><th>Bağlantı</th><th>Durum</th><th class="num">Aktif paket</th></tr></thead>' +
+        '<tbody>' + (rows || '<tr><td colspan="4">Kayıt yok</td></tr>') + '</tbody></table>');
+    }).catch(showError);
   }
 
   function viewRapor() {
@@ -272,13 +325,18 @@
     nav();
     ({
       ozet: viewOzet, havuz: viewHavuz, kuryeler: viewKuryeler, restoranlar: viewRestoranlar,
-      bolgeler: viewBolgeler, tarife: viewTarife, rapor: viewRapor, iptaller: viewIptaller, davet: viewDavet
+      bolgeler: viewBolgeler, tarife: viewTarife, rapor: viewRapor, iptaller: viewIptaller, davet: viewDavet,
+      limit: viewLimit, sontalepler: viewSonTalepler, kuryedurum: viewKuryeDurum
     })[S.tab]();
   }
 
   document.addEventListener('DOMContentLoaded', function () {
     API.init().then(function (s) {
       S.session = s;
+      if (s.role !== 'yonetici') {
+        panel('<div class="empty"><b>Yetkiniz yok</b>Bu panel yalnız yönetici hesabıyla açılır.</div>');
+        return;
+      }
       var b = document.getElementById('mode');
       if (b) b.textContent = (API.mode === 'real' ? 'CANLI' : 'MİMİK VERİ');
       render();

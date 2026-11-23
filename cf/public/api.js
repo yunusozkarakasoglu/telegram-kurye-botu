@@ -238,6 +238,15 @@
     });
   };
 
+  Mock.prototype.profil = function (data) {
+    var self = this;
+    return this.delay(function () {
+      self.me.name = data.name || self.me.name;
+      self.me.phone = data.phone || self.me.phone;
+      return { ok: true, user: { id: self.me.id, name: self.me.name, phone: self.me.phone, contact_name: data.contact_name || null } };
+    });
+  };
+
   Mock.prototype.talepVer = function (items) {
     var self = this;
     return this.delay(function () {
@@ -332,11 +341,13 @@
     kazanc: function () { return req('GET', '/api/kazanc'); },
     talepVer: function (items) { return req('POST', '/api/restoran/talep', { packages: items }); },
     paketlerimRestoran: function (filter) { return req('GET', '/api/restoran/paketlerim?filter=' + encodeURIComponent(filter || 'all')); },
+    profil: function (data) { return req('PATCH', '/api/profil', data); },
     yonetim: function (what, arg) {
       if (what === 'davet') return req('POST', '/api/yonetim/davet', arg || { role: 'kurye' });
       if (what === 'hesap') return req('POST', '/api/yonetim/hesap', arg || {});
       if (what === 'hesapGuncelle') return req('POST', '/api/yonetim/hesap-guncelle', arg || {});
       if (what === 'limit') return req('PUT', '/api/yonetim/limit', arg || {});
+      if (what === 'tarifeKaydet') return req('PUT', '/api/yonetim/tarife', arg || {});
       if (what === 'bolge') return req('POST', '/api/yonetim/bolge', arg || {});
       if (what === 'sontalepler') return req('GET', '/api/yonetim/sontalepler');
       if (what === 'temizle') return req('POST', '/api/yonetim/temizle', arg || {});
@@ -373,7 +384,7 @@
     }
   };
   ['oturum', 'havuz', 'kabul', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
-    'kazanc', 'talepVer', 'paketlerimRestoran', 'yonetim'].forEach(function (m) {
+    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);
         var target = mode === 'real' ? real : mock;

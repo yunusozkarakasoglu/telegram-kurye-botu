@@ -6,6 +6,9 @@
 - [x] Mini App menü düğmesi geçici olarak kapatıldı (`commands`); botu tam düzenleme turu başladı.
 - [x] Bot: havuz özeti (restoran/paket/kapasite), admin 3 sütun menü + alt satırlar, kabul sonrası kart yerine liste + `card:` düğmesi.
 - [x] Kayıt adı doğrulaması: kurye kaydında ad+soyad zorunlu (tek kelime/"Slm" reddedilir); CF + Python.
+- [x] Mini App: 4 gruplama (bölge/restoran/talep/sıra) + havuz özeti, tek-kabul listesi, liste/kart geçişi (hatırlanır), dokun→kart detay, profil düzenleme.
+- [x] Mini App admin: 12 sekmeli 3 sütun ızgara, Restoranlar filtreleri + Düzenle, Kuryeler/Kurye Durumu, Limit, Son Talepler, Tarife, Bölgeler.
+- [x] Mini App menü düğmesi yeniden açıldı; yönetici `/` → `/admin` yönlendirmesi.
 - [ ] Bot profilleri: kurye ad/telefon, restoran ad/yetkili/telefon düzenleme (bot içi).
 - [ ] Bot `Paketlerim`: liste/kart görünüm seçimi (kurye tercihi saklanır).
 - [ ] Python'a aynı değişikliklerin tam portu (kabul listesi, profiller, görünüm tercihi).

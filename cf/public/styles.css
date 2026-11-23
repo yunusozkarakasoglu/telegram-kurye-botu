@@ -145,8 +145,8 @@ body.sheet-open #toast{bottom:auto;top:calc(14px + var(--sat));z-index:12}
 .adm-top h1{font-size:22px}
 .adm-top .sp{flex:1}
 .adm-grid{display:grid;grid-template-columns:250px 1fr;gap:18px;align-items:start}
-.adm-nav{background:var(--el);border:1px solid var(--ln);border-radius:12px;padding:8px;position:sticky;top:16px}
-.adm-nav button{width:100%;justify-content:flex-start;border:0;background:none;min-height:38px;border-radius:8px;padding:8px 10px;font-size:14px}
+.adm-nav{background:var(--el);border:1px solid var(--ln);border-radius:12px;padding:8px;position:sticky;top:16px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.adm-nav button{width:100%;justify-content:center;text-align:center;border:1px solid transparent;background:var(--el2);min-height:46px;border-radius:8px;padding:8px 6px;font-size:13px;line-height:1.2}
 .adm-nav button.on{background:var(--ac);color:var(--on);font-weight:600}
 .adm-panel{background:var(--el);border:1px solid var(--ln);border-radius:12px;padding:16px}
 .adm-panel h2{margin:0 0 4px;font-size:17px}
@@ -170,3 +170,9 @@ body.sheet-open #toast{bottom:auto;top:calc(14px + var(--sat));z-index:12}
   .adm-nav{position:static;display:flex;flex-wrap:wrap;gap:4px}
   .adm-nav button{width:auto}
 }
+
+.prow{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;border:0;border-bottom:1px solid var(--ln);background:none;padding:12px;text-align:left;cursor:pointer}
+.prow:last-child{border-bottom:0}
+.prow b{display:block;font-weight:600;font-size:14px}
+.prow small{display:block;color:var(--t2);font-size:12px;margin-top:2px}
+.prow em{font-style:normal;font-weight:700;color:var(--ok);font-size:13px}
