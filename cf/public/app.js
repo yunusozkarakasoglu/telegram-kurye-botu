@@ -391,7 +391,7 @@
     if (!p) return;
     S.kmPending = true;
     var base = (S.session && S.session.settings) ? S.session.settings : {};
-    var tariff = base.tariff || [120, 30, 40, 50, 60, 70, 80, 90, 100];
+    var tariff = base.tariff || [120, 150, 190, 240, 300, 370, 450, 540, 640];
     var sh = UI.openSheet(
       '<h2>Teslim aldım · #' + p.batch + '-' + p.number + '</h2>' +
       '<p>Teslimat mesafesini kilometre olarak girin.</p>' +
@@ -668,6 +668,115 @@
     nav(isRest ? restaurantTabs() : courierTabs(), {});
   }
 
+  function offersBanner() {
+    var offers = (S.offers || []);
+    if (!offers.length) return '';
+    return '<div class="card" style="padding:12px;margin-top:10px;border-color:var(--ac)">' +
+      '<b>🔔 ' + offers.length + ' aktarım teklifi</b>' +
+      '<button class="p" data-ofs style="width:100%;margin-top:8px">Teklifleri gör</button></div>';
+  }
+
+  function offersSheet() {
+    var offers = S.offers || [];
+    if (!offers.length) return;
+    var sh = UI.openSheet('<h2>Aktarım teklifleri</h2>' + offers.map(function (o) {
+      return '<div class="card" style="margin:8px 0;padding:10px"><b>#' + o.batch + '-' + o.number + ' · ' + esc(o.restaurant) + '</b>' +
+        '<small style="display:block;color:var(--t2)">Gönderen: ' + esc(o.from_name) + ' · ' + esc(o.region || '') + '</small>' +
+        '<div class="act" style="margin-top:6px"><button class="sm p" data-acc="' + o.token + '">Kabul</button>' +
+        '<button class="sm d" data-rej="' + o.token + '">Reddet</button></div></div>';
+    }).join(''), { onClose: function () { render(); } });
+    Array.prototype.forEach.call(sh.querySelectorAll('[data-acc]'), function (b) {
+      b.onclick = function () {
+        API.aktarimKarar(b.getAttribute('data-acc'), true).then(function () {
+          UI.closeSheet(); UI.toast('Aktarım kabul edildi', 'success'); refresh(true);
+        }).catch(function (e) { UI.toast(e.message || 'Kabul edilemedi', 'error'); });
+      };
+    });
+    Array.prototype.forEach.call(sh.querySelectorAll('[data-rej]'), function (b) {
+      b.onclick = function () {
+        API.aktarimKarar(b.getAttribute('data-rej'), false).then(function () {
+          UI.closeSheet(); UI.toast('Teklif reddedildi', 'success'); refresh(true);
+        }).catch(function (e) { UI.toast(e.message || 'Reddedilemedi', 'error'); });
+      };
+    });
+  }
+
+  function renderSistem() {
+    setHeader('Sistem', 'Fiyatlandırma · Restoranlar · Kuryeler · Bölgeler · v10');
+    var main = $('mn');
+    var admin = S.session && S.session.role === 'yonetici';
+    var seg = '<div class="seg four">' + [['fiyat', 'Fiyatlandırma'], ['restoran', 'Restoranlar'], ['kurye', 'Kuryeler'], ['bolge', 'Bölgeler']].map(function (x) {
+      return '<button data-st="' + x[0] + '" class="' + (S.sistemTab === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
+    }).join('') + '</div>';
+    function bindSeg() {
+      Array.prototype.forEach.call(main.querySelectorAll('[data-st]'), function (b) {
+        b.onclick = function () { S.sistemTab = b.getAttribute('data-st'); render(); };
+      });
+    }
+    function draw() {
+      var d = S.sistem;
+      if (!d) { main.innerHTML = seg + '<div class="empty">Yükleniyor…</div>'; bindSeg(); return; }
+      var body = '';
+      if (S.sistemTab === 'fiyat') {
+        var st = d.settings || {}, tariff = st.tariff || [], labels = st.tariff_intervals || [];
+        body = '<div class="card" style="padding:12px"><b>Mesafe ücretleri (sabit)</b>' + tariff.map(function (v, i) {
+          return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--ln);font-size:13px">' +
+            '<span>' + esc(labels[i] || (i === 0 ? '0–3' : i + '. aralık')) + ' km</span><b>' + money(v) + '</b></div>';
+        }).join('') + '</div>';
+      } else if (S.sistemTab === 'bolge') {
+        body = '<div class="card">' + ((d.settings && d.settings.regions) || []).map(function (r, i) {
+          return '<div class="row" style="cursor:default"><div><b>' + (i + 1) + '. ' + esc(r) + '</b></div></div>';
+        }).join('') + '</div>';
+      } else if (S.sistemTab === 'restoran') {
+        body = '<div class="card">' + ((d.restaurants || []).length ? d.restaurants.map(function (r) {
+          return '<div class="row" style="cursor:default"><div><b>' + esc(r.name) + '</b><small>' + esc(r.contact_name || '—') +
+            (r.phone ? ' · ' + esc(r.phone) : '') + '</small></div><span class="acts">' +
+            (r.phone ? '<a class="tel" href="tel:' + esc(r.phone) + '">📞</a>' : '') +
+            (admin ? '<button class="sm" data-editr="' + r.id + '">Düzenle</button>' : '') + '</span></div>';
+        }).join('') : '<div class="empty">Restoran yok</div>') + '</div>';
+      } else {
+        body = '<div class="card">' + ((d.couriers || []).length ? d.couriers.map(function (c) {
+          return '<div class="row" style="cursor:default"><div><b>' + esc(c.name) + '</b><small>' +
+            (c.online ? 'Online' : 'Offline') + (c.phone ? ' · ' + esc(c.phone) : '') + '</small></div><span class="acts">' +
+            (c.phone ? '<a class="tel" href="tel:' + esc(c.phone) + '">📞</a>' : '') +
+            (admin ? '<button class="sm" data-editc="' + c.id + '">Düzenle</button>' : '') + '</span></div>';
+        }).join('') : '<div class="empty">Kurye yok</div>') + '</div>';
+      }
+      main.innerHTML = seg + body;
+      bindSeg();
+      function editSheet(row, role) {
+        var sh = UI.openSheet('<h2>' + (role === 'restoran' ? 'Restoran' : 'Kurye') + ' düzenle</h2>' +
+          '<div class="fld"><label>Ad</label><input id="se-name" value="' + esc(row.name || '') + '"></div>' +
+          (role === 'restoran' ? '<div class="fld"><label>Yetkili</label><input id="se-contact" value="' + esc(row.contact_name || '') + '"></div>' : '') +
+          '<div class="fld"><label>Telefon</label><input id="se-phone" inputmode="tel" value="' + esc(row.phone || '') + '"></div>' +
+          '<div class="err" id="se-err"></div><button class="p" id="se-save">Kaydet</button>');
+        sh.querySelector('#se-save').onclick = function () {
+          var payload = { id: row.id, name: sh.querySelector('#se-name').value.trim(), phone: sh.querySelector('#se-phone').value.trim() };
+          if (role === 'restoran') payload.contact_name = sh.querySelector('#se-contact').value.trim();
+          API.yonetim('hesapGuncelle', payload).then(function () {
+            UI.closeSheet(); UI.toast('Kaydedildi', 'success'); S.sistem = null; renderSistem();
+          }).catch(function (e) { sh.querySelector('#se-err').textContent = e.message || 'Kaydedilemedi'; });
+        };
+      }
+      Array.prototype.forEach.call(main.querySelectorAll('[data-editc]'), function (b) {
+        b.onclick = function () {
+          var id = Number(b.getAttribute('data-editc'));
+          editSheet((d.couriers || []).filter(function (x) { return x.id === id; })[0] || {}, 'kurye');
+        };
+      });
+      Array.prototype.forEach.call(main.querySelectorAll('[data-editr]'), function (b) {
+        b.onclick = function () {
+          var id = Number(b.getAttribute('data-editr'));
+          editSheet((d.restaurants || []).filter(function (x) { return x.id === id; })[0] || {}, 'restoran');
+        };
+      });
+    }
+    draw();
+    if (!S.sistem) API.sistem().then(function (d) { S.sistem = d; draw(); }).catch(function (e) {
+      main.innerHTML = seg + '<div class="empty">Yüklenemedi: ' + esc(e.message || '') + '</div>'; bindSeg();
+    });
+  }
+
   function renderLogs() {
     setHeader('Loglar', 'Tanılama');
     var logs = (API.logs ? API.logs() : []).slice(-60);
@@ -766,5 +875,7 @@
     });
   }
 
+  window.addEventListener('error', function (e) { if (window.API && API.log) API.log('JS hata: ' + (e.message || e.error)); });
+  window.addEventListener('unhandledrejection', function (e) { if (window.API && API.log) API.log('Promise hata: ' + (e.reason && e.reason.message ? e.reason.message : e.reason)); });
   document.addEventListener('DOMContentLoaded', boot);
 })();
