@@ -862,8 +862,20 @@
     var sh = UI.openSheet('<h2>Bildirimler</h2>' + (items.length ? items.map(function (n) {
       return '<div class="notif"><small>' + dt(new Date(n.created_at * 1000).toISOString()) + '</small><div>' + esc(n.text) + '</div></div>';
     }).join('') : '<div class="empty">Bildirim yok.</div>') +
-      '<button class="d" id="nf-close" style="width:100%;margin-top:8px">Kapat</button>', { onClose: function () { render(); } });
+      '<button class="d" id="nf-clear" style="width:100%;margin-top:8px">Tümünü Temizle</button>' +
+      '<button class="d" id="nf-close" style="width:100%;margin-top:6px">Kapat</button>', { onClose: function () { render(); } });
     sh.querySelector('#nf-close').onclick = function () { UI.closeSheet(); };
+    sh.querySelector('#nf-clear').onclick = function () {
+      var c = UI.openSheet('<h2>Tümünü temizle</h2><p>Tüm bildirimler silinsin mi?</p>' +
+        '<button class="p" id="nc-yes">Evet, temizle</button><button class="d" id="nc-no">Hayır</button>');
+      c.querySelector('#nc-no').onclick = function () { UI.closeSheet(); };
+      c.querySelector('#nc-yes').onclick = function () {
+        API.bildirimTemizle().then(function () {
+          S.notifs = { items: [], unread: 0 };
+          UI.closeSheet(); UI.toast('Bildirimler temizlendi', 'success'); renderIcons();
+        }).catch(function (e) { UI.toast(e.message || 'Temizlenemedi', 'error'); });
+      };
+    };
     var maxId = items.reduce(function (m, n) { return Math.max(m, n.id); }, 0);
     if (maxId) {
       API.bildirimOkundu(maxId).then(function () {

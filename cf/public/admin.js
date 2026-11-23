@@ -559,9 +559,15 @@
       '<option value="all">Tümü</option><option value="online">Sadece online</option><option value="offline">Sadece offline</option></select></div>' +
       '<div class="fld"><label>Mesaj</label><textarea id="m-text" rows="5" style="width:100%" placeholder="Bildirim metni…"></textarea></div>' +
       '<button class="p" id="m-send">Gönder</button>' +
-      '<p class="note">Mesaj hem Telegram sohbetine hem Mini App bildirimlerine (🔔) düşer.</p>');
+      '<p class="note">Mesaj hem Telegram sohbetine hem Mini App bildirimlerine (🔔) düşer.</p>' +
+      '<button class="d" id="m-clear" style="margin-top:10px">Bildirimleri Temizle</button>');
     $('m-role').onchange = function () {
       $('m-aud-wrap').style.display = $('m-role').value === 'kurye' ? '' : 'none';
+    };
+    $('m-clear').onclick = function () {
+      if (!confirm('Tüm bildirimler silinsin mi?')) return;
+      API.yonetim('bildirimTemizle').then(function () { UI.toast('Bildirimler temizlendi', 'success'); })
+        .catch(function (e) { UI.toast(e.message || 'Temizlenemedi', 'error'); });
     };
     $('m-send').onclick = function () {
       var text = $('m-text').value.trim();

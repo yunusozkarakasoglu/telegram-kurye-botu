@@ -253,6 +253,7 @@
   };
   Mock.prototype.bildirimler = function () { return this.delay(function () { return { items: [], unread: 0 }; }); };
   Mock.prototype.bildirimOkundu = function () { return this.delay(function () { return { ok: true }; }); };
+  Mock.prototype.bildirimTemizle = function () { return this.delay(function () { return { ok: true }; }); };
   Mock.prototype.sistem = function () {
     var self = this;
     return this.delay(function () {
@@ -372,6 +373,7 @@
     sistem: function () { return req('GET', '/api/sistem'); },
     bildirimler: function () { return req('GET', '/api/bildirimler'); },
     bildirimOkundu: function (upto) { return req('POST', '/api/bildirimler/okundu', { upto: upto }); },
+    bildirimTemizle: function () { return req('POST', '/api/bildirimler/temizle'); },
     aktarimKuryeler: function () { return req('GET', '/api/aktarim/kuryeler'); },
     aktarimTeklifler: function () { return req('GET', '/api/aktarim/teklifler'); },
     aktarimKarar: function (token, kabul) { return req('POST', '/api/aktarim/' + token + (kabul ? '/kabul' : '/reddet')); },
@@ -387,6 +389,8 @@
       if (what === 'sontalepler') return req('GET', '/api/yonetim/sontalepler');
       if (what === 'rapor') return req('GET', '/api/yonetim/rapor' + (arg && arg.date ? '?date=' + encodeURIComponent(arg.date) : ''));
       if (what === 'mesaj') return req('POST', '/api/yonetim/mesaj', arg || {});
+      if (what === 'kuryeAta') return req('POST', '/api/yonetim/ata', arg || {});
+      if (what === 'bildirimTemizle') return req('POST', '/api/bildirimler/temizle');
       if (what === 'temizle') return req('POST', '/api/yonetim/temizle', arg || {});
       return req('GET', '/api/yonetim/' + what);
     }
@@ -430,7 +434,7 @@
     }
   };
   ['oturum', 'havuz', 'kabul', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
-    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'yonetim'].forEach(function (m) {
+    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);
         var target = mode === 'real' ? real : mock;

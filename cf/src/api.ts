@@ -155,6 +155,22 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       return json({ ok: true });
     }
 
+    if (path === "/bildirimler/temizle" && method === "POST") {
+      await bot.db.run("CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, created_at REAL NOT NULL)");
+      await bot.db.run("CREATE TABLE IF NOT EXISTS notif_targets(notif INTEGER NOT NULL, account INTEGER NOT NULL, PRIMARY KEY(notif,account))");
+      if (user.role === "yonetici") {
+        await bot.db.batch([
+          bot.db.d1.prepare("DELETE FROM notif_targets"),
+          bot.db.d1.prepare("DELETE FROM notifications"),
+          bot.db.d1.prepare("DELETE FROM notif_read"),
+        ]);
+      } else {
+        await bot.db.run("DELETE FROM notif_targets WHERE account=?", user.id);
+        await bot.db.run("DELETE FROM notif_read WHERE account=?", user.id);
+      }
+      return json({ ok: true });
+    }
+
     if (path === "/sistem" && method === "GET") {
       const restaurants = await bot.db.all<Account>("SELECT * FROM accounts WHERE role='restoran' AND deleted=0 AND active=1 ORDER BY name");
       const couriers = await bot.db.all<Account>("SELECT * FROM accounts WHERE role='kurye' AND deleted=0 AND active=1 ORDER BY name");
