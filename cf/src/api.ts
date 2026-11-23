@@ -93,6 +93,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       await env.DB.prepare("DELETE FROM invites WHERE code=?").bind(code).run();
       return json({ ok: true, role });
     }
+    if (path0 === "/oturum") return json({ need_register: true, invite: null, user: { id: user.id, name: "" } });
     return fail("Hesabınız pasif veya silinmiş. Yöneticiden yeni davet isteyin.", 403, "account_inactive");
   }
 
