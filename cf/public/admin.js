@@ -194,9 +194,13 @@
     API.yonetim('bolgeler').then(function (d) {
       panel('<div class="filters"><input id="nr" placeholder="Yeni bölge…"><button class="p sm" id="add">Ekle</button></div>' +
         '<div id="blist">' + (d.regions || []).map(function (r, i) {
-          return '<div class="brow" data-name="' + esc(r) + '"><span class="grip" title="Sürükle">☰</span>' +
+          return '<div class="brow" data-name="' + esc(r) + '">' +
             '<span class="bname"><b>' + (i + 1) + '.</b> ' + esc(r) + '</span>' +
-            '<button class="sm d" data-del="' + esc(r) + '" title="Sil">✕ Sil</button></div>';
+            '<span class="bactions">' +
+              '<button class="sm" data-up="' + esc(r) + '" title="Yukarı taşı">▲</button>' +
+              '<button class="sm" data-down="' + esc(r) + '" title="Aşağı taşı">▼</button>' +
+              '<button class="sm d" data-del="' + esc(r) + '" title="Sil">✕</button>' +
+            '</span></div>';
         }).join('') + '</div>' +
         '<p class="note">Restoranın bölge seçimi bu listeden beslenir.</p>');
       $('add').onclick = function () {
@@ -204,7 +208,7 @@
           UI.toast('Bölge eklendi', 'success'); render();
         }).catch(function (e) { UI.toast(e.message || 'Eklenemedi', 'error'); });
       };
-      bindRegionDrag();
+      bindRegionMove();
       Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-del]'), function (b) {
         b.onclick = function () {
           API.yonetim('bolge', { action: 'del', name: b.getAttribute('data-del') }).then(function () {
@@ -215,10 +219,9 @@
     }).catch(showError);
   }
 
-  function bindRegionDrag() {
+  function bindRegionMove() {
     var list = $('blist');
     if (!list) return;
-    var dragging = null;
     function renumber() {
       Array.prototype.forEach.call(list.querySelectorAll('.brow'), function (row, i) {
         row.querySelector('.bname b').textContent = (i + 1) + '.';
@@ -230,33 +233,18 @@
         UI.toast('Sıralama kaydedildi', 'success');
       }).catch(function (e) { UI.toast(e.message || 'Kaydedilemedi', 'error'); });
     }
-    Array.prototype.forEach.call(list.querySelectorAll('.grip'), function (grip) {
-      grip.addEventListener('pointerdown', function (ev) {
-        ev.preventDefault();
-        dragging = grip.closest('.brow');
-        dragging.classList.add('dragging');
-        grip.setPointerCapture(ev.pointerId);
-      });
-      grip.addEventListener('pointermove', function (ev) {
-        if (!dragging) return;
-        var el = document.elementFromPoint(ev.clientX, ev.clientY);
-        var over = el && el.closest ? el.closest('.brow') : null;
-        if (!over || over === dragging || over.parentNode !== list) return;
-        var rect = over.getBoundingClientRect();
-        var after = ev.clientY > rect.top + rect.height / 2;
-        list.insertBefore(dragging, after ? over.nextSibling : over);
-      });
-      grip.addEventListener('pointerup', function () {
-        if (!dragging) return;
-        dragging.classList.remove('dragging');
-        dragging = null;
-        renumber();
-        save();
-      });
-      grip.addEventListener('pointercancel', function () {
-        if (dragging) dragging.classList.remove('dragging');
-        dragging = null;
-      });
+    function move(row, dir) {
+      if (!row) return;
+      if (dir < 0 && row.previousElementSibling) list.insertBefore(row, row.previousElementSibling);
+      if (dir > 0 && row.nextElementSibling) list.insertBefore(row.nextElementSibling, row);
+      renumber();
+      save();
+    }
+    Array.prototype.forEach.call(list.querySelectorAll('[data-up]'), function (b) {
+      b.onclick = function () { move(b.closest('.brow'), -1); };
+    });
+    Array.prototype.forEach.call(list.querySelectorAll('[data-down]'), function (b) {
+      b.onclick = function () { move(b.closest('.brow'), 1); };
     });
   }
 

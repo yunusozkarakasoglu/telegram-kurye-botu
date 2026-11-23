@@ -225,3 +225,6 @@ header{position:relative}
 .brow.dragging{opacity:.6;background:var(--el2)}
 .brow{display:flex;align-items:center}
 .brow .bname{flex:1}
+
+.bactions{display:flex;gap:4px;align-items:center}
+.bactions .sm{width:34px;padding:4px 0;text-align:center}
