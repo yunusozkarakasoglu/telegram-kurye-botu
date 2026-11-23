@@ -246,16 +246,39 @@ export async function adminRoutes(
   }
 
   if (path === "/yonetim/rapor" && method === "GET") {
-    const rows = await bot.db.all<{ courier: number; n: number; km: number | null; fee: number | null }>(
-      `SELECT courier, count(*) AS n, sum(CAST(distance_km AS REAL)) AS km, sum(courier_fee) AS fee
-       FROM packages WHERE delivered_at IS NOT NULL AND courier IS NOT NULL GROUP BY courier`);
-    const names = await bot.db.all<{ id: number; name: string }>("SELECT id, name FROM accounts");
+    const dateParam = url.searchParams.get("date") || "";
+    let start: number;
+    let end: number;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+      start = Math.floor(Date.parse(dateParam + "T00:00:00+03:00") / 1000);
+    } else {
+      const n = bot.now();
+      start = Math.floor((n + 3 * 3600) / 86400) * 86400 - 3 * 3600;
+    }
+    end = start + 86400;
+    const activeRest = await bot.db.first<{ n: number }>("SELECT count(*) AS n FROM accounts WHERE role='restoran' AND active=1 AND deleted=0");
+    const working = await bot.db.first<{ n: number }>(
+      "SELECT count(DISTINCT courier) AS n FROM packages WHERE courier IS NOT NULL AND accepted_at>=? AND accepted_at<?", start, end);
+    const pkgs = await bot.db.first<{ n: number }>(
+      "SELECT count(*) AS n FROM packages p JOIN batches b ON b.id=p.batch WHERE b.created_at>=? AND b.created_at<?", start, end);
+    const couriers = await bot.db.all<any>(
+      `SELECT c.id, c.name,
+         (SELECT min(p.accepted_at) FROM packages p WHERE p.courier=c.id AND p.accepted_at>=? AND p.accepted_at<?) AS giris,
+         (SELECT max(coalesce(p.delivered_at,p.cancelled_at)) FROM packages p WHERE p.courier=c.id AND p.accepted_at>=? AND p.accepted_at<?) AS cikis,
+         (SELECT count(*) FROM packages p WHERE p.courier=c.id AND p.delivered_at>=? AND p.delivered_at<?) AS delivered,
+         (SELECT count(*) FROM packages p WHERE p.courier=c.id AND p.accepted_at>=? AND p.accepted_at<?) AS accepted
+       FROM accounts c WHERE c.role='kurye' AND c.deleted=0 ORDER BY delivered DESC, c.name`, start, end, start, end, start, end, start, end);
+    const restaurants = await bot.db.all<any>(
+      `SELECT a.id, a.name,
+         (SELECT count(*) FROM packages p JOIN batches b ON b.id=p.batch WHERE b.owner=a.id AND b.created_at>=? AND b.created_at<?) AS created,
+         (SELECT coalesce(sum(p.courier_fee),0) FROM packages p JOIN batches b ON b.id=p.batch
+            WHERE b.owner=a.id AND p.delivered_at>=? AND p.delivered_at<?) AS fee
+       FROM accounts a WHERE a.role='restoran' AND a.deleted=0 ORDER BY created DESC, a.name`, start, end, start, end);
     return json({
-      rows: rows.map((r) => ({
-        id: r.courier,
-        name: names.find((n) => n.id === r.courier)?.name || "—",
-        count: r.n, km: Math.round((r.km ?? 0) * 10) / 10, fee_tl: r.fee ?? 0,
-      })),
+      date: new Date(start * 1000 + 3 * 3600 * 1000).toISOString().slice(0, 10),
+      genel: { active_restaurants: activeRest?.n ?? 0, working_couriers: working?.n ?? 0, packages: pkgs?.n ?? 0 },
+      couriers: couriers.map((c) => ({ name: c.name, giris: c.giris || null, cikis: c.cikis || null, delivered: c.delivered || 0, accepted: c.accepted || 0 })),
+      restaurants: restaurants.map((r) => ({ name: r.name, packages: r.created || 0, fee_tl: r.fee || 0 })),
     });
   }
 

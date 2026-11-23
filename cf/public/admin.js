@@ -498,16 +498,45 @@
   }
 
   function viewRapor() {
-    head('Raporlar', 'Dönem bazlı kurye performansı');
-    API.yonetim('rapor').then(function (d) {
-      var rows = (d.rows || []).map(function (r) {
-        return '<tr><td>' + esc(r.name) + '</td><td class="num">' + r.count + '</td>' +
-          '<td class="num">' + (Math.round((r.km || 0) * 10) / 10) + ' km</td>' +
-          '<td class="num">' + money(r.fee_tl) + '</td></tr>';
-      }).join('');
-      panel('<table class="tbl"><thead><tr><th>Kurye</th><th class="num">Paket</th><th class="num">Mesafe</th><th class="num">Hakediş</th></tr></thead>' +
-        '<tbody>' + (rows || '<tr><td colspan="4">Veri yok</td></tr>') + '</tbody></table>');
-    });
+    head('Raporlar', 'Genel · Kurye · Restoran');
+    var tab = S.raporTab || 'genel';
+    var date = S.raporDate || '';
+    function seg() {
+      return '<div class="seg three">' + [['genel', 'Genel'], ['kurye', 'Kurye'], ['restoran', 'Restoran']].map(function (t) {
+        return '<button data-rt="' + t[0] + '" class="' + (tab === t[0] ? 'on' : '') + '">' + t[1] + '</button>';
+      }).join('') + '</div>' +
+        '<div class="filters" style="margin-top:8px"><label class="note">Tarih</label><input type="date" id="rdate" value="' + esc(date) + '"></div>';
+    }
+    API.yonetim('rapor', { date: date }).then(function (d) {
+      date = d.date || date;
+      var body = '';
+      if (tab === 'genel') {
+        body = '<div class="kpis k3">' +
+          kpi('Aktif restoran', d.genel.active_restaurants) +
+          kpi('Çalışan kurye', d.genel.working_couriers) +
+          kpi('Paket', d.genel.packages) + '</div>';
+      } else if (tab === 'kurye') {
+        var rows = (d.couriers || []).map(function (c) {
+          return '<tr><td>' + esc(c.name) + '</td><td>' + (c.giris ? dt(new Date(c.giris * 1000).toISOString()) : '—') +
+            '</td><td>' + (c.cikis ? dt(new Date(c.cikis * 1000).toISOString()) : '—') +
+            '</td><td class="num">' + (c.delivered || 0) + '</td></tr>';
+        }).join('');
+        body = '<table class="tbl"><thead><tr><th>Kurye</th><th>Giriş</th><th>Çıkış</th><th class="num">Atılan paket</th></tr></thead>' +
+          '<tbody>' + (rows || '<tr><td colspan="4">Kayıt yok</td></tr>') + '</tbody></table>';
+      } else {
+        var rws = (d.restaurants || []).map(function (r) {
+          return '<tr><td>' + esc(r.name) + '</td><td class="num">' + (r.packages || 0) + '</td>' +
+            '<td class="num">' + money(r.fee_tl || 0) + '</td></tr>';
+        }).join('');
+        body = '<table class="tbl"><thead><tr><th>Restoran</th><th class="num">Atılan paket</th><th class="num">Ödeme tutarı</th></tr></thead>' +
+          '<tbody>' + (rws || '<tr><td colspan="3">Kayıt yok</td></tr>') + '</tbody></table>';
+      }
+      panel(seg() + body);
+      Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-rt]'), function (b) {
+        b.onclick = function () { S.raporTab = b.getAttribute('data-rt'); viewRapor(); };
+      });
+      $('rdate').onchange = function () { S.raporDate = $('rdate').value; viewRapor(); };
+    }).catch(showError);
   }
 
   function viewIptaller() {

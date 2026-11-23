@@ -381,6 +381,7 @@
       if (what === 'bolge') return req('POST', '/api/yonetim/bolge', arg || {});
       if (what === 'bolgeSirala') return req('POST', '/api/yonetim/bolge-sirala', arg || {});
       if (what === 'sontalepler') return req('GET', '/api/yonetim/sontalepler');
+      if (what === 'rapor') return req('GET', '/api/yonetim/rapor' + (arg && arg.date ? '?date=' + encodeURIComponent(arg.date) : ''));
       if (what === 'temizle') return req('POST', '/api/yonetim/temizle', arg || {});
       return req('GET', '/api/yonetim/' + what);
     }
