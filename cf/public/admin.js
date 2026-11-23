@@ -61,7 +61,7 @@
         kpi('Aktif kurye', d.active_couriers) +
         kpi('Toplam paket (bugün)', d.today_packages) +
         '</div>' +
-        '<h3 style="font-size:15px;margin:16px 0 6px">10 dakikayı geçen bekleyenler</h3>' +
+        '<h3 style="font-size:15px;margin:16px 0 6px">Geciken Siparişler - ' + waiting.length + ' Adet</h3>' +
         groupBtns +
         '<div class="card" style="padding:6px 10px">' + list + '</div>' +
         '<p class="note">Bölgeler: ' + esc((d.regions || []).join(', ')) + '</p>');
