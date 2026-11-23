@@ -23,7 +23,15 @@ async function hmacSign(key: BufferSource, message: string): Promise<ArrayBuffer
  * Anahtar zinciri: secret = HMAC_SHA256(bot_token, "WebAppData"); hash = HMAC_SHA256(secret, data_check_string).
  * data_check_string: "hash" ve "signature" hariç, anahtarların sıralı "key=value" listesi, "\n" ile ayrılmış.
  */
-export async function verifyInitData(initData: string, botToken: string): Promise<{ id: number; name: string; username: string }> {
+async function logAuthFailure(env: Env, initData: string, computed: string, hash: string, error: string) {
+  try {
+    await env.DB.prepare("CREATE TABLE IF NOT EXISTS auth_log (id INTEGER PRIMARY KEY AUTOINCREMENT, at REAL NOT NULL, error TEXT, hash TEXT, computed TEXT, keys TEXT, init_data TEXT)").run();
+    await env.DB.prepare("INSERT INTO auth_log(at,error,hash,computed,keys,init_data) VALUES (?,?,?,?,?,?)")
+      .bind(Date.now() / 1000, error, hash, computed, [...new URLSearchParams(initData).keys()].join(","), initData.slice(0, 3000)).run();
+  } catch {}
+}
+
+export async function verifyInitData(initData: string, botToken: string, env?: Env): Promise<{ id: number; name: string; username: string }> {
   const params = new URLSearchParams(initData);
   const hash = params.get("hash");
   if (!hash) throw new HttpError(401, "initData bulunamadı.");
@@ -35,7 +43,10 @@ export async function verifyInitData(initData: string, botToken: string): Promis
     .join("\n");
   const secret = await hmacSign(new TextEncoder().encode("WebAppData"), botToken);
   const computed = toHex(await hmacSign(secret, dataCheck));
-  if (computed !== hash.toLowerCase()) throw new HttpError(401, "initData doğrulanamadı.");
+  if (computed !== hash.toLowerCase()) {
+    if (env) await logAuthFailure(env, initData, computed, hash, "hash-mismatch");
+    throw new HttpError(401, "initData doğrulanamadı.");
+  }
   const authDate = Number(params.get("auth_date") || 0);
   if (!authDate) throw new HttpError(401, "auth_date yok.");
   if (Date.now() / 1000 - authDate > MAX_AGE_SECONDS) throw new HttpError(401, "Oturum süresi doldu; yenileyin.");
@@ -58,7 +69,7 @@ export async function authenticate(request: Request, env: Env): Promise<Account 
   const initData = request.headers.get("x-telegram-init-data") || "";
   let telegramId = 0;
   if (initData) {
-    const verified = await verifyInitData(initData, env.BOT_TOKEN);
+    const verified = await verifyInitData(initData, env.BOT_TOKEN, env);
     telegramId = verified.id;
   } else if (env.DEV_AUTH && request.headers.get("x-dev-auth") === env.DEV_AUTH) {
     telegramId = Number(request.headers.get("x-dev-tg") || 0);

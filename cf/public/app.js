@@ -30,10 +30,10 @@
   function curRole() { return S.session && S.session.role ? S.session.role : 'courier'; }
 
   function courierTabs() {
-    return [['havuz', '▤', 'Havuz'], ['paketlerim', '✓', 'Açık Paketler'], ['gecmis', '◷', 'Geçmiş'], ['kazanc', '₺', 'Kazanç'], ['sistem', '⚙', 'Sistem'], ['profil', '☺', 'Profil']];
+    return [['havuz', '▤', 'Havuz'], ['paketlerim', '✓', 'Açık Paketler'], ['gecmis', '◷', 'Geçmiş'], ['kazanc', '₺', 'Kazanç'], ['sistem', '⚙', 'Sistem'], ['loglar', '🐞', 'Loglar'], ['profil', '☺', 'Profil']];
   }
   function restaurantTabs() {
-    return [['talep', '＋', 'Talep Ver'], ['paketlerim', '▤', 'Paketlerim'], ['sistem', '⚙', 'Sistem'], ['profil', '☺', 'Profil']];
+    return [['talep', '＋', 'Talep Ver'], ['paketlerim', '▤', 'Paketlerim'], ['sistem', '⚙', 'Sistem'], ['loglar', '🐞', 'Loglar'], ['profil', '☺', 'Profil']];
   }
 
   function hardReload() {
@@ -706,6 +706,29 @@
     API.sistem().then(function (d) { S.sistem = d; renderSistem(); }).catch(function () {});
   }
 
+  function renderLogs() {
+    setHeader('Loglar', 'Tanılama');
+    var logs = (API.logs ? API.logs() : []).slice(-60);
+    var main = $('mn');
+    main.innerHTML = '<div class="card" style="padding:12px;font-size:12px">' +
+      '<div><b>Sürüm:</b> v10 · <b>Mod:</b> ' + (API.mode === 'real' ? 'CANLI' : 'MİMİK') + '</div>' +
+      '<div><b>initData:</b> ' + (window.Telegram && Telegram.WebApp && Telegram.WebApp.initData ? 'var (' + Telegram.WebApp.initData.length + ' bayt)' : 'YOK') + '</div>' +
+      '<div><b>Son hata:</b> ' + esc(API.lastError || '—') + '</div>' +
+      '<div style="margin-top:6px;color:var(--t2)">' + esc(navigator.userAgent.slice(0, 120)) + '</div></div>' +
+      '<div class="card" style="padding:12px;font-size:12px;white-space:pre-wrap">' +
+      (logs.length ? logs.map(esc).join('\n') : 'Kayıt yok.') + '</div>' +
+      '<button class="p" id="log-send" style="width:100%;margin-top:8px">Sunucuya Gönder</button>' +
+      '<button class="d" id="log-clear" style="width:100%;margin-top:6px">Temizle</button>';
+    $('log-send').onclick = function () {
+      API.sendLogs({ mode: API.mode, lastError: API.lastError, ua: navigator.userAgent }).then(function () {
+        UI.toast('Log gönderildi', 'success');
+      }).catch(function (e) { UI.toast(e.message || 'Gönderilemedi', 'error'); });
+    };
+    $('log-clear').onclick = function () { window.__kuryeLogs = []; render(); };
+    $('cta').innerHTML = '';
+    nav(curRole() === 'restoran' ? restaurantTabs() : courierTabs(), {});
+  }
+
   /* ---------------- yönlendirme ---------------- */
   function render() {
     var role = curRole();
@@ -715,7 +738,8 @@
       else renderRestPaketlerim();
       return;
     }
-    if (S.tab === 'sistem') renderSistem();
+    if (S.tab === 'loglar') renderLogs();
+    else if (S.tab === 'sistem') renderSistem();
     else if (S.tab === 'profil') renderProfil();
     else if (S.tab === 'paketlerim') renderPaketlerim();
     else if (S.tab === 'gecmis') renderGecmis();
@@ -761,8 +785,8 @@
       var badge = document.getElementById('mode');
       if (badge) badge.textContent = (API.mode === 'real' ? 'CANLI' : 'MİMİK VERİ');
       if (API.mode !== 'real' && API.lastError) {
-        var m = document.getElementById('mn');
-        if (m) m.insertAdjacentHTML('afterbegin', '<div class="pk-warn">Telegram kimliği alınamadı: ' + esc(API.lastError) + '</div>');
+        var w = document.getElementById('authwarn');
+        if (w) { w.hidden = false; w.textContent = 'Telegram kimliği alınamadı: ' + API.lastError + ' — Loglar sekmesinden ayrıntıya bakın.'; }
       }
       refresh(true);
       setInterval(function () { refresh(false); }, 5000);

@@ -330,6 +330,13 @@
     if (t) { h['X-Dev-Auth'] = t; h['X-Dev-Tg'] = sessionStorage.getItem('dev_tg') || ''; }
     return h;
   }
+  function logLine(msg) {
+    try {
+      window.__kuryeLogs = window.__kuryeLogs || [];
+      window.__kuryeLogs.push(new Date().toISOString().slice(11, 19) + ' ' + msg);
+      if (window.__kuryeLogs.length > 100) window.__kuryeLogs.shift();
+    } catch (e) {}
+  }
   function req(method, path, body) {
     return fetch(path, {
       method: method,
@@ -337,6 +344,7 @@
       body: body ? JSON.stringify(body) : undefined,
       credentials: 'same-origin'
     }).then(function (r) {
+      if (!r.ok) logLine('HTTP ' + r.status + ' ' + method + ' ' + path);
       return r.json().catch(function () { return {}; }).then(function (j) {
         if (!r.ok) { var e = new Error(j.error || ('Hata ' + r.status)); e.status = r.status; e.code = j.code; throw e; }
         return j;
@@ -392,6 +400,9 @@
     feeFor: feeFor,
     feePreview: feePreview,
     lastError: '',
+    logs: function () { return (window.__kuryeLogs || []).slice(); },
+    log: logLine,
+    sendLogs: function (extra) { return req('POST', '/api/log', { extra: extra, logs: (window.__kuryeLogs || []) }); },
     init: function () {
       var setMockRole = function () {
         mode = 'mock';

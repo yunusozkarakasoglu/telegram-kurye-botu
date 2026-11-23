@@ -26,6 +26,14 @@ async function readBody(request: Request): Promise<any> {
 export async function handleApi(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const bot = new Bot(env);
+  if (url.pathname === "/api/log" && request.method === "POST") {
+    try {
+      const body = await readBody(request);
+      await bot.db.run("CREATE TABLE IF NOT EXISTS client_log (id INTEGER PRIMARY KEY AUTOINCREMENT, at REAL NOT NULL, msg TEXT)");
+      await bot.db.run("INSERT INTO client_log(at,msg) VALUES (?,?)", bot.nowF(), JSON.stringify(body).slice(0, 4000));
+    } catch {}
+    return json({ ok: true });
+  }
   bot.ignoreNotifyErrors = true; // Mini App akışında bildirim hatası isteği bozmasın.
   let user: Account;
   try {
