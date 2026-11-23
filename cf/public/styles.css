@@ -188,3 +188,5 @@ body.sheet-open #toast{bottom:auto;top:calc(14px + var(--sat));z-index:12}
 .gname{background:var(--ac);color:var(--on);font-weight:700;font-size:14px;padding:5px 12px;border-radius:99px}
 .gcount{background:var(--ok);color:var(--on);font-weight:700;font-size:13px;padding:5px 12px;border-radius:99px}
 .gcard .row{padding:12px}
+.row .acts{margin-left:auto;display:flex;align-items:center;gap:6px;flex:none}
+.row .acts .sm{white-space:nowrap}

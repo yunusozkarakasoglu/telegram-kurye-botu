@@ -691,14 +691,8 @@
         b.onclick = function () { S.sistemTab = b.getAttribute('data-st'); render(); };
       });
     }
-    if (!S.sistem) {
-      API.sistem().then(function (d) { S.sistem = d; render(); }).catch(function (e) {
-        main.innerHTML = seg + '<div class="empty">Yüklenemedi: ' + esc(e.message || '') + '</div>';
-        bindSeg();
-      });
-      draw(); bindSeg(); return;
-    }
-    draw();
+    draw(); bindSeg();
+    API.sistem().then(function (d) { S.sistem = d; render(); }).catch(function () {});
   }
 
   /* ---------------- yönlendirme ---------------- */
