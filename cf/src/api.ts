@@ -43,9 +43,11 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     return fail(e.message || "Yetkilendirme hatası", e instanceof HttpError ? e.status : 401, "unauthorized");
   }
   let existing = await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(ident.id).first<Account>();
-  const path0 = url.pathname.replace(/^\/api/, "") || "/";
+    const path0 = url.pathname.replace(/^\/api/, "") || "/";
+  const urlStart = url.searchParams.get("tgWebAppStartParam") || url.searchParams.get("start_param") || "";
+  const inviteCode = ident.startParam || urlStart;
   if (!existing) {
-    const code0 = ident.startParam || "";
+    const code0 = inviteCode;
     const invite0 = code0 ? await env.DB.prepare("SELECT * FROM invites WHERE code=? AND expires>?").bind(code0, Math.floor(Date.now() / 1000)).first<any>() : null;
     if (invite0 && invite0.name && invite0.phone) {
       await env.DB.prepare("INSERT INTO accounts(id,role,name,phone,contact_name) VALUES (?,?,?,?,?)")
@@ -54,7 +56,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       existing = await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(ident.id).first<Account>();
     }
     if (!existing && path0 === "/oturum") {
-      return json({ need_register: true, invite: invite0 ? { code: invite0.code, role: invite0.role } : null, user: { id: ident.id, name: ident.name } });
+      return json({ need_register: true, invite: invite0 ? { code: invite0.code, role: invite0.role, name: invite0.name || "", phone: invite0.phone || "", contact_name: invite0.contact_name || "" } : null, user: { id: ident.id, name: ident.name } });
     }
     if (!existing && path0 === "/kayit" && request.method === "POST") {
       const body = await readBody(request);
@@ -77,7 +79,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
   }
   user = existing!;
   if (user.deleted || !user.active) {
-    const code0 = ident.startParam || "";
+    const code0 = inviteCode;
     const invite0 = code0 ? await env.DB.prepare("SELECT * FROM invites WHERE code=? AND expires>?").bind(code0, Math.floor(Date.now() / 1000)).first<any>() : null;
     if (invite0 && invite0.name && invite0.phone) {
       await env.DB.prepare("UPDATE accounts SET deleted=0,active=1,online=0,locked=0,role=?,name=?,phone=?,contact_name=? WHERE id=?")
@@ -101,7 +103,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       await env.DB.prepare("DELETE FROM invites WHERE code=?").bind(code).run();
       return json({ ok: true, role });
     } else if (path0 === "/oturum") {
-      return json({ need_register: true, invite: invite0 ? { code: invite0.code, role: invite0.role } : null, user: { id: user.id, name: "" } });
+      return json({ need_register: true, invite: invite0 ? { code: invite0.code, role: invite0.role, name: invite0.name || "", phone: invite0.phone || "", contact_name: invite0.contact_name || "" } : null, user: { id: user.id, name: "" } });
     } else {
       return fail("Hesabınız pasif veya silinmiş. Yöneticiden yeni davet isteyin.", 403, "account_inactive");
     }

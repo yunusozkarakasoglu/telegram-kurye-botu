@@ -1000,10 +1000,10 @@
     $('nv').innerHTML = '';
     $('mn').innerHTML = '<div class="card" style="padding:12px">' +
       '<p class="note">Davet bağlantısıyla kayıt. Bilgilerinizi girin.</p>' +
-      '<div class="fld"><label>' + (isRest ? 'Restoran adı' : 'Ad Soyad') + '</label><input id="rg-name" value="' + esc(s.user && s.user.name || '') + '"></div>' +
-      (isRest ? '<div class="fld"><label>Yetkili adı</label><input id="rg-contact"></div>' : '') +
+      '<div class="fld"><label>' + (isRest ? 'Restoran adı' : 'Ad Soyad') + '</label><input id="rg-name" value="' + esc(inv.name || (s.user && s.user.name) || '') + '"></div>' +
+      (isRest ? '<div class="fld"><label>Yetkili adı</label><input id="rg-contact" value="' + esc(inv.contact_name || '') + '"></div>' : '') +
       (inv.code ? '' : '<div class="fld"><label>Davet kodu</label><input id="rg-code" placeholder="Davet kodunu yapıştırın"></div>') +
-      '<div class="fld"><label>Telefon</label><input id="rg-phone" inputmode="tel" placeholder="0546 208 99 00"></div>' +
+      '<div class="fld"><label>Telefon</label><input id="rg-phone" inputmode="tel" value="' + esc(inv.phone || '') + '" placeholder="0546 208 99 00"></div>' +
       '<div class="err" id="rg-err"></div>' +
       '<button class="p" id="rg-save" style="width:100%">Kayıt Ol</button></div>';
     $('rg-save').onclick = function () {

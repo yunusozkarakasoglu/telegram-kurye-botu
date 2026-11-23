@@ -357,7 +357,10 @@
   }
 
   var real = {
-    oturum: function () { return req('GET', '/api/oturum'); },
+    oturum: function () {
+      var sp = new URLSearchParams(location.search).get('tgWebAppStartParam') || '';
+      return req('GET', '/api/oturum' + (sp ? '?tgWebAppStartParam=' + encodeURIComponent(sp) : ''));
+    },
     havuz: function () { return req('GET', '/api/havuz'); },
     kabul: function (ids) { return req('POST', '/api/kabul', { ids: ids }); },
     kmGir: function (id, km) { return req('POST', '/api/paket/' + id + '/km', { km: km }); },
