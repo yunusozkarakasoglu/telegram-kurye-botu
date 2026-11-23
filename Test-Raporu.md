@@ -127,6 +127,14 @@ Bilinen mesaj kimliğiyle yapılan güncellemeler çökme sonrası aynı mesajı
 - CF: `validFullName` (`cf/src/util.ts`) + `profile.ts`; Python: `FULL_NAME_RE` (`kurye/profile.py`).
 - Testler: **382/382 OK**, `ruff` temiz; CF `tsc` temiz ve yayınlandı (`bb8c0be0…`).
 
+### Son doğrulama (bu tur)
+
+- Python: **382/382 OK**, `ruff` temiz.
+- Cloudflare: `tsc --noEmit` temiz; `wrangler deploy` başarılı.
+- Canlı: gerçek `initData` ile `/api/oturum` 200; 2 saatlik initData kabul, 25 saatlik reddediliyor.
+- Yönetici paneli yerel: kartlar+arama, hamburger, bölge ▲▼, KPI, geciken atama, davet paylaş/kopyala.
+- Ücret: 4,5 km → **190 TL**.
+
 ## Kanıtlar ve tekrar çalıştırma
 
 ```bash

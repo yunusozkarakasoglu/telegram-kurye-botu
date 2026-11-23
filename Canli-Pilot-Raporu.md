@@ -184,6 +184,14 @@ Kullanıcının **Bölgeler** ekranında tanımladığı listeden 4 bölge seçi
 - Kullanıcı adı: `@YunusKuryePilot_4862_bot` — BotFather `/setusername` artık yok (“Unrecognized command”), menülerde de yok; Telegram yalnız Bot Support ile değiştiriyor. **Karar: kullanıcı adı böyle kalacak.**
 - Mini App URL'si ve webhook kullanıcı adından bağımsız; etkilenmedi.
 
+### Yönetici paneli (tamam)
+
+- Menü: 3 sütun + mobil hamburger; Kuryeler/Restoranlar kart + arama; telefon 📞 + Düzenle.
+- Bölgeler: satır satır, ▲▼ ile sıralama (kalıcı), ekle/sil.
+- Özet: Aktif restoran / Aktif kurye / Toplam paket (bugün) + **Geciken Siparişler - X Adet**; satıra dokun → boştaki kuryeye ata; bölge/restoran gruplama.
+- Ücret tarifesi: km aralığı başına sabit ücret.
+- Davet: Bağlantıyı Paylaş + açıklamalı metin **Kopyala**.
+
 ### Mini App (aktif geliştirme)
 
 - Menü düğmesi **"Kurye"** olarak yeniden açıldı.
