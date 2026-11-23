@@ -6,7 +6,7 @@
   'use strict';
   var $ = UI.$, esc = UI.esc, money = UI.money, kmf = UI.km, dt = UI.dt;
 
-  var S = { tab: 'ozet', data: {}, session: null, ozetGroup: '' };
+  var S = { tab: 'anasayfa', homeTab: 'ozet', data: {}, session: null, ozetGroup: '' };
 
   var TABS = [
     ['ozet', 'Özet'], ['havuz', 'Havuz'], ['sontalepler', 'Son Talepler'],
@@ -18,18 +18,21 @@
   function head(t, s) { $('adm-title').textContent = t; $('adm-sub').textContent = s || ''; }
   var MAIN = ['ozet', 'havuz', 'sontalepler'];
   function renderTabs() {
+    if (S.tab !== 'anasayfa') { $('adm-tabs').innerHTML = ''; return; }
     $('adm-tabs').innerHTML = MAIN.map(function (key) {
       var t = TABS.filter(function (x) { return x[0] === key; })[0];
-      return '<button class="' + (S.tab === key ? 'on' : '') + '" data-mt="' + key + '">' + t[1] + '</button>';
+      return '<button class="' + (S.homeTab === key ? 'on' : '') + '" data-mt="' + key + '">' + t[1] + '</button>';
     }).join('');
     Array.prototype.forEach.call($('adm-tabs').children, function (b) {
-      b.onclick = function () { S.tab = b.getAttribute('data-mt'); render(); };
+      b.onclick = function () { S.homeTab = b.getAttribute('data-mt'); render(); };
     });
   }
   function nav() {
-    $('adm-nav').innerHTML = TABS.filter(function (t) { return MAIN.indexOf(t[0]) < 0; }).map(function (t) {
-      return '<button class="' + (S.tab === t[0] ? 'on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</button>';
-    }).join('');
+    var items = TABS.filter(function (t) { return MAIN.indexOf(t[0]) < 0; });
+    $('adm-nav').innerHTML = '<button class="' + (S.tab === 'anasayfa' ? 'on' : '') + '" data-t="anasayfa">Anasayfa</button>' +
+      items.map(function (t) {
+        return '<button class="' + (S.tab === t[0] ? 'on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</button>';
+      }).join('');
     Array.prototype.forEach.call($('adm-nav').children, function (b) {
       b.onclick = function () { S.tab = b.getAttribute('data-t'); render(); };
     });
@@ -556,11 +559,13 @@
   function render() {
     renderTabs();
     nav();
+    var view = S.tab === 'anasayfa' ? S.homeTab : S.tab;
+    if (S.tab === 'anasayfa' && renderTabs) { /* tabs already rendered */ }
     ({
       ozet: viewOzet, havuz: viewHavuz, kuryeler: viewKuryeler, restoranlar: viewRestoranlar,
       bolgeler: viewBolgeler, tarife: viewTarife, rapor: viewRapor, iptaller: viewIptaller, davet: viewDavet,
       limit: viewLimit, sontalepler: viewSonTalepler, kuryedurum: viewKuryeDurum, mesaj: viewMesaj
-    })[S.tab]();
+    })[view]();
   }
 
   function bindBurger() {
