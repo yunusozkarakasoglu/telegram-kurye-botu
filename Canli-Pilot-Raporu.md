@@ -178,6 +178,13 @@ Kullanıcının **Bölgeler** ekranında tanımladığı listeden 4 bölge seçi
 - Canlı doğrulanan (gerçek Telegram, `yunusozkar`): `/yonetici` ile D1'de yönetici oluştu; `/bolgeler` listesi; `/davet kurye CF Test Kurye` + telefon → davet kaydı; `/kuryepaketlimiti 5` → setting 5; `/tarife 130 35 …` → tarife güncellendi.
 - **Henüz doğrulanmadı:** restoran/kurye davet kabulü, talep formu, havuz/kabul/km/teslim/iptal akışlarının Cloudflare üzerinde gerçek hesaplarla çalışması. Yerel ağ `*.workers.dev` TLS'ini engellediği için webhook'a dışarıdan sentetik istek atılamadı.
 
+### Mini App (sürüm `e1e02837…`)
+
+- URL: `https://telegram-kurye-botu.packonexpress.workers.dev/` · bot menü düğmesi **Kurye** olarak ayarlandı (`setChatMenuButton`).
+- Kurye/restoran arayüzü + yönetici paneli (`/admin.html`); kimlik `initData` HMAC (1 saat).
+- API iş kuralları mevcut modüllerden çağrılıyor (km/ücret, iptal, aktarım tek kaynak).
+- **Bekleyen:** gerçek cihazda açılış; bot menülerinin kademeli olarak "Uygulamayı Aç" modeline indirilmesi; özel alan adı.
+
 ### Cloudflare sürümü — güncel durum (sürüm `df60c6bf…`)
 
 - Kurye kaydı (ad+telefon) canlı doğrulandı: D1'de **Neriman Kurye / +905462089900 / online**.

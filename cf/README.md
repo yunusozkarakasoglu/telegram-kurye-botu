@@ -46,3 +46,11 @@ Python sürümü aynı bot tokenıyla çalışıyorsa **durdurulmalı** (webhook
 
 - Gönderim kuyruğu yerine doğrudan `sendMessage`; yüksek hacimde Telegram 429 riski. Gerekirse Queues eklenir.
 - Yerel ağda `*.workers.dev` TLS engelli olabilir; bot Telegram üzerinden çalışır, test için Telegram kullanılır.
+
+## Mini App
+
+- Arayüz: `public/` (kurye+restoran `index.html`, yönetici `admin.html`), statik dosyalar Worker'dan sunulur (`assets` + `run_worker_first`).
+- API: `/api/*` — kimlik `X-Telegram-Init-Data`; doğrulama `src/auth.ts` (HMAC-SHA256, `auth_date` ≤ 1 saat).
+- Yerel test: `.dev.vars` içine `DEV_AUTH=localdev` → `?dev_tg=<id>&dev_auth=localdev`.
+- Yayın: `./node_modules/.bin/tsc --noEmit && npx wrangler deploy`; menü düğmesi `setChatMenuButton` (`web_app`).
+- **Üretimde `DEV_AUTH` tanımlanmaz.**

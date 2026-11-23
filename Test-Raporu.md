@@ -113,6 +113,13 @@ Bilinen mesaj kimliğiyle yapılan güncellemeler çökme sonrası aynı mesajı
 
 **Not:** Bu simülasyon gerçek Telegram sohbetine mesaj göndermez; mantık/D1 doğrular. Gerçek cihaz testi için restoranın kendi Telegram hesabı (kendi telefon numarası) veya davet linkini kullanacak bir kişi gerekir.
 
+## Mini App doğrulaması (sürüm `e1e02837…`)
+
+- `tsc --noEmit` temiz; `wrangler deploy` ile statik arayüz + `/api/*` yayınlandı.
+- Canlı uçlar: `/saglik` → `{"ok":true,"accounts":5}`; `/` → 200 HTML; `/styles.css` → 200; `/api/oturum` kimliksiz → **401**; geçersiz initData → **401**; `/webhook` yanlış secret → **403**.
+- Yerel D1 + `DEV_AUTH` ile API zinciri: oturum → havuz → kabul `[6001]` → km `3,5` → **150 TL** → teslim → yönetici özeti (teslim 2, toplam 340 TL).
+- **Bekleyen:** gerçek Telegram `initData` ile cihaz testi (kurye/restoran/yönetici).
+
 ## Kanıtlar ve tekrar çalıştırma
 
 ```bash
