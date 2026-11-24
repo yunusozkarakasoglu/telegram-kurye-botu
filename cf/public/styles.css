@@ -428,3 +428,13 @@ textarea{width:100%;font:inherit;font-size:15px;padding:10px 12px;border:1px sol
 #ovl .seg button.on{border-color:var(--ac)}
 
 .seg.two{grid-template-columns:repeat(2,minmax(0,1fr));display:grid}
+
+.tblwrap{overflow-x:auto;border:1px solid var(--ln);border-radius:10px;background:var(--card)}
+.rtbl{width:100%;border-collapse:collapse;font-size:12px}
+.rtbl th{text-align:left;color:var(--t2);font-weight:600;padding:8px 6px;border-bottom:1px solid var(--ln);white-space:nowrap;font-size:11px}
+.rtbl td{padding:9px 6px;border-bottom:1px solid var(--ln);white-space:nowrap}
+.rtbl tr:last-child td{border-bottom:0}
+.rtbl tbody tr:active{background:rgba(127,127,127,.08)}
+.pcheck{display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;border-radius:5px;font-size:11px}
+.pcheck.on{background:rgba(31,168,85,.18);color:#178a44}
+.pcheck.off{background:rgba(229,72,77,.16);color:#c0353a}

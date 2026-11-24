@@ -43,7 +43,7 @@
     return [['havuz', '▤', 'Havuz'], ['paketlerim', '✓', 'Açık Paketler'], ['gecmis', '◷', 'Geçmiş']];
   }
   function restaurantTabs() {
-    return [['talep', '＋', 'Sipariş Ekle'], ['paketlerim', '▤', 'Paketlerim']];
+    return [['talep', '＋', 'Sipariş Ekle'], ['paketlerim', '▤', 'Paketlerim'], ['rapor', '▦', 'Rapor']];
   }
 
   function hardReload() {
@@ -751,6 +751,46 @@
     sh.querySelector('#ecancel').onclick = function () { UI.closeSheet(); };
   }
 
+  function renderRestRapor() {
+    setHeader('Rapor', 'Bugünün paketleri');
+    var main = $('mn');
+    var items = (S.restItems && S.restItems.items) || [];
+    var day0 = new Date(); day0.setHours(0, 0, 0, 0);
+    var day1 = new Date(day0); day1.setDate(day1.getDate() + 1);
+    var t0 = Math.floor(day0.getTime() / 1000), t1 = Math.floor(day1.getTime() / 1000);
+    var rows = items.filter(function (p) { return p.created_at && p.created_at >= t0 && p.created_at < t1; });
+    var hm = function (sec) {
+      if (sec == null || sec < 0) return '—';
+      var m = Math.floor(sec / 60), h = Math.floor(m / 60);
+      return h ? (h + ' sa ' + (m % 60) + ' dk') : (m + ' dk');
+    };
+    main.innerHTML = '<div class="card" style="padding:10px 12px;margin-bottom:8px"><b>' + rows.length + ' paket</b>' +
+      '<small style="color:var(--t2)"> · ' + day0.toLocaleDateString('tr-TR') + '</small></div>' +
+      (rows.length ? '<div class="tblwrap"><table class="rtbl"><thead><tr>' +
+        '<th>Tarih</th><th>Talep</th><th>Kurye</th><th>Süre</th><th>Km</th><th>Tutar</th><th>Öd</th>' +
+        '</tr></thead><tbody>' + rows.map(function (p) {
+          var sure = p.created_at && p.delivered_at ? p.delivered_at - p.created_at : null;
+          return '<tr data-rp="' + p.id + '">' +
+            '<td>' + (p.created_at ? new Date(p.created_at * 1000).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '—') + '</td>' +
+            '<td>#' + p.batch + '-' + p.number + '</td>' +
+            '<td>' + esc(p.courier_name || '—') + '</td>' +
+            '<td>' + hm(sure) + '</td>' +
+            '<td>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</td>' +
+            '<td>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</td>' +
+            '<td>' + (p.payment_received === true ? '<span class="pcheck on">✓</span>' : p.payment_received === false ? '<span class="pcheck off">✕</span>' : '—') + '</td>' +
+          '</tr>';
+        }).join('') + '</tbody></table></div>' : '<div class="empty"><b>Bugün paket yok</b>Bugün oluşturulan sipariş bulunmuyor.</div>');
+    Array.prototype.forEach.call(main.querySelectorAll('[data-rp]'), function (tr) {
+      tr.onclick = function () {
+        var id = Number(tr.getAttribute('data-rp'));
+        var p = rows.filter(function (x) { return x.id === id; })[0];
+        if (p) restPkgSheet(p);
+      };
+    });
+    $('cta').innerHTML = '';
+    nav(restaurantTabs(), {});
+  }
+
   function renderRestPaketlerim() {
     setHeader('Paketlerim', '');
     var filters = [['all', 'Tümü'], ['waiting', 'Bekleyen'], ['active', 'Yolda (Aktif)'], ['delivered', 'Teslim Edilen']];
@@ -1329,6 +1369,7 @@
     var role = curRole();
     if (role === 'restoran') {
       if (S.tab === 'talep') renderTalep();
+      else if (S.tab === 'rapor') renderRestRapor();
       else if (S.tab === 'sistem') renderSistem();
       else if (S.tab === 'profil') renderProfil();
       else renderRestPaketlerim();
@@ -1347,7 +1388,8 @@
   }
 
   function loadRest() {
-    return API.paketlerimRestoran(S.restFilter).then(function (r) { S.restItems = r; render(); });
+    var f = S.tab === 'rapor' ? 'all' : S.restFilter;
+    return API.paketlerimRestoran(f).then(function (r) { S.restItems = r; render(); });
   }
 
   function refresh(full) {
