@@ -339,6 +339,8 @@
     }
     if (initData) h['X-Telegram-Init-Data'] = initData;
     if (actAs) h['X-Act-As'] = actAs;
+    var pin = sessionStorage.getItem('pinToken');
+    if (pin) h['X-Pin-Token'] = pin;
     var t = sessionStorage.getItem('dev_auth');
     if (t) { h['X-Dev-Auth'] = t; h['X-Dev-Tg'] = sessionStorage.getItem('dev_tg') || ''; }
     return h;
@@ -389,6 +391,9 @@
     bildirimOkundu: function (upto) { return req('POST', '/api/bildirimler/okundu', { upto: upto }); },
     bildirimTemizle: function () { return req('POST', '/api/bildirimler/temizle'); },
     odeme: function (ids, all) { return req('POST', '/api/odeme', { ids: ids || [], all: !!all }); },
+    pinDurum: function () { return req('GET', '/api/pin/durum'); },
+    pinOlustur: function (pin) { return req('POST', '/api/pin/olustur', { pin: pin }); },
+    pinDogrula: function (pin) { return req('POST', '/api/pin/dogrula', { pin: pin }); },
     aktarimKuryeler: function () { return req('GET', '/api/aktarim/kuryeler'); },
     aktarimTeklifler: function () { return req('GET', '/api/aktarim/teklifler'); },
     aktarimKarar: function (token, kabul) { return req('POST', '/api/aktarim/' + token + (kabul ? '/kabul' : '/reddet')); },
@@ -454,7 +459,7 @@
     }
   };
   ['oturum', 'havuz', 'kabul', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
-    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'yonetim'].forEach(function (m) {
+    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'pinDurum', 'pinOlustur', 'pinDogrula', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);
         var target = mode === 'real' ? real : mock;

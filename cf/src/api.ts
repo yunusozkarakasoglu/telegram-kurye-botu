@@ -7,6 +7,7 @@ export { json, fail } from "./apidto";
 import * as apiCourier from "./apicourier";
 import * as forms from "./forms";
 import { dialNumber, validFullName, validPhone } from "./util";
+import { checkPinHash, makePinHash, pinToken, pinSql, validPin, validPinToken } from "./pin";
 import { CANCEL_REASONS, PAYMENTS, MAX_PACKAGES, UNSPECIFIED } from "./constants";
 
 /**
@@ -114,6 +115,47 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
 
   const path = url.pathname.replace(/^\/api/, "") || "/";
   const method = request.method.toUpperCase();
+
+  // PIN kurulumu/doğrulaması (kurye ve restoran için zorunlu ikinci adım)
+  if (originalRole !== "yonetici" && path !== "/oturum") {
+    for (const sql of pinSql()) { try { await env.DB.prepare(sql).run(); } catch {} }
+    const fresh = (await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(user.id).first<Account>()) || user;
+    user = fresh;
+    if (path === "/pin/durum" && method === "GET") {
+      return json({ has_pin: !!user.pin_hash, phone: user.phone || null });
+    }
+    if (path === "/pin/olustur" && method === "POST") {
+      if (user.pin_hash) return fail("PIN zaten oluşturulmuş.", 409, "conflict");
+      const body = await readBody(request);
+      const pin = String(body.pin || "");
+      if (!validPin(pin)) return fail("PIN 4 haneli olmalı.", 422, "invalid");
+      const hash = await makePinHash(pin);
+      await env.DB.prepare("UPDATE accounts SET pin_hash=?, pin_fail=0, pin_lock=0 WHERE id=?").bind(hash, user.id).run();
+      const t = await pinToken(env, user.id);
+      return json({ ok: true, ...t });
+    }
+    if (path === "/pin/dogrula" && method === "POST") {
+      if (!user.pin_hash) return fail("Önce PIN oluşturun.", 409, "pin_setup");
+      const now = Math.floor(Date.now() / 1000);
+      if ((user.pin_lock || 0) > now) return fail("Çok fazla hatalı deneme. 5 dakika sonra tekrar deneyin.", 429, "locked");
+      const body = await readBody(request);
+      const pin = String(body.pin || "");
+      if (await checkPinHash(pin, user.pin_hash)) {
+        await env.DB.prepare("UPDATE accounts SET pin_fail=0, pin_lock=0 WHERE id=?").bind(user.id).run();
+        const t = await pinToken(env, user.id);
+        return json({ ok: true, ...t });
+      }
+      const fails = (user.pin_fail || 0) + 1;
+      const lock = fails >= 3 ? now + 300 : 0;
+      await env.DB.prepare("UPDATE accounts SET pin_fail=?, pin_lock=? WHERE id=?").bind(fails, lock, user.id).run();
+      return fail(fails >= 3 ? "3 hatalı deneme. 5 dakika kilitlendi." : `Hatalı PIN. Kalan deneme: ${3 - fails}`, 401, "wrong_pin");
+    }
+    if (path.startsWith("/pin/")) return fail("Bulunamadı", 404, "not_found");
+    if (!user.pin_hash) return fail("PIN oluşturmanız gerekiyor.", 403, "pin_setup");
+    if (!(await validPinToken(env, user.id, request.headers.get("x-pin-token") || ""))) {
+      return fail("PIN doğrulaması gerekli.", 401, "pin_required");
+    }
+  }
 
   // Tarife/limit/bölge tohumları yoksa eklenir (webhook ile aynı davranış).
   await bot.db.ensureSeeds((env.REGIONS || "Kadıköy,Üsküdar,Ataşehir").split(",").map((s) => s.trim()).filter(Boolean));

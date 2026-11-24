@@ -1162,6 +1162,83 @@
     };
   }
 
+  function startSession(s) {
+  S.session = s;
+  S.role = s.role || 'courier';
+  if (S.role === 'yonetici') { location.replace('/admin' + location.hash); return; }
+  S.tab = S.role === 'restoran' ? 'talep' : 'havuz';
+  var badge = document.getElementById('mode');
+  if (badge) badge.textContent = (API.mode === 'real' ? 'CANLI' : 'MİMİK VERİ');
+  if (API.mode !== 'real' && API.lastError) {
+    var w = document.getElementById('authwarn');
+    if (w) { w.hidden = false; w.textContent = 'Telegram kimliği alınamadı: ' + API.lastError + ' — Loglar sekmesinden ayrıntıya bakın.'; }
+    if (/süresi doldu/i.test(API.lastError) && !sessionStorage.getItem('authReloaded')) {
+      sessionStorage.setItem('authReloaded', '1');
+      setTimeout(hardReload, 400);
+      return;
+    }
+  }
+  refresh(true);
+  setInterval(function () { refresh(false); }, 5000);
+  setInterval(tick, 1000);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) refresh(false);
+  });
+  }
+
+  function pinGate(s) {
+    API.pinDurum().then(function (d) {
+      if (!d.has_pin) return renderPinCreate(s);
+      if (!window.__pinVerified) return renderPinEnter(s, d.phone);
+      startSession(s);
+    }).catch(function () { startSession(s); });
+  }
+
+  function renderPinCreate(s) {
+    setHeader('PIN oluştur', '4 haneli güvenlik PIN’i');
+    $('hdr-right').innerHTML = '';
+    $('nv').innerHTML = '';
+    $('mn').innerHTML = '<div class="card" style="padding:14px">' +
+      '<p class="note">Uygulamayı her açtığınızda sorulacak 4 haneli PIN belirleyin.</p>' +
+      '<div class="fld"><label>Yeni PIN</label><input id="pin1" inputmode="numeric" maxlength="4" type="password"></div>' +
+      '<div class="fld"><label>PIN (tekrar)</label><input id="pin2" inputmode="numeric" maxlength="4" type="password"></div>' +
+      '<div class="err" id="pinerr"></div>' +
+      '<button class="p" id="pinsave" style="width:100%">PIN Oluştur</button></div>';
+    $('pinsave').onclick = function () {
+      var p1 = $('pin1').value.trim(), p2 = $('pin2').value.trim(), err = $('pinerr');
+      err.textContent = '';
+      if (!/^\d{4}$/.test(p1)) { err.textContent = 'PIN 4 haneli olmalı'; return; }
+      if (p1 !== p2) { err.textContent = 'PIN’ler uyuşmuyor'; return; }
+      API.pinOlustur(p1).then(function (r) {
+        sessionStorage.setItem('pinToken', r.token);
+        window.__pinVerified = true;
+        UI.toast('PIN oluşturuldu', 'success');
+        startSession(s);
+      }).catch(function (e) { err.textContent = e.message || 'Oluşturulamadı'; });
+    };
+  }
+
+  function renderPinEnter(s, phone) {
+    setHeader('Giriş', 'PIN ile devam');
+    $('hdr-right').innerHTML = '';
+    $('nv').innerHTML = '';
+    $('mn').innerHTML = '<div class="card" style="padding:14px">' +
+      '<p class="note">Telefon: <b>' + esc(phone || '—') + '</b></p>' +
+      '<div class="fld"><label>4 haneli PIN</label><input id="pin" inputmode="numeric" maxlength="4" type="password"></div>' +
+      '<div class="err" id="pinerr"></div>' +
+      '<button class="p" id="pinok" style="width:100%">Giriş Yap</button></div>';
+    $('pinok').onclick = function () {
+      var pin = $('pin').value.trim(), err = $('pinerr');
+      err.textContent = '';
+      if (!/^\d{4}$/.test(pin)) { err.textContent = 'PIN 4 haneli olmalı'; return; }
+      API.pinDogrula(pin).then(function (r) {
+        sessionStorage.setItem('pinToken', r.token);
+        window.__pinVerified = true;
+        startSession(s);
+      }).catch(function (e) { err.textContent = e.message || 'Hatalı PIN'; });
+    };
+  }
+
   function boot() {
     API.init().then(function (s) {
       if (s && s.role === 'yonetici') { location.replace('/admin' + location.hash); return; }
@@ -1171,6 +1248,7 @@
       }
       if (s && s.need_register) { renderRegister(s); return; }
       if (s && s.incomplete) { renderIncomplete(s); return; }
+      if (API.mode === 'real' && s && s.role !== 'yonetici') { pinGate(s); return; }
       S.session = s;
       S.role = s.role || 'courier';
       if (S.role === 'yonetici') { location.replace('/admin' + location.hash); return; }
