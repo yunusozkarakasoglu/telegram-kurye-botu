@@ -50,7 +50,7 @@ export async function recordDistance(bot: Bot, courier: number, value: string): 
   const pkg = (await bot.packages("p.id=?", [pending.package]))[0];
   await bot.send(courier, `${pkg.batch}-${pkg.number} · ${pkg.restaurant}\nKaydedildi · ${String(distance).replace(".", ",")} km · Kurye ücreti ${fee} TL`);
   const { cardMarkup } = await import("./pool");
-  await bot.send(courier, await details(bot.db, pkg, true), await cardMarkup(bot, pkg, "kurye"), "HTML");
+  await bot.send(courier, await details(bot.db, pkg, true), undefined, "HTML");
   return null;
 }
 
@@ -95,7 +95,7 @@ export async function advance(bot: Bot, user: Account, packageId: number, action
       await bot.send(user.id, online.online
         ? "Üzerinizdeki paketlerin tamamı teslim edildi. Yeni iş alabilirsiniz."
         : "Üzerinizdeki paketlerin tamamı teslim edildi. Yeni iş için çevrimiçi olun.",
-        online.online ? keyboard([[["Havuz", "pv:regions"]]]) : undefined);
+        );
     }
   }
   return null;
@@ -132,7 +132,7 @@ export async function warnRepeated(bot: Bot, packageId: number) {
   if (!admin || !pkg.length) return;
   await bot.db.run("INSERT INTO settings VALUES (?,?)", key, bot.now());
   await bot.send(admin.id, `🔴 Talep #${pkg[0].batch}-${pkg[0].number} paketi ${row.n} kez reddedildi/kaçırıldı.\n${pkg[0].restaurant} · ${pkg[0].region || "Belirtilmedi"}\nElle kurye atamanız gerekiyor; otomatik teklifler tükendi.`,
-    keyboard([[["Havuza Git", "pv:regions"]]]));
+    );
 }
 
 // --- iptal ---

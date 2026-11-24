@@ -3,7 +3,6 @@ import { Telegram } from "./telegram";
 import type { Account, Env, PackageRow, TelegramUpdate } from "./types";
 import { MENUS, PRIORITY_SECONDS, MAX_PACKAGES, DEFAULT_ACTIVE_LIMIT, TARIFF_BOUNDS, MEDIA_NOTICE_SECONDS } from "./constants";
 import { now, nowF, dialNumber, escapeHtml } from "./util";
-import { keyboard } from "./views";
 import * as forms from "./forms";
 import * as pool from "./pool";
 import * as accept from "./accept";
@@ -44,31 +43,8 @@ export class Bot {
       const count = await this.incomingCount(user.id);
       if (count) text += `\n\n🔔 ${count} aktarım dikkatinizi bekliyor.`;
     }
-    const isAdmin = user.role === "yonetici";
-    let labels = [...(MENUS[user.role] || [])];
-    if (user.role === "kurye") labels.push(user.online ? "Çevrimdışı Ol" : "Çevrimiçi Ol");
-    if (isAdmin) {
-      labels = labels.filter((l) => l !== "Yönetici Numarası");
-      labels.push("Raporlar");
-    } else {
-      labels.push("Raporlar");
-    }
-    const solo = new Set(["Yöneticiyi Ara"]);
-    const perRow = isAdmin ? 3 : 2;
-    const rows: { text: string }[][] = [];
-    let group: { text: string }[] = [];
-    for (const label of labels) {
-      if (!isAdmin && solo.has(label)) {
-        if (group.length) { rows.push(group); group = []; }
-        rows.push([{ text: label }]);
-        continue;
-      }
-      group.push({ text: label });
-      if (group.length === perRow) { rows.push(group); group = []; }
-    }
-    if (group.length) rows.push(group);
-    if (isAdmin) rows.push([{ text: "Yönetici Numarası" }]);
-    await this.send(user.id, text, { keyboard: rows, resize_keyboard: true });
+    text += "\n\nTüm işlemler Mini App üzerinden yapılır: aşağıdaki “Kurye Paket” düğmesine dokunun.";
+    await this.send(user.id, text, { remove_keyboard: true });
   }
 
   async account(id: number) {
@@ -312,7 +288,7 @@ export class Bot {
       const row = await this.db.first<PackageRow>(`SELECT p.*, b.owner, b.created_at, r.name AS restaurant, c.name AS courier_name,
           r.latitude AS restaurant_lat, r.longitude AS restaurant_lng, r.contact_name AS restaurant_contact,
           r.phone AS restaurant_phone, c.phone AS courier_phone, x.name AS cancelled_by_name, x.role AS cancelled_by_role FROM packages p JOIN batches b ON b.id=p.batch
-          JOIN accounts r ON r.id=b.owner LEFT JOIN accounts c ON c.id=p.courier WHERE p.id=?`, id);
+          JOIN accounts r ON r.id=b.owner LEFT JOIN accounts c ON c.id=p.courier LEFT JOIN accounts x ON x.id=p.cancelled_by WHERE p.id=?`, id);
       if (row) packages.push(row);
     }
     if (!packages.length) return;
@@ -320,8 +296,7 @@ export class Bot {
     const body = packages.map((p) => `${p.batch}-${p.number} · ${p.restaurant} · ${p.region || "Belirtilmedi"}`).join("\n");
     await this.send(packages[0].owner, `${body}\n${status}`);
     const lines = packages.map((p) => `#${p.batch}-${p.number} · ${p.restaurant} · ${p.region || "Belirtilmedi"}`);
-    await this.send(courier, `${manual ? "Size atanan" : "Üzerinize alınan"} paketler (${packages.length})\n\n${lines.join("\n")}\n\nKartı görmek için düğmeye dokunun. Onay/red için uygulamayı açın.`,
-      keyboard(packages.slice(0, 10).map((p) => [[`📦 Talep #${p.batch}-${p.number}`, `card:${p.id}`]])), "HTML");
+    await this.send(courier, `${manual ? "Size atanan" : "Üzerinize alınan"} paketler (${packages.length})\n\n${lines.join("\n")}\n\nAyrıntı ve işlemler için Mini App'i açın.`);
     await pool.refreshBatch(this, batchId);
   }
 }

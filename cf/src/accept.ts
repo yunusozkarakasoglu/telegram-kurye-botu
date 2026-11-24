@@ -112,8 +112,7 @@ async function offerClaim(bot: Bot, admin: Account, packageId: number, courierId
   await bot.db.run("UPDATE packages SET incoming=1,incoming_from=?,incoming_at=? WHERE id=?", last?.from_courier ?? null, bot.nowF(), packageId);
   const pkg = await bot.packages("p.id=?", [packageId]);
   await bot.send(courierId, [`<b>🔔 AKTARILAN SİPARİŞ — ONAY GEREKLİ</b>`,
-    `<b>Gönderen kurye : ${from?.name || "—"}</b>`, await details(bot.db, pkg[0], true)].join("\n"),
-    keyboard([[["Kabul Et", `coa:${token}`], ["Reddet", `cod:${token}`]]]), "HTML");
+    `<b>Gönderen kurye : ${from?.name || "—"}</b>`, await details(bot.db, pkg[0], true)].join("\n"), undefined, "HTML");
   await bot.send(admin.id, `Onay istendi: ${pkg[0].batch}-${pkg[0].number} → ${target.name}. Kurye kabul ederse paket ona geçer.`);
   return "Onay istendi.";
 }
@@ -152,11 +151,7 @@ export async function transferAction(bot: Bot, user: Account, action: string, pa
       const token = await newScope(bot, user.id, packageId, true);
       return targets(bot, user, token);
     }
-    await bot.send(user.id, `${rows[0].batch}-${rows[0].number} · ${rows[0].restaurant}\nAktarım kapsamını seçin.`, keyboard([
-      [[`Tümünü Aktar (${active.length} Paket)`, `trall:${packageId}`]],
-      [["Yalnız Bu Paketi Aktar", `trone:${packageId}`]],
-      [["Vazgeç", "cxv"]],
-    ]));
+    await bot.send(user.id, `${rows[0].batch}-${rows[0].number} · ${rows[0].restaurant}\nAktarım Mini App üzerinden yapılır.`);
     return null;
   }
   const token = await newScope(bot, user.id, packageId, action === "trall");
@@ -180,11 +175,7 @@ async function scopeRows(bot: Bot, token: string, courier: number) {
 async function targets(bot: Bot, user: Account, token: string): Promise<any> {
   const rows = await scopeRows(bot, token, user.id);
   if (!rows || !rows.length) return "Aktarılacak paket yok.";
-  await bot.send(user.id, `${rows.length} paket aktarılacak.\n\nNereye aktarılsın?`, keyboard([
-    [["Havuza Aktar", `trpool:${token}`]],
-    [["Kuryeye Aktar", `trcour:${token}`]],
-    [["Vazgeç", "cxv"]],
-  ]));
+  await bot.send(user.id, `${rows.length} paket aktarılacak. Aktarım Mini App üzerinden yapılır.`);
   return null;
 }
 
@@ -195,7 +186,7 @@ export async function transferStep(bot: Bot, user: Account, action: string, toke
   if (!rows) return "Aktarım süresi doldu, tekrar deneyin.";
   if (action === "trpool") {
     await bot.send(user.id, `${rows.length} paket havuza bırakılacak ve üzerinizden alınacak. Alım/mesafe bilgileri sıfırlanır. Onaylıyor musunuz?`,
-      keyboard([[["Evet, Havuza Aktar", `trpy:${token}`], ["Vazgeç", "cxv"]]]));
+      );
     return null;
   }
   if (action === "trpy") {
@@ -219,12 +210,10 @@ export async function transferStep(bot: Bot, user: Account, action: string, toke
       AND a.deleted=0 AND a.id<>? AND NOT EXISTS (SELECT 1 FROM packages p WHERE p.courier=a.id
       AND p.delivered_at IS NULL AND p.cancelled_at IS NULL) ORDER BY a.name LIMIT 10`, user.id);
     if (!couriers.length) {
-      await bot.send(user.id, "Aktarım için uygun kurye yok. Havuza aktarabilirsiniz.", keyboard([[["Havuza Aktar", `trpool:${token}`]]]));
+      await bot.send(user.id, "Aktarım için uygun kurye yok. Havuza aktarabilirsiniz.");
       return null;
     }
-    const pickRows: any[] = couriers.map((c) => [[c.name, `trg:${token}:${c.id}`]]);
-    pickRows.push([["Vazgeç", "cxv"]]);
-    await bot.send(user.id, "Paketi alacak kuryeyi seçin.", keyboard(pickRows));
+    await bot.send(user.id, "Paketi alacak kuryeyi seçin.");
     return null;
   }
   return "Bu işlem kullanılamıyor.";

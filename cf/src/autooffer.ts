@@ -29,7 +29,7 @@ async function warnWaiting(bot: Bot) {
   if (!admin) return;
   await bot.db.run("INSERT INTO settings VALUES ('last_wait_warn',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", bot.now());
   await bot.send(admin.id, `⚠️ Havuzda bekleyen ${row.n} paket var; ${WAIT_WARN_SECONDS / 60} dakikayı geçti.\n${AUTO_OFFER_AFTER / 60} dakikayı geçenler için uygun kuryelere otomatik teklif gönderilir.`,
-    keyboard([[["Havuza Git", "pv:regions"]]]));
+    );
 }
 
 async function createOffers(bot: Bot) {
@@ -67,7 +67,6 @@ async function createOffers(bot: Bot) {
   for (const [courierId, items] of pending) {
     const lines = [`Otomatik iş teklifi · ${items.length} paket`, "İlk kabul eden alır; süre 2 dakika.", ""];
     items.forEach((item) => lines.push(`#${item.pkg.batch}-${item.pkg.number} · ${item.pkg.restaurant} · ${item.pkg.region || "Belirtilmedi"}`));
-    const rows = items.slice(0, 8).map((item) => [[`Kabul Et #${item.pkg.number}`, `aoa:${item.offerId}`], [`Reddet #${item.pkg.number}`, `aod:${item.offerId}`]]);
-    await bot.send(courierId, lines.join("\n"), keyboard(rows as any));
+    await bot.send(courierId, lines.join("\n"));
   }
 }
