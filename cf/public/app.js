@@ -1221,6 +1221,7 @@
       if (S.tab === 'talep') renderTalep();
       else if (S.tab === 'profil') renderProfil();
       else renderRestPaketlerim();
+      renderDrawer();
       return;
     }
     if (S.tab === 'loglar') renderLogs();
