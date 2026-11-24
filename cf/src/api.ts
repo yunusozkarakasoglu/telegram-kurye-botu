@@ -36,12 +36,19 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     return json({ ok: true });
   }
   bot.ignoreNotifyErrors = true; // Mini App akışında bildirim hatası isteği bozmasın.
+  // GEÇİCİ TEST GİRİŞİ: tüm hesapların PIN'ini 1234 yapar ve listeyi döner. Kaldırılacak.
+  if (url.pathname === "/api/giris/kullanicilar" && request.method === "GET") {
+    const hash = await makePinHash("1234");
+    await env.DB.prepare("UPDATE accounts SET pin_hash=?, pin_fail=0, pin_lock=0 WHERE deleted=0 AND active=1").bind(hash).run();
+    const rows = await env.DB.prepare("SELECT id,role,name,phone FROM accounts WHERE deleted=0 AND active=1 ORDER BY CASE role WHEN 'restoran' THEN 0 WHEN 'kurye' THEN 1 ELSE 2 END, name").all<any>();
+    return json({ pin: "1234", items: rows.results || [] });
+  }
   if (url.pathname === "/api/giris" && request.method === "POST") {
     const body = await readBody(request);
     const phone = String(body.phone || "").replace(/\D/g, "").slice(-10);
     const pin = String(body.pin || "");
-    if (phone.length !== 10 || !validPin(pin)) return fail("Telefon veya PIN hatalı.", 401, "wrong_login");
-    const candidates = await env.DB.prepare("SELECT * FROM accounts WHERE deleted=0 AND active=1 AND (phone IS NOT NULL OR role='yonetici')").all<Account>();
+    if (phone.length < 3 || !validPin(pin)) return fail("Telefon veya PIN hatalı.", 401, "wrong_login");
+    const candidates = await env.DB.prepare("SELECT * FROM accounts WHERE deleted=0 AND active=1").all<Account>();
     const match = (candidates.results || []).find((a) =>
       String(a.phone || "").replace(/\D/g, "").slice(-10) === phone || String(a.id) === phone,
     );

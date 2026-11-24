@@ -1300,11 +1300,13 @@
       '<div class="fld"><label>4 haneli PIN</label><input id="lgpin" inputmode="numeric" maxlength="4" type="password" autocomplete="current-password" placeholder="••••"></div>' +
       '<div class="err" id="lgerr"></div>' +
       '<button class="p" id="lgok" style="width:100%">Giriş Yap</button>' +
-      '<p class="note" style="margin-top:10px">Hesabınızın rolüne göre kurye, restoran veya yönetici paneli açılır. Yönetici hesabı, telefon yerine Telegram ID ile giriş yapabilir.</p></div>';
+      '<p class="note" style="margin-top:10px">Hesabınızın rolüne göre kurye, restoran veya yönetici paneli açılır.</p>' +
+      '<div class="testwarn">TEST GİRİŞİ · tüm PIN’ler 1234 · kaldırılacak</div>' +
+      '<div id="lglistbox"><p class="note">Kullanıcılar yükleniyor…</p></div></div>';
     $('lgok').onclick = function () {
       var phone = ($('lgphone').value || '').trim(), pin = ($('lgpin').value || '').trim(), err = $('lgerr');
       err.textContent = '';
-      if (phone.replace(/\D/g, '').length < 10) { err.textContent = 'Telefon numarasını tam girin'; return; }
+      if (phone.replace(/\D/g, '').length < 4) { err.textContent = 'Telefon numarasını tam girin'; return; }
       if (!/^\d{4}$/.test(pin)) { err.textContent = 'PIN 4 haneli olmalı'; return; }
       $('lgok').disabled = true;
       API.giris(phone, pin).then(function (r) {
@@ -1316,6 +1318,28 @@
         location.reload();
       }).catch(function (e) { $('lgok').disabled = false; err.textContent = e.message || 'Giriş yapılamadı'; });
     };
+    API.girisKullanicilar().then(function (r) {
+      var box = $('lglistbox');
+      var items = r.items || [];
+      var order = function (x) { return x.role === 'restoran' ? 0 : x.role === 'kurye' ? 1 : 2; };
+      items.sort(function (a, b) { return order(a) - order(b) || String(a.name).localeCompare(String(b.name)); });
+      box.innerHTML = '<div class="testlist">' + items.map(function (x) {
+        var id = String(x.phone || x.id).replace(/\D/g, '').slice(-10);
+        var label = x.role === 'yonetici' ? 'Yönetici' : x.role === 'restoran' ? 'Restoran' : 'Kurye';
+        return '<button data-phone="' + esc(id) + '"><b>' + esc(x.name) + ' <em>' + label + '</em></b>' +
+          '<span>' + esc(id) + ' · PIN ' + esc(r.pin || '1234') + '</span></button>';
+      }).join('') + '</div>';
+      Array.prototype.forEach.call(box.querySelectorAll('[data-phone]'), function (b) {
+        b.onclick = function () {
+          $('lgphone').value = b.getAttribute('data-phone');
+          $('lgpin').value = r.pin || '1234';
+          $('lgok').click();
+        };
+      });
+    }).catch(function (e) {
+      var box = $('lglistbox');
+      if (box) box.innerHTML = '<p class="err">' + esc(e.message || 'Kullanıcı listesi alınamadı') + '</p>';
+    });
   }
 
   function renderPinEnter(s, phone) {
