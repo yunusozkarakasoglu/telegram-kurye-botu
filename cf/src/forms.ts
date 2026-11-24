@@ -118,14 +118,14 @@ async function nextIds(bot: Bot, table: "batches" | "packages", count: number) {
   return Array.from({ length: count }, (_, i) => start + i);
 }
 
-export async function submit(bot: Bot, chat: number, selected: (string | null)[], payments: (string | null)[]) {
+export async function submit(bot: Bot, chat: number, selected: (string | null)[], payments: (string | null)[], notes: (string | null)[] = []) {
   const [batchId] = await nextIds(bot, "batches", 1);
   const ids = await nextIds(bot, "packages", selected.length);
   await bot.db.run("INSERT INTO batches(id,owner,created_at) VALUES (?,?,?)", batchId, chat, bot.now());
   const stmts: D1PreparedStatement[] = [];
   for (let i = 0; i < selected.length; i++) {
-    stmts.push(bot.db.d1.prepare("INSERT INTO packages(id,batch,number,region,payment) VALUES (?,?,?,?,?)")
-      .bind(ids[i], batchId, i + 1, selected[i] || "", payments[i]));
+    stmts.push(bot.db.d1.prepare("INSERT INTO packages(id,batch,number,region,payment,note) VALUES (?,?,?,?,?,?)")
+      .bind(ids[i], batchId, i + 1, selected[i] || "Belirtilmedi", payments[i] || null, notes[i] || null));
   }
   await bot.db.batch(stmts);
   await bot.db.run("DELETE FROM drafts WHERE owner=?", chat);

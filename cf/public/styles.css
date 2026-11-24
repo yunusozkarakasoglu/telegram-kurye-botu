@@ -397,3 +397,6 @@ main{padding-bottom:20px}
 
 #cta{padding:10px 12px;background:var(--bg);border-top:1px solid var(--ln);flex:none;display:block}
 #cta button{width:100%;min-height:48px;display:block}
+
+textarea{width:100%;font:inherit;font-size:15px;padding:10px 12px;border:1px solid var(--ln);border-radius:10px;background:var(--card);color:var(--tx);resize:vertical}
+.fld textarea{margin-top:2px}

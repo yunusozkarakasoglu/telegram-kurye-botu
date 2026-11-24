@@ -274,6 +274,7 @@
         '<dt>Restoran</dt><dd>' + esc(p.restaurant) + '</dd>' +
         '<dt>Bölge</dt><dd>' + esc(p.region || '—') + '</dd>' +
         '<dt>Ödeme</dt><dd>' + esc(p.payment || '—') + '</dd>' +
+        (p.note ? '<dt>Not</dt><dd>' + esc(p.note) + '</dd>' : '') +
         '<dt>Yetkili</dt><dd>' + esc(p.restaurant_contact || '—') + '</dd>' +
         '<dt>Kabul</dt><dd>' + dt(p.accepted_at) + '</dd>' +
         '<dt>Alım</dt><dd>' + dt(p.picked_at) + '</dd>' +
@@ -672,11 +673,11 @@
     var st = (S.session && S.session.settings) || {};
     var regions = st.regions || [];
     var payments = st.payments || ['Nakit', 'Kart', 'Ödendi'];
-    if (!S.reqDraft) S.reqDraft = { region: '', payment: '' };
+    if (!S.reqDraft) S.reqDraft = { region: '', payment: '', note: '' };
     var d = S.reqDraft;
     var rows = S.reqItems.map(function (it, i) {
       return '<div class="reqrow"><b>#' + (i + 1) + '</b>' +
-        '<span><em>' + esc(it.region || 'Bölge yok') + '</em><small>' + esc(it.payment || 'Ödeme yok') + '</small></span>' +
+        '<span><em>' + esc(it.region || 'Bölge yok') + '</em><small>' + esc(it.payment || 'Ödeme yok') + (it.note ? ' · 📝 ' + esc(it.note) : '') + '</small></span>' +
         '<button class="ic" data-edit="' + i + '" title="Düzenle">✎</button>' +
         '<button class="ic" data-del="' + i + '" title="Sil">✕</button></div>';
     }).join('');
@@ -690,6 +691,7 @@
           '<option value="">— seçin —</option>' +
           payments.map(function (r) { return '<option' + (d.payment === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
         '</select></div>' +
+        '<div class="fld"><label>Not (opsiyonel)</label><textarea id="an" rows="2" placeholder="Siparişe özel not (kurye görür)">' + esc(d.note || '') + '</textarea></div>' +
         '<button class="p addbtn" id="addbtn">＋ Paket Ekle</button>' +
       '</div>' +
       '<div class="reqlist">' + (rows || '<p class="note" style="margin:4px 0">Listeniz boş. Bölge ve ödeme seçip “Paket Ekle”ye basın.</p>') + '</div>' +
@@ -697,10 +699,11 @@
 
     main.querySelector('#ar').onchange = function (e) { S.reqDraft.region = e.target.value; };
     main.querySelector('#ap').onchange = function (e) { S.reqDraft.payment = e.target.value; };
+    main.querySelector('#an').oninput = function (e) { S.reqDraft.note = e.target.value; };
     main.querySelector('#addbtn').onclick = function () {
       if (S.reqItems.length >= 10) { UI.toast('En fazla 10 paket eklenebilir', 'error'); return; }
-      S.reqItems.push({ region: S.reqDraft.region, payment: S.reqDraft.payment });
-      S.reqDraft = { region: '', payment: '' };
+      S.reqItems.push({ region: S.reqDraft.region, payment: S.reqDraft.payment, note: (S.reqDraft.note || '').trim() });
+      S.reqDraft = { region: '', payment: '', note: '' };
       render();
     };
     Array.prototype.forEach.call(main.querySelectorAll('[data-edit]'), function (b) {
@@ -716,7 +719,7 @@
       if (!S.reqItems.length) { UI.toast('Önce paket ekleyin', 'error'); return; }
       API.talepVer(S.reqItems).then(function (r) {
         S.reqItems = [];
-        S.reqDraft = { region: '', payment: '' };
+        S.reqDraft = { region: '', payment: '', note: '' };
         UI.toast('Talep #' + r.req_no + ' · ' + r.count + ' paket havuza atıldı', 'success');
         S.tab = 'paketlerim';
         S.mineView = 'list';
@@ -738,9 +741,10 @@
         '<option value="">— seçin (opsiyonel) —</option>' +
         payments.map(function (r) { return '<option' + (it.payment === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
       '</select></div>' +
+      '<div class="fld"><label>Not</label><textarea id="en" rows="2" placeholder="Siparişe özel not">' + esc(it.note || '') + '</textarea></div>' +
       '<button class="p" id="esave">Kaydet</button><button class="d" id="ecancel">İptal</button>');
     sh.querySelector('#esave').onclick = function () {
-      S.reqItems[i] = { region: sh.querySelector('#er').value, payment: sh.querySelector('#ep').value };
+      S.reqItems[i] = { region: sh.querySelector('#er').value, payment: sh.querySelector('#ep').value, note: (sh.querySelector('#en').value || '').trim() };
       UI.closeSheet();
       render();
     };
@@ -789,6 +793,7 @@
       '<dl class="pk-fields" style="margin:10px 0">' +
         '<dt>Bölge</dt><dd>' + esc(p.region || '—') + '</dd>' +
         '<dt>Ödeme</dt><dd>' + esc(p.payment || '—') + '</dd>' +
+        (p.note ? '<dt>Not</dt><dd>' + esc(p.note) + '</dd>' : '') +
         '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
         '<dt>Mesafe</dt><dd>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</dd>' +
         '<dt>Ücret</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +

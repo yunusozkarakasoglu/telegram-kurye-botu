@@ -505,15 +505,18 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const regions = await bot.regionList();
       const selected: (string | null)[] = [];
       const payments: (string | null)[] = [];
+      const notes: (string | null)[] = [];
       for (const item of items) {
         const region = String(item.region ?? "").trim();
         const payment = String(item.payment ?? "").trim();
         if (region && !regions.includes(region)) return fail(`Bilinmeyen bölge: ${region}`, 422, "invalid");
         if (payment && !PAYMENTS.includes(payment as any)) return fail(`Geçersiz ödeme tipi: ${payment}`, 422, "invalid");
+        const note = String(item.note ?? "").trim().slice(0, 200);
         selected.push(region || null);
         payments.push(payment || null);
+        notes.push(note || null);
       }
-      await forms.submit(bot, user.id, selected, payments);
+      await forms.submit(bot, user.id, selected, payments, notes);
       const batch = await bot.db.first<{ id: number }>("SELECT max(id) AS id FROM batches");
       return json({ ok: true, req_no: batch?.id ?? 0, count: items.length });
     }

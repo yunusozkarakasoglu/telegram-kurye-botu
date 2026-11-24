@@ -4,7 +4,7 @@ export interface PackageRow {
   id: number; batch: number; number: number; region: string; courier: number | null; payment: string | null;
   accepted_at: number | null; picked_up_at: number | null; delivered_at: number | null; distance_km: string | null;
   courier_fee: number | null; incoming: number; payment_received?: number | null; pin_hash?: string | null; pin_fail?: number; pin_lock?: number; incoming_from: number | null; incoming_at: number | null;
-  cancelled_at: number | null; cancel_reason: string | null; cancel_note: string | null; cancelled_by: number | null; cancelled_by_name?: string | null; cancelled_by_role?: string | null;
+  cancelled_at: number | null; cancel_reason: string | null; cancel_note: string | null; note?: string | null; cancelled_by: number | null; cancelled_by_name?: string | null; cancelled_by_role?: string | null;
   owner: number; created_at: number | null; restaurant: string; courier_name: string | null;
   restaurant_lat: number | null; restaurant_lng: number | null; restaurant_contact: string | null;
   restaurant_phone: string | null; courier_phone: string | null;
