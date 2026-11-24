@@ -364,3 +364,9 @@ header{display:flex;align-items:center;gap:8px}
 .rowline{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .rowline span{font-size:13px;color:var(--t2)}
 .pkg-row .fld:last-child{margin-bottom:0}
+
+.reqlist{margin:8px 0}
+.reqrow{display:flex;align-items:center;gap:8px;padding:11px 12px;background:var(--card);border:1px solid var(--ln);border-radius:10px;margin-bottom:6px;font-size:13px}
+.reqrow b{color:var(--t2);flex:none}
+.reqrow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reqrow .ic{width:34px;height:34px;min-height:34px;padding:0;flex:none;border-radius:8px;background:var(--el)}

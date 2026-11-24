@@ -16,6 +16,7 @@
     history: null,
     earnings: null,
     reqItems: [],
+    reqQty: 1,
     restFilter: 'all',
     kmPending: false,
     mineView: (localStorage.getItem('mineView') === 'card' ? 'card' : 'list'),
@@ -667,49 +668,45 @@
   function renderTalep() {
     setHeader('Talep Ver', '');
     var main = $('mn');
-    if (!S.reqItems.length) S.reqItems = [{ region: '', payment: '' }];
     var st = (S.session && S.session.settings) || {};
     var regions = st.regions || [];
     var payments = st.payments || ['Nakit', 'Kart', 'Ödendi'];
+    var rows = S.reqItems.map(function (it, i) {
+      var txt = (it.region || 'Bölge yok') + ' · ' + (it.payment || 'Ödeme yok');
+      return '<div class="reqrow"><b>#' + (i + 1) + '</b><span>' + esc(txt) + '</span>' +
+        '<button class="ic" data-edit="' + i + '" title="Düzenle">✎</button>' +
+        '<button class="ic" data-del="' + i + '" title="Sil">✕</button></div>';
+    }).join('');
     main.innerHTML =
-      '<div class="card reqcard">' +
-        '<div class="rowline"><span>Paket sayısı</span>' +
-          '<div class="stepper"><button id="minus">−</button><b id="qty">' + S.reqItems.length + '</b><button id="plus">＋</button></div>' +
+      '<div class="card addcard">' +
+        '<div class="rowline"><span>Paket ekle</span>' +
+          '<div class="stepper"><button id="minus">−</button><b id="qty">' + S.reqQty + '</b><button id="plus">＋</button></div>' +
+          '<button class="sm" id="addbtn">Ekle</button>' +
         '</div>' +
       '</div>' +
-      S.reqItems.map(function (it, i) {
-        var done = !!(it.region || it.payment);
-        return '<div class="pkg-row' + (done ? ' done' : '') + '">' +
-          '<div class="hd"><b>' + (done ? '✓' : '') + ' Paket ' + (i + 1) + '</b>' +
-            '<span class="tag ac">#' + (i + 1) + '/' + S.reqItems.length + '</span></div>' +
-          '<div class="fld"><label>Bölge</label><select data-region="' + i + '">' +
-            '<option value="">— seçin (opsiyonel) —</option>' +
-            regions.map(function (r) { return '<option' + (it.region === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
-          '</select></div>' +
-          '<div class="fld"><label>Ödeme</label><select data-payment="' + i + '">' +
-            '<option value="">— seçin (opsiyonel) —</option>' +
-            payments.map(function (r) { return '<option' + (it.payment === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
-          '</select></div>' +
-        '</div>';
-      }).join('') +
-      '<p class="hint" style="margin:6px 0 10px">Bölge ve ödeme opsiyoneldir; boş bırakılan paketler havuza yine düşer.</p>' +
-      '<button class="p" id="req-send" style="width:100%;min-height:48px">Talebi Havuza At</button>';
+      '<div class="reqlist">' + (rows || '<p class="note">Henüz paket eklenmedi. Yukarıdan adet seçip “Ekle”ye basın.</p>') + '</div>' +
+      '<p class="hint" style="margin:8px 0 10px">Satırdaki ✎ ile bölge/ödeme düzenlenir, ✕ ile paket listeden çıkarılır.</p>' +
+      '<button class="p" id="req-send" style="width:100%;min-height:48px"' + (S.reqItems.length ? '' : ' disabled') + '>Talebi Havuza At' + (S.reqItems.length ? ' (' + S.reqItems.length + ')' : '') + '</button>';
 
-    main.querySelector('#minus').onclick = function () {
-      if (S.reqItems.length > 1) { S.reqItems.pop(); render(); }
+    main.querySelector('#minus').onclick = function () { if (S.reqQty > 1) { S.reqQty--; render(); } };
+    main.querySelector('#plus').onclick = function () { if (S.reqQty < 10) { S.reqQty++; render(); } };
+    main.querySelector('#addbtn').onclick = function () {
+      if (S.reqItems.length >= 10) { UI.toast('En fazla 10 paket eklenebilir', 'error'); return; }
+      var n = Math.min(S.reqQty, 10 - S.reqItems.length);
+      for (var k = 0; k < n; k++) S.reqItems.push({ region: '', payment: '' });
+      S.reqQty = 1;
+      render();
     };
-    main.querySelector('#plus').onclick = function () {
-      if (S.reqItems.length < 10) { S.reqItems.push({ region: '', payment: '' }); render(); }
-    };
-    Array.prototype.forEach.call(main.querySelectorAll('[data-region]'), function (sel) {
-      sel.onchange = function () { S.reqItems[Number(sel.getAttribute('data-region'))].region = sel.value; render(); };
+    Array.prototype.forEach.call(main.querySelectorAll('[data-edit]'), function (b) {
+      b.onclick = function () { editReqItem(Number(b.getAttribute('data-edit')), regions, payments); };
     });
-    Array.prototype.forEach.call(main.querySelectorAll('[data-payment]'), function (sel) {
-      sel.onchange = function () { S.reqItems[Number(sel.getAttribute('data-payment'))].payment = sel.value; };
+    Array.prototype.forEach.call(main.querySelectorAll('[data-del]'), function (b) {
+      b.onclick = function () { S.reqItems.splice(Number(b.getAttribute('data-del')), 1); render(); };
     });
     main.querySelector('#req-send').onclick = function () {
+      if (!S.reqItems.length) { UI.toast('Önce paket ekleyin', 'error'); return; }
       API.talepVer(S.reqItems).then(function (r) {
-        S.reqItems = [{ region: '', payment: '' }];
+        S.reqItems = [];
         UI.toast('Talep #' + r.req_no + ' · ' + r.count + ' paket havuza atıldı', 'success');
         S.tab = 'paketlerim';
         S.mineView = 'list';
@@ -718,6 +715,27 @@
     };
     $('cta').innerHTML = '';
     nav(restaurantTabs(), {});
+  }
+
+  function editReqItem(i, regions, payments) {
+    var it = S.reqItems[i] || { region: '', payment: '' };
+    var sh = UI.openSheet(
+      '<h2>Paket ' + (i + 1) + '</h2>' +
+      '<div class="fld"><label>Bölge</label><select id="er">' +
+        '<option value="">— seçin (opsiyonel) —</option>' +
+        regions.map(function (r) { return '<option' + (it.region === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
+      '</select></div>' +
+      '<div class="fld"><label>Ödeme</label><select id="ep">' +
+        '<option value="">— seçin (opsiyonel) —</option>' +
+        payments.map(function (r) { return '<option' + (it.payment === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
+      '</select></div>' +
+      '<button class="p" id="esave">Kaydet</button><button class="d" id="ecancel">İptal</button>');
+    sh.querySelector('#esave').onclick = function () {
+      S.reqItems[i] = { region: sh.querySelector('#er').value, payment: sh.querySelector('#ep').value };
+      UI.closeSheet();
+      render();
+    };
+    sh.querySelector('#ecancel').onclick = function () { UI.closeSheet(); };
   }
 
   function renderRestPaketlerim() {
