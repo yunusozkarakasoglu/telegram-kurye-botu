@@ -283,3 +283,6 @@ body.admin .burger{display:flex}
 .hrow .prow{border-bottom:0;flex:1}
 
 .admin-btn{width:auto;padding:0 12px;font-size:13px;font-weight:700;background:var(--ac);color:var(--on);border-color:var(--ac)}
+
+.ptr{position:fixed;top:6px;left:50%;transform:translateX(-50%);background:var(--ac);color:var(--on);
+  padding:6px 14px;border-radius:99px;font-size:12px;font-weight:600;z-index:90;box-shadow:var(--sh)}

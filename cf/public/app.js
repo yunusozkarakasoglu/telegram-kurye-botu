@@ -1164,5 +1164,33 @@
 
   window.addEventListener('error', function (e) { if (window.API && API.log) API.log('JS hata: ' + (e.message || e.error)); });
   window.addEventListener('unhandledrejection', function (e) { if (window.API && API.log) API.log('Promise hata: ' + (e.reason && e.reason.message ? e.reason.message : e.reason)); });
-  document.addEventListener('DOMContentLoaded', boot);
+  function bindPullToRefresh() {
+    var ptr = { start: null, dist: 0 };
+    var el = function () { return document.getElementById('ptr'); };
+    function reset() { ptr.start = null; ptr.dist = 0; var e = el(); if (e) e.hidden = true; }
+    document.addEventListener('touchstart', function (e) {
+      if (UI.sheetOpen() || window.scrollY > 0 || e.touches.length !== 1) return;
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
+      ptr.start = e.touches[0].clientY; ptr.dist = 0;
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+      if (ptr.start == null || e.touches.length !== 1) return;
+      var d = e.touches[0].clientY - ptr.start;
+      if (d <= 0) { var e0 = el(); if (e0) e0.hidden = true; return; }
+      ptr.dist = d;
+      var ind = el();
+      if (ind && d > 20) {
+        ind.hidden = false;
+        ind.textContent = d > 80 ? 'Bırakın, yenileniyor…' : '↓ Yenilemek için çekin';
+      }
+    }, { passive: true });
+    document.addEventListener('touchend', function () {
+      if (ptr.start == null) return;
+      var d = ptr.dist; reset();
+      if (d > 80) { refresh(true); UI.toast('Yenilendi', 'success'); }
+    }, { passive: true });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () { bindPullToRefresh(); boot(); });
 })();
