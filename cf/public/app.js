@@ -1184,6 +1184,9 @@
   }
 
   function refresh(full) {
+    var ae = document.activeElement;
+    if (ae && /^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)) return Promise.resolve();
+    if (S.tab === 'talep') return Promise.resolve();
     var role = curRole();
     if (role === 'restoran') {
       if (S.tab === 'paketlerim') return loadRest().catch(function () {});
