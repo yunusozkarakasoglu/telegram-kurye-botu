@@ -1337,10 +1337,12 @@
       Array.prototype.forEach.call(box.querySelectorAll('[data-phone]'), function (b) {
         b.onclick = function () {
           var as = b.getAttribute('data-as') || '';
+          Array.prototype.forEach.call(box.querySelectorAll('[data-phone]'), function (x) { x.classList.remove('on'); });
+          b.classList.add('on');
           $('lgphone').value = b.getAttribute('data-phone');
           $('lgpin').value = r.pin || '1234';
           if (as) sessionStorage.setItem('actAs', as); else sessionStorage.removeItem('actAs');
-          $('lgok').click();
+          $('lgok').focus();
         };
       });
     }).catch(function (e) {

@@ -357,3 +357,5 @@ header{display:flex;align-items:center;gap:8px}
 
 .testwarn{margin-top:10px;padding:6px 8px;border-radius:8px;background:rgba(230,168,23,.15);border:1px solid #e6a817;font-size:11px;color:var(--t2)}
 .testlist button em{font-style:normal;font-size:10px;font-weight:600;color:var(--t2);margin-left:4px}
+
+.testlist button.on{background:rgba(31,168,85,.12);border-left:3px solid #1fa855}
