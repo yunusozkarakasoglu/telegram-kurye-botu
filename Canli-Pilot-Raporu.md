@@ -190,6 +190,13 @@ Kullanıcının **Bölgeler** ekranında tanımladığı listeden 4 bölge seçi
 - Silinmiş/pasif hesap davetle yeniden aktifleşir; davetsiz girişte mock yerine engel ekranı.
 - `startapp` kodu taşınmazsa `tgWebAppStartParam` yedeği ve elle kod girme var.
 
+### PIN ve durum
+
+- Kurye/restoran girişte 4 haneli PIN; 24 saat kalıcı token; yönetici kurye modunda da PIN.
+- Profil PIN düzenleme (eski/yeni/tekrar, göz ikonu).
+- Durum: Online / Meşgul (Mola·Arıza·Kaza·İhtiyaç) / Offline; meşgulde bildirim ve kabul yok.
+- Yönetici hesabı Kuryeler listesinde “Yönetici” etiketiyle; Paketler popup'ı.
+
 ### Ödeme takibi
 
 - Teslim onayında "Ödemeyi aldınız mı?" → `payment_received`.

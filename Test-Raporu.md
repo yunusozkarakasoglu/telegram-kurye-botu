@@ -156,6 +156,14 @@ Bilinen mesaj kimliğiyle yapılan güncellemeler çökme sonrası aynı mesajı
 - Yönetici `X-Act-As: kurye` → `role:kurye, can_admin:true`; kurye UI + 🛠.
 - **382/382** Python, `ruff`/`tsc` temiz.
 
+### Son doğrulama (PIN + domain + durum)
+
+- `kurye.packonexpress.com/saglik` → 200 (Wi‑Fi dahil); Mini App CANLI; admin `/admin` yönlendirmesi.
+- PIN: ilk oluşturma → giriş; yanlış PIN "Kalan deneme"; 24s token ile yenilemede PIN sorulmadı.
+- Durum: Meşgul + Arıza → DB `online=1,busy=1,busy_reason=Arıza`; yönetici kartında "Meşgul · Arıza".
+- Admin Düzenle düzeltildi (accountEdit geri eklendi); kurye modu PIN sonrası 403 giderildi.
+- **382/382** Python, `ruff`/`tsc` temiz.
+
 ## Kanıtlar ve tekrar çalıştırma
 
 ```bash

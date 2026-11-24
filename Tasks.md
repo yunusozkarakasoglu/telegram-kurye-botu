@@ -24,6 +24,10 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] PIN girişi (24 saat token, yenilemede sorulmaz, hesaba bağlı), profil PIN düzenleme (göz ikonu), yönetici kurye modu PIN.
+- [x] Kurye durumu Online/Meşgul/Offline + sebep; meşgulde paket/bildirim kapalı.
+- [x] `kurye.packonexpress.com` custom domain (proxy Worker, DNS+route) — TLS sorunu çözüldü; menü URL'si taşındı.
+- [x] Ödeme takibi + Ödemeler sayfası; geçmişte Paketler/Ödeme sekmeleri.
 - [x] Ödeme takibi: teslimde Evet/Hayır, geçmişte toplu "Ödeme Aldım", kazanç listesi+filtre, restoran ödenmemiş filtresi, yönetici **Ödemeler** (restoran/kurye gruplama).
 - [x] Yönetici **Kurye Modu** (aynı hesap) + 🛠 ile panele dönüş.
 - [x] Davet sekmeleri Kuryeler/Restoranlar içine taşındı; ☰ başında Anasayfa.

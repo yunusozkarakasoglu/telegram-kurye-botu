@@ -75,6 +75,7 @@ Mantık dosyaları 300 satır altında tutulur. UI metinleri ve tekrar eden say�
 - Mini App kimlik: `initData` HMAC (Telegram yeni imzası **`signature` dahil**), 24 saat; süre dolunca istemci bir kez otomatik yeniler.
 - Ödeme: `payment_received` sütunu; API `/api/odeme` (tekil/çoklu/tümü), `/api/kazanc` paket listesi, `/yonetim/odemeler`.
 - Rol geçişi: yönetici hesabı `X-Act-As: kurye` ile kurye uçlarını kullanır; `can_admin` ile geri dönüş.
+- PIN/oturum: `pin_hash` (PBKDF2), `pin_fail/pin_lock`, `pin_ok_until`; token `<exp>.<HMAC(BOT_TOKEN,id:exp)>` 24 saat. `eligible()` + bildirim sorguları `online=1 AND busy=0 AND pin_ok_until>now` ister.
 - Ücret: km aralığı başına **sabit ücret** (taban+kademe kaldırıldı).
 - Mini App katmanı: `auth.ts` (initData HMAC + `auth_date` 1 saat; `DEV_AUTH` yalnız yerelde) → `api.ts` yönlendirme → iş kuralları mevcut modüllerden (`accept`, `ops`, `forms`, `accept.adminGive`). Frontend vanilla JS (`public/`), Telegram SDK vendor'da; yönetici paneli `admin.html`.
 - Doğrulama: `tsc --noEmit` + canlı Telegram (yönetici ve kurye kaydı) + `/api/*` için 401/403 testleri.
