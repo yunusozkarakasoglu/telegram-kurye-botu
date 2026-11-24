@@ -1085,6 +1085,7 @@
     h += '<button data-dt="sistem" class="' + (S.tab === 'sistem' ? 'on' : '') + '"><i>⚙</i>Sistem</button>';
     h += '<button data-dt="profil" class="' + (S.tab === 'profil' ? 'on' : '') + '"><i>👤</i>Profil</button>';
     if (S.session && S.session.can_admin) h += '<button data-da="admin"><i>🛠</i>Yönetici Paneli</button>';
+    h += '<button data-da="logout"><i>⏻</i>Çıkış</button>';
     d.innerHTML = h;
     Array.prototype.forEach.call(d.querySelectorAll('[data-dt]'), function (b) {
       b.onclick = function () { S.tab = b.getAttribute('data-dt'); closeDrawer(); render(); refresh(false); };
@@ -1092,6 +1093,7 @@
     Array.prototype.forEach.call(d.querySelectorAll('[data-da]'), function (b) {
       b.onclick = function () {
         var a = b.getAttribute('data-da');
+        if (a === 'logout') { localStorage.removeItem('loginToken'); localStorage.removeItem('loginTokenUser'); localStorage.removeItem('pinToken'); localStorage.removeItem('pinTokenUser'); location.reload(); return; }
         closeDrawer();
         if (a === 'refresh') hardReload();
         else if (a === 'admin') { API.setActAs(''); location.replace('/admin' + location.hash); }
@@ -1269,6 +1271,33 @@
     };
   }
 
+  function renderLogin() {
+    setHeader('Giriş', 'Telefon ve PIN');
+    $('hdr-right').innerHTML = '';
+    $('nv').innerHTML = '';
+    $('mn').innerHTML = '<div class="card" style="padding:14px">' +
+      '<div class="fld"><label>Telefon</label><input id="lgphone" inputmode="tel" placeholder="05xx xxx xx xx"></div>' +
+      '<div class="fld"><label>4 haneli PIN</label><input id="lgpin" inputmode="numeric" maxlength="4" type="password" placeholder="••••"></div>' +
+      '<div class="err" id="lgerr"></div>' +
+      '<button class="p" id="lgok" style="width:100%">Giriş Yap</button>' +
+      '<p class="note" style="margin-top:10px">Hesabınızın rolüne göre kurye, restoran veya yönetici paneli açılır.</p></div>';
+    $('lgok').onclick = function () {
+      var phone = ($('lgphone').value || '').trim(), pin = ($('lgpin').value || '').trim(), err = $('lgerr');
+      err.textContent = '';
+      if (phone.replace(/\D/g, '').length < 10) { err.textContent = 'Telefon numarasını tam girin'; return; }
+      if (!/^\d{4}$/.test(pin)) { err.textContent = 'PIN 4 haneli olmalı'; return; }
+      $('lgok').disabled = true;
+      API.giris(phone, pin).then(function (r) {
+        localStorage.setItem('loginToken', r.token);
+        localStorage.setItem('loginTokenUser', String(r.id));
+        localStorage.removeItem('pinToken');
+        localStorage.removeItem('pinTokenUser');
+        if (r.role === 'yonetici') { location.replace('/admin'); return; }
+        location.reload();
+      }).catch(function (e) { $('lgok').disabled = false; err.textContent = e.message || 'Giriş yapılamadı'; });
+    };
+  }
+
   function renderPinEnter(s, phone) {
     setHeader('Giriş', 'PIN ile devam');
     $('hdr-right').innerHTML = '';
@@ -1293,6 +1322,7 @@
 
   function boot() {
     API.init().then(function (s) {
+      if (API.mode === 'real' && !localStorage.getItem('loginToken')) { renderLogin(); return; }
       if (s && s.role === 'yonetici') { location.replace('/admin' + location.hash); return; }
       if (s && s.can_admin) {
         // yönetici hesabı kurye modunda: geri dönüş düğmesi
@@ -1300,7 +1330,7 @@
       }
       if (s && s.need_register) { renderRegister(s); return; }
       if (s && s.incomplete) { renderIncomplete(s); return; }
-      if (API.mode === 'real' && s && s.role !== 'yonetici') { pinGate(s); return; }
+      if (API.mode === 'real' && !localStorage.getItem('loginToken') && s && s.role !== 'yonetici') { pinGate(s); return; }
       S.session = s;
       S.role = s.role || 'courier';
       if (S.role === 'yonetici') { location.replace('/admin' + location.hash); return; }

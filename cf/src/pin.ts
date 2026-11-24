@@ -41,6 +41,18 @@ export async function validPinToken(env: Env, account: number, token: string): P
   if (!exp || !sig || exp < Math.floor(Date.now() / 1000)) return false;
   return (await hmac(env.BOT_TOKEN, `${account}:${exp}`)) === sig;
 }
+export async function loginToken(env: Env, account: number): Promise<{ token: string; exp: number }> {
+  const exp = Math.floor(Date.now() / 1000) + 24 * 3600;
+  const sig = await hmac(env.BOT_TOKEN, `${account}:${exp}`);
+  return { token: `${account}.${exp}.${sig}`, exp };
+}
+export async function validLoginToken(env: Env, token: string): Promise<number | null> {
+  const [idS, expS, sig] = (token || "").split(".");
+  const id = Number(idS), exp = Number(expS);
+  if (!id || !exp || !sig || exp < Math.floor(Date.now() / 1000)) return null;
+  if ((await hmac(env.BOT_TOKEN, `${id}:${exp}`)) !== sig) return null;
+  return id;
+}
 export function pinSql(): string[] {
   return [
     "ALTER TABLE accounts ADD COLUMN pin_hash TEXT",

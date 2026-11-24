@@ -7,7 +7,7 @@ export { json, fail } from "./apidto";
 import * as apiCourier from "./apicourier";
 import * as forms from "./forms";
 import { dialNumber, validFullName, validPhone } from "./util";
-import { checkPinHash, makePinHash, pinToken, pinSql, validPin, validPinToken } from "./pin";
+import { checkPinHash, loginToken, makePinHash, pinToken, pinSql, validLoginToken, validPin, validPinToken } from "./pin";
 import { CANCEL_REASONS, PAYMENTS, MAX_PACKAGES, UNSPECIFIED } from "./constants";
 
 /**
@@ -36,12 +36,43 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     return json({ ok: true });
   }
   bot.ignoreNotifyErrors = true; // Mini App akışında bildirim hatası isteği bozmasın.
+  if (url.pathname === "/api/giris" && request.method === "POST") {
+    const body = await readBody(request);
+    const phone = String(body.phone || "").replace(/\D/g, "").slice(-10);
+    const pin = String(body.pin || "");
+    if (phone.length !== 10 || !validPin(pin)) return fail("Telefon veya PIN hatalı.", 401, "wrong_login");
+    const candidates = await env.DB.prepare("SELECT * FROM accounts WHERE deleted=0 AND active=1 AND (phone IS NOT NULL OR role='yonetici')").all<Account>();
+    const match = (candidates.results || []).find((a) =>
+      String(a.phone || "").replace(/\D/g, "").slice(-10) === phone || String(a.id) === phone,
+    );
+    if (!match) return fail("Telefon veya PIN hatalı.", 401, "wrong_login");
+    const now = Math.floor(Date.now() / 1000);
+    if ((match.pin_lock || 0) > now) return fail("Çok fazla hatalı deneme. 5 dakika sonra tekrar deneyin.", 429, "locked");
+    if (!match.pin_hash) return fail("Bu hesap için PIN oluşturulmamış. Yöneticinize başvurun.", 409, "pin_setup");
+    if (!(await checkPinHash(pin, match.pin_hash))) {
+      const fails = (match.pin_fail || 0) + 1;
+      const lock = fails >= 3 ? now + 300 : 0;
+      await env.DB.prepare("UPDATE accounts SET pin_fail=?, pin_lock=? WHERE id=?").bind(fails, lock, match.id).run();
+      return fail(fails >= 3 ? "3 hatalı deneme. 5 dakika kilitlendi." : `Hatalı PIN. Kalan deneme: ${3 - fails}`, 401, "wrong_pin");
+    }
+    await env.DB.prepare("UPDATE accounts SET pin_fail=0, pin_lock=0, pin_ok_until=? WHERE id=?").bind(now + 24 * 3600, match.id).run();
+    const t = await loginToken(env, match.id);
+    return json({ ok: true, token: t.token, exp: t.exp, role: match.role, name: match.name, id: match.id, phone: match.phone });
+  }
   let user: Account;
   let ident: { id: number; name: string; startParam: string };
-  try {
-    ident = await identity(request, env);
-  } catch (e: any) {
-    return fail(e.message || "Yetkilendirme hatası", e instanceof HttpError ? e.status : 401, "unauthorized");
+  const loginTok = request.headers.get("x-login-token") || "";
+  let loginId: number | null = null;
+  if (loginTok) loginId = await validLoginToken(env, loginTok);
+  if (loginTok && !loginId) return fail("Oturum süresi doldu. Tekrar giriş yapın.", 401, "login_required");
+  if (loginId) {
+    ident = { id: loginId, name: "", startParam: "" };
+  } else {
+    try {
+      ident = await identity(request, env);
+    } catch (e: any) {
+      return fail(e.message || "Yetkilendirme hatası", e instanceof HttpError ? e.status : 401, "unauthorized");
+    }
   }
   let existing = await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(ident.id).first<Account>();
     const path0 = url.pathname.replace(/^\/api/, "") || "/";
@@ -117,7 +148,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
   const method = request.method.toUpperCase();
 
   // PIN kurulumu/doğrulaması (kurye ve restoran için zorunlu ikinci adım)
-  if ((originalRole !== "yonetici" || actAsCourier) && path !== "/oturum") {
+  if (!loginId && path !== "/oturum" && (path.startsWith("/pin/") || originalRole !== "yonetici" || actAsCourier)) {
     for (const sql of pinSql()) { try { await env.DB.prepare(sql).run(); } catch {} }
     const fresh = (await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(user.id).first<Account>()) || user;
     user = actAsCourier ? { ...fresh, role: "kurye" } : fresh;
@@ -168,9 +199,11 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       return json({ ok: true });
     }
     if (path.startsWith("/pin/")) return fail("Bulunamadı", 404, "not_found");
-    if (!user.pin_hash) return fail("PIN oluşturmanız gerekiyor.", 403, "pin_setup");
-    if (!(await validPinToken(env, user.id, request.headers.get("x-pin-token") || ""))) {
-      return fail("PIN doğrulaması gerekli.", 401, "pin_required");
+    if (!(originalRole === "yonetici" && !actAsCourier)) {
+      if (!user.pin_hash) return fail("PIN oluşturmanız gerekiyor.", 403, "pin_setup");
+      if (!(await validPinToken(env, user.id, request.headers.get("x-pin-token") || ""))) {
+        return fail("PIN doğrulaması gerekli.", 401, "pin_required");
+      }
     }
   }
 

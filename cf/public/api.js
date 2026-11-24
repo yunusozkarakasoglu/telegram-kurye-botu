@@ -341,6 +341,8 @@
     if (actAs) h['X-Act-As'] = actAs;
     var pin = localStorage.getItem('pinToken') || sessionStorage.getItem('pinToken');
     if (pin) h['X-Pin-Token'] = pin;
+    var login = localStorage.getItem('loginToken');
+    if (login) h['X-Login-Token'] = login;
     var t = sessionStorage.getItem('dev_auth');
     if (t) { h['X-Dev-Auth'] = t; h['X-Dev-Tg'] = sessionStorage.getItem('dev_tg') || ''; }
     return h;
@@ -391,6 +393,7 @@
     bildirimOkundu: function (upto) { return req('POST', '/api/bildirimler/okundu', { upto: upto }); },
     bildirimTemizle: function () { return req('POST', '/api/bildirimler/temizle'); },
     odeme: function (ids, all) { return req('POST', '/api/odeme', { ids: ids || [], all: !!all }); },
+    giris: function (phone, pin) { return req('POST', '/api/giris', { phone: phone, pin: pin }); },
     pinDurum: function () { return req('GET', '/api/pin/durum'); },
     pinOlustur: function (pin) { return req('POST', '/api/pin/olustur', { pin: pin }); },
     pinDogrula: function (pin) { return req('POST', '/api/pin/dogrula', { pin: pin }); },
@@ -460,7 +463,7 @@
     }
   };
   ['oturum', 'havuz', 'kabul', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
-    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
+    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);
         var target = mode === 'real' ? real : mock;
