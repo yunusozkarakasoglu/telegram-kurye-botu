@@ -764,8 +764,19 @@
       var m = Math.floor(sec / 60), h = Math.floor(m / 60);
       return h ? (h + ' sa ' + (m % 60) + ' dk') : (m + ' dk');
     };
-    main.innerHTML = '<div class="card" style="padding:10px 12px;margin-bottom:8px"><b>' + rows.length + ' paket</b>' +
-      '<small style="color:var(--t2)"> · ' + day0.toLocaleDateString('tr-TR') + '</small></div>' +
+    var delivered = rows.filter(function (p) { return !!p.delivered_at; });
+    var durs = rows.filter(function (p) { return p.created_at && p.delivered_at; })
+      .map(function (p) { return p.delivered_at - p.created_at; });
+    var ortSure = durs.length ? Math.round(durs.reduce(function (a, b) { return a + b; }, 0) / durs.length) : null;
+    var kms = rows.filter(function (p) { return p.distance_km != null; });
+    var ortKm = kms.length ? (kms.reduce(function (a, p) { return a + Number(p.distance_km); }, 0) / kms.length) : null;
+    var kpi = '<div class="kpis">' +
+      '<div class="kpi"><b>' + rows.length + '</b><small>Bugün paket</small></div>' +
+      '<div class="kpi"><b>' + (ortSure == null ? '—' : hm(ortSure)) + '</b><small>Ort. süre</small></div>' +
+      '<div class="kpi"><b>' + (ortKm == null ? '—' : (ortKm.toFixed(1).replace('.', ',') + ' km')) + '</b><small>Ort. mesafe</small></div>' +
+      '</div>';
+    main.innerHTML = kpi + '<div class="card" style="padding:10px 12px;margin-bottom:8px"><b>' + rows.length + ' paket</b>' +
+      '<small style="color:var(--t2)"> · ' + day0.toLocaleDateString('tr-TR') + (delivered.length ? ' · ' + delivered.length + ' teslim' : '') + '</small></div>' +
       (rows.length ? '<div class="tblwrap"><table class="rtbl"><thead><tr>' +
         '<th>Tarih</th><th>Talep</th><th>Kurye</th><th>Süre</th><th>Km</th><th>Tutar</th><th>Öd</th>' +
         '</tr></thead><tbody>' + rows.map(function (p) {
