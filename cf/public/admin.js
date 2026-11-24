@@ -29,11 +29,15 @@
   }
   function nav() {
     var items = TABS.filter(function (t) { return MAIN.indexOf(t[0]) < 0; });
-    $('adm-nav').innerHTML = '<button class="' + (S.tab === 'anasayfa' ? 'on' : '') + '" data-t="anasayfa">Anasayfa</button>' +
+    $('adm-nav').innerHTML = '<div class="mode-switch"><button id="mode-courier">Kurye</button><button class="on">Yönetici</button></div>' +
+      '<button class="' + (S.tab === 'anasayfa' ? 'on' : '') + '" data-t="anasayfa">Anasayfa</button>' +
       items.map(function (t) {
         return '<button class="' + (S.tab === t[0] ? 'on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</button>';
       }).join('');
+    var mc = document.getElementById('mode-courier');
+    if (mc) mc.onclick = function () { location.href = '/?mode=courier'; };
     Array.prototype.forEach.call($('adm-nav').children, function (b) {
+      if (!b.getAttribute || !b.getAttribute('data-t')) return;
       b.onclick = function () { S.tab = b.getAttribute('data-t'); render(); };
     });
   }
@@ -679,6 +683,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    if (API.setActAs) API.setActAs('');
     bindBurger();
     API.init().then(function (s) {
       S.session = s;
