@@ -274,7 +274,6 @@
         '<dt>Restoran</dt><dd>' + esc(p.restaurant) + '</dd>' +
         '<dt>Bölge</dt><dd>' + esc(p.region || '—') + '</dd>' +
         '<dt>Ödeme</dt><dd>' + esc(p.payment || '—') + '</dd>' +
-        '<dt>Not</dt><dd>' + esc(p.note || '—') + '</dd>' +
         '<dt>Yetkili</dt><dd>' + esc(p.restaurant_contact || '—') + '</dd>' +
         '<dt>Kabul</dt><dd>' + dt(p.accepted_at) + '</dd>' +
         '<dt>Alım</dt><dd>' + dt(p.picked_at) + '</dd>' +
@@ -285,7 +284,9 @@
         '<dt>Durum</dt><dd>' + esc(st.t) + '</dd>' +
         (p.cancelled_at ? '<dt>İptal eden</dt><dd>' + esc((p.cancelled_by_role === 'restoran' ? 'Restoran' : p.cancelled_by_role === 'kurye' ? 'Kurye' : 'Yönetici') + ' · ' + (p.cancelled_by_name || '—')) + '</dd>' : '') +
         '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
-      '</dl>' + (p.transfer_from ? '<p class="note">Aktarma bilgisi: önceki kurye ' + esc(p.transfer_from) + '</p>' : '') + warn + '</div>' +
+      '</dl>' +
+      '<div class="notebox"><small>Not</small><div>' + esc(p.note || '') + '</div></div>' +
+      (p.transfer_from ? '<p class="note">Aktarma bilgisi: önceki kurye ' + esc(p.transfer_from) + '</p>' : '') + warn + '</div>' +
       (actions ? '<div class="pk-ft">' + actions + '</div>' : '') +
     '</div>';
   }
@@ -970,11 +971,11 @@
         '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
         '<dt>Bölge</dt><dd>' + esc(p.region || '—') + '</dd>' +
         '<dt>Ödeme</dt><dd>' + esc(p.payment || '—') + '</dd>' +
-        '<dt>Not</dt><dd>' + esc(p.note || '—') + '</dd>' +
         '<dt>Mesafe</dt><dd>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</dd>' +
         '<dt>Ücret</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +
         '<dt>Hakediş</dt><dd>' + (p.payment_received === true ? 'Alındı' : p.payment_received === false ? 'Alınmadı' : '—') + '</dd>' +
-      '</dl>' + cancelInfo +
+      '</dl>' +
+      '<div class="notebox"><small>Not</small><div>' + esc(p.note || '') + '</div></div>' + cancelInfo +
       (p.cancelled_at || p.delivered_at ? '' : '<button class="d" id="rp-cancel" style="width:100%">İptal Et</button>') +
       '<button class="d" id="rp-close" style="width:100%;margin-top:6px">Kapat</button>');
     sh.querySelector('#rp-close').onclick = function () { UI.closeSheet(); };

@@ -447,3 +447,7 @@ textarea{width:100%;font:inherit;font-size:15px;padding:10px 12px;border:1px sol
 .pk-hd .pkx{margin-left:6px;width:28px;height:28px;min-height:28px;padding:0;border-radius:8px;border:1px solid var(--ln);background:transparent;font-size:14px;line-height:1}
 .pk-ft .two{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .pk-ft .two button{min-height:42px}
+
+.notebox{margin-top:10px;padding:9px 11px;border:1px solid var(--ln);border-radius:10px;background:var(--el2,rgba(127,127,127,.06))}
+.notebox small{display:block;font-size:11px;color:var(--t2);margin-bottom:3px}
+.notebox div{font-size:13px;min-height:18px;white-space:pre-wrap;overflow-wrap:anywhere}
