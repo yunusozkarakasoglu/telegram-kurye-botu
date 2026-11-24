@@ -43,7 +43,7 @@
     return [['havuz', '▤', 'Havuz'], ['paketlerim', '✓', 'Açık Paketler'], ['gecmis', '◷', 'Geçmiş']];
   }
   function restaurantTabs() {
-    return [['talep', '＋', 'Talep Ver'], ['paketlerim', '▤', 'Paketlerim']];
+    return [['talep', '＋', 'Sipariş Ekle'], ['paketlerim', '▤', 'Paketlerim']];
   }
 
   function hardReload() {
@@ -667,7 +667,7 @@
 
   /* ---------------- RESTORAN ---------------- */
   function renderTalep() {
-    setHeader('Talep Ver', '');
+    setHeader('Sipariş Ekle', '');
     var main = $('mn');
     var st = (S.session && S.session.settings) || {};
     var regions = st.regions || [];
@@ -682,11 +682,11 @@
     }).join('');
     main.innerHTML =
       '<div class="card addcard">' +
-        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><label style="flex:0 0 88px;font-size:13px;color:#888">Bölge</label><select id="ar" style="flex:1;min-width:0;width:auto;font:inherit;font-size:15px;padding:11px 10px;border:1px solid #ccc;border-radius:10px;background:transparent;color:inherit">' +
+        '<div style="display:flex;flex-wrap:nowrap;align-items:center;gap:10px;margin-bottom:10px;width:100%"><label style="flex:0 0 84px;font-size:13px;color:#888;white-space:nowrap">Bölge</label><select id="ar" style="flex:1;min-width:0;width:auto;font:inherit;font-size:15px;padding:11px 10px;border:1px solid #ccc;border-radius:10px;background:transparent;color:inherit">' +
           '<option value="">— seçin —</option>' +
           regions.map(function (r) { return '<option' + (d.region === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
         '</select></div>' +
-        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><label style="flex:0 0 88px;font-size:13px;color:#888">Ödeme tipi</label><select id="ap" style="flex:1;min-width:0;width:auto;font:inherit;font-size:15px;padding:11px 10px;border:1px solid #ccc;border-radius:10px;background:transparent;color:inherit">' +
+        '<div style="display:flex;flex-wrap:nowrap;align-items:center;gap:10px;margin-bottom:10px;width:100%"><label style="flex:0 0 84px;font-size:13px;color:#888;white-space:nowrap">Ödeme tipi</label><select id="ap" style="flex:1;min-width:0;width:auto;font:inherit;font-size:15px;padding:11px 10px;border:1px solid #ccc;border-radius:10px;background:transparent;color:inherit">' +
           '<option value="">— seçin —</option>' +
           payments.map(function (r) { return '<option' + (d.payment === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
         '</select></div>' +
