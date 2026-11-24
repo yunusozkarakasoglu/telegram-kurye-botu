@@ -348,3 +348,9 @@ header{display:flex;align-items:center;gap:8px}
 #sysd.ok{box-shadow:0 0 0 3px rgba(31,168,85,.16)}
 #who{gap:5px}
 #wname{max-width:28vw;font-size:12px}
+
+.orn{margin:12px 0;text-align:center;color:var(--t2);font-size:12px}
+.testlist{max-height:44vh;overflow:auto;margin-top:8px;border:1px solid var(--ln);border-radius:10px}
+.testlist button{display:block;width:100%;text-align:left;padding:9px 10px;background:transparent;border:0;border-bottom:1px solid var(--ln);font-size:13px}
+.testlist button b{display:block}
+.testlist button span{color:var(--t2);font-size:11px}
