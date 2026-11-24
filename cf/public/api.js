@@ -328,10 +328,13 @@
   };
 
   /* =======================  GERÇEK İSTEMCİ  ======================= */
+  var actAs = sessionStorage.getItem('actAs') || new URLSearchParams(location.search).get('mode') === 'courier' ? 'kurye' : '';
+  if (actAs) sessionStorage.setItem('actAs', actAs);
   function headers() {
     var h = { 'Content-Type': 'application/json' };
     var tg = window.TG && window.TG.app;
     if (tg && tg.initData) h['X-Telegram-Init-Data'] = tg.initData;
+    if (actAs) h['X-Act-As'] = actAs;
     var t = sessionStorage.getItem('dev_auth');
     if (t) { h['X-Dev-Auth'] = t; h['X-Dev-Tg'] = sessionStorage.getItem('dev_tg') || ''; }
     return h;
@@ -423,6 +426,7 @@
     feeFor: feeFor,
     feePreview: feePreview,
     lastError: '',
+    setActAs: function (mode) { actAs = mode || ''; if (actAs) sessionStorage.setItem('actAs', actAs); else sessionStorage.removeItem('actAs'); },
     logs: function () { return (window.__kuryeLogs || []).slice(); },
     log: logLine,
     sendLogs: function (extra) { return req('POST', '/api/log', { extra: extra, logs: (window.__kuryeLogs || []) }); },

@@ -78,6 +78,9 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     if (!existing) return fail("Bu Telegram hesabı tanımlı değil. Davet bağlantısını kullanın.", 403, "forbidden");
   }
   user = existing!;
+  const originalRole = user.role;
+  const actAsCourier = originalRole === "yonetici" && request.headers.get("x-act-as") === "kurye";
+  if (actAsCourier) user = { ...user, role: "kurye" };
   if (user.deleted || !user.active) {
     const code0 = inviteCode;
     const invite0 = code0 ? await env.DB.prepare("SELECT * FROM invites WHERE code=? AND expires>?").bind(code0, Math.floor(Date.now() / 1000)).first<any>() : null;
@@ -118,12 +121,13 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
   try {
     // ---------- oturum ----------
     if (path === "/oturum" && method === "GET") {
-      const incomplete = user.role !== "yonetici" && (!user.phone ||
+      const incomplete = originalRole !== "yonetici" && (!user.phone ||
         (user.role === "kurye" && !validFullName(user.name)) ||
         (user.role === "restoran" && (!user.contact_name || !user.phone)));
       return json({
         incomplete,
         role: user.role,
+        can_admin: originalRole === "yonetici",
         user: {
           id: user.id, name: user.name, phone: user.phone || null,
           contact_name: user.contact_name || null, online: !!user.online, locked: !!user.locked,

@@ -957,11 +957,17 @@
       '<button class="ico" id="hdr-ref" title="Yenile">↻</button>' +
       '<button class="ico" id="hdr-sys" title="Sistem">⚙</button>' +
       '<button class="ico" id="hdr-bell" title="Bildirimler">🔔' + (unread ? '<em>' + unread + '</em>' : '') + '</button>' +
+      ((S.session && S.session.can_admin) ? '<button class="ico" id="hdr-admin" title="Yönetici paneline dön">🛠</button>' : '') +
       '<button class="ico" id="hdr-prof" title="Profil">👤</button></span>';
     $('hdr-ref').onclick = hardReload;
     $('hdr-sys').onclick = function () { S.sistem = null; S.tab = 'sistem'; render(); };
     $('hdr-bell').onclick = notifSheet;
     $('hdr-prof').onclick = function () { S.tab = 'profil'; render(); };
+    var adm = $('hdr-admin');
+    if (adm) adm.onclick = function () {
+      API.setActAs('');
+      location.replace('/admin' + location.hash);
+    };
   }
 
   function assignmentPopup(items) {
@@ -1121,6 +1127,10 @@
   function boot() {
     API.init().then(function (s) {
       if (s && s.role === 'yonetici') { location.replace('/admin' + location.hash); return; }
+      if (s && s.can_admin) {
+        // yönetici hesabı kurye modunda: geri dönüş düğmesi
+        var hr0 = $('hdr-right');
+      }
       if (s && s.need_register) { renderRegister(s); return; }
       if (s && s.incomplete) { renderIncomplete(s); return; }
       S.session = s;
