@@ -259,8 +259,8 @@
       } else {
         actions = callBtn + '<button class="p w" data-a="teslim" data-i="' + p.id + '">Teslim ettim</button>';
       }
-      actions += '<button class="w" data-a="aktar" data-i="' + p.id + '">Aktar</button>' +
-                 '<button class="d w" data-a="iptal" data-i="' + p.id + '">İptal et</button>';
+      actions += '<div class="two"><button data-a="aktar" data-i="' + p.id + '">Aktar</button>' +
+                 '<button class="d" data-a="iptal" data-i="' + p.id + '">İptal et</button></div>';
     }
     if (opts.pay && !cancelled && delivered && p.payment_received !== true) {
       actions += '<button class="p w" data-a="odeme" data-i="' + p.id + '">Ödeme Aldım</button>';
@@ -268,13 +268,13 @@
     var warn = (S.kmPending && opts.own) ? '<div class="pk-warn">Km girişi bekleniyor. Önce km girişini tamamlayın.</div>' : '';
     return '<div class="pk">' +
       '<div class="pk-hd"><b>' + esc(p.restaurant) + '</b><em class="lb r">' + esc(p.region || '—') + '</em>' +
-        UI.statusTag(p.status) + '</div>' +
+        UI.statusTag(p.status) + (opts.closable ? '<button class="pkx" data-close="1" title="Kapat">✕</button>' : '') + '</div>' +
       '<div class="pk-bd"><dl class="pk-fields">' +
         '<dt>Sipariş no</dt><dd>Talep #' + p.batch + '-' + p.number + '</dd>' +
         '<dt>Restoran</dt><dd>' + esc(p.restaurant) + '</dd>' +
         '<dt>Bölge</dt><dd>' + esc(p.region || '—') + '</dd>' +
         '<dt>Ödeme</dt><dd>' + esc(p.payment || '—') + '</dd>' +
-        (p.note ? '<dt>Not</dt><dd>' + esc(p.note) + '</dd>' : '') +
+        '<dt>Not</dt><dd>' + esc(p.note || '—') + '</dd>' +
         '<dt>Yetkili</dt><dd>' + esc(p.restaurant_contact || '—') + '</dd>' +
         '<dt>Kabul</dt><dd>' + dt(p.accepted_at) + '</dd>' +
         '<dt>Alım</dt><dd>' + dt(p.picked_at) + '</dd>' +
@@ -377,7 +377,9 @@
   function openPkg(id) {
     var p = findPkg(id);
     if (!p) return;
-    var sh = UI.openSheet(pkgCard(p, { own: true }), { onClose: function () { render(); } });
+    var sh = UI.openSheet(pkgCard(p, { own: true, closable: true }), { onClose: function () { render(); } });
+    var cx = sh.querySelector('[data-close]');
+    if (cx) cx.onclick = function () { UI.closeSheet(); };
     bindPkgActions(sh, [p]);
   }
 
@@ -467,7 +469,9 @@
       b.onclick = function () {
         var p = items.filter(function (x) { return String(x.id) === b.getAttribute('data-hopen'); })[0];
         if (!p) return;
-        var sh = UI.openSheet(pkgCard(p, { pay: true }), { onClose: function () { render(); } });
+        var sh = UI.openSheet(pkgCard(p, { pay: true, closable: true }), { onClose: function () { render(); } });
+        var cx2 = sh.querySelector('[data-close]');
+        if (cx2) cx2.onclick = function () { UI.closeSheet(); };
         bindPkgActions(sh, [p]);
       };
     });
@@ -514,7 +518,9 @@
       b.onclick = function () {
         var p = items.filter(function (x) { return String(x.id) === b.getAttribute('data-kopen'); })[0];
         if (!p) return;
-        var sh = UI.openSheet(pkgCard(p, { pay: true }), { onClose: function () { renderKazanc(); } });
+        var sh = UI.openSheet(pkgCard(p, { pay: true, closable: true }), { onClose: function () { renderKazanc(); } });
+        var cx3 = sh.querySelector('[data-close]');
+        if (cx3) cx3.onclick = function () { UI.closeSheet(); };
         bindPkgActions(sh, [p]);
       };
     });
