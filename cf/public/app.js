@@ -682,11 +682,11 @@
     }).join('');
     main.innerHTML =
       '<div class="card addcard">' +
-        '<div class="frow"><label>Bölge</label><select id="ar">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><label style="flex:0 0 88px;font-size:13px;color:#888">Bölge</label><select id="ar" style="flex:1;min-width:0;width:auto;font:inherit;font-size:15px;padding:11px 10px;border:1px solid #ccc;border-radius:10px;background:transparent;color:inherit">' +
           '<option value="">— seçin —</option>' +
           regions.map(function (r) { return '<option' + (d.region === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
         '</select></div>' +
-        '<div class="frow"><label>Ödeme tipi</label><select id="ap">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><label style="flex:0 0 88px;font-size:13px;color:#888">Ödeme tipi</label><select id="ap" style="flex:1;min-width:0;width:auto;font:inherit;font-size:15px;padding:11px 10px;border:1px solid #ccc;border-radius:10px;background:transparent;color:inherit">' +
           '<option value="">— seçin —</option>' +
           payments.map(function (r) { return '<option' + (d.payment === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
         '</select></div>' +
