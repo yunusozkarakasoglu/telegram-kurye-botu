@@ -20,7 +20,7 @@
     kmPending: false,
     mineView: (localStorage.getItem('mineView') === 'card' ? 'card' : 'list'),
     histView: (localStorage.getItem('histView') === 'card' ? 'card' : 'list'),
-    histRange: 'today',
+    histRange: 'all',
     histDate: '',
     histPay: false,
     paySel: {},
@@ -405,7 +405,7 @@
     }).join('') + '</div>' : '<div class="empty"><b>Kayıt yok</b>Bu aralıkta tamamlanan/iptal edilen iş bulunmuyor.</div>';
     main.innerHTML = rseg + payBar + body;
     Array.prototype.forEach.call(main.querySelectorAll('[data-hmode]'), function (b) {
-      b.onclick = function () { S.histPay = b.getAttribute('data-hmode') === 'pay'; S.paySel = {}; render(); };
+      b.onclick = function () { S.histPay = b.getAttribute('data-hmode') === 'pay'; S.paySel = {}; S.histDate = ''; if (S.histPay) S.histRange = 'all'; render(); };
     });
     function selCount() { return Object.keys(S.paySel).filter(function (k) { return S.paySel[k]; }).length; }
     Array.prototype.forEach.call(main.querySelectorAll('[data-pay]'), function (c) {
