@@ -8,6 +8,7 @@ async function eligible(bot: Bot, courier: number): Promise<[Account | null, str
   const user = await bot.db.first<Account>("SELECT * FROM accounts WHERE id=? AND role='kurye'", courier);
   if (!user || user.deleted || !user.active) return [null, "Kurye hesabı pasif veya silinmiş."];
   if (!user.online) return [null, "Kurye çevrimdışı. Yeni paket alamaz."];
+  if (user.busy) return [null, "Kurye meşgul (" + (user.busy_reason || "Mola") + "). Yeni paket alamaz."];
   if ((user.pin_ok_until || 0) < Math.floor(Date.now() / 1000)) return [null, "Mini App'e girip PIN ile giriş yapın."];
   if (user.locked || !(await bot.capacity(courier))) return [null, "Kurye, üzerindeki tüm paketleri teslim edene kadar yeni paket alamaz."];
   return [user, null];

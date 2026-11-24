@@ -753,12 +753,20 @@
           '<div class="acts"><button class="p sm" id="pin-save">Kaydet</button><button class="sm" id="pin-cancel">İptal</button></div>'
         : '<div class="pinrow"><span>PIN: ••••</span><button class="sm" id="pin-edit">Düzenle</button></div>') +
       '</div>';
-    var sw = (!isRest ? '<label class="hdr-sw" style="margin-right:auto"><input type="checkbox" id="p-online"' + (u.online ? ' checked' : '') + '><span>' + (u.online ? 'Açık' : 'Kapalı') + '</span></label>' : '');
-    var actionRow = '<div class="acts" style="margin-top:12px;align-items:center">' + sw +
+    var status = u.busy ? 'busy' : (u.online ? 'online' : 'offline');
+    var statusRow = !isRest ? '<div class="statusrow">' +
+      [['online', 'Online'], ['busy', 'Meşgul'], ['offline', 'Offline']].map(function (x) {
+        return '<button data-st2="' + x[0] + '" class="' + (status === x[0] ? 'on ' + x[0] : '') + '">' + x[1] + '</button>';
+      }).join('') + '</div>' +
+      (u.busy ? '<div class="busybox"><div class="ameta">Meşgul sebebi: <b>' + esc(u.busy_reason || 'Mola') + '</b></div>' +
+        '<div class="seg four" style="margin-top:6px">' + ['Mola', 'Arıza', 'Kaza', 'İhtiyaç'].map(function (r) {
+          return '<button data-br="' + r + '" class="' + ((u.busy_reason || 'Mola') === r ? 'on' : '') + '">' + r + '</button>';
+        }).join('') + '</div></div>' : '') : '';
+    var actionRow = '<div class="acts" style="margin-top:12px;align-items:center">' +
       (editing
         ? '<button class="p sm" id="p-save">Kaydet</button><button class="sm" id="p-cancel">İptal</button>'
         : '<button class="sm" id="p-edit">Düzenle</button>') + '</div>';
-    main.innerHTML = '<div class="card oc" style="padding:12px">' + fields + pinSection + actionRow + '</div>' +
+    main.innerHTML = '<div class="card oc" style="padding:12px">' + fields + statusRow + pinSection + actionRow + '</div>' +
       (!isRest ? '<p class="note" style="padding:10px 4px">Kurye paket sınırı: <b>' + (((S.session || {}).settings || {}).limit || '—') +
         '</b> paket · Yönetici tarafından belirlenir.</p>' : '');
 
@@ -799,16 +807,21 @@
     } else {
       $('p-edit').onclick = function () { S.profEdit = true; render(); };
     }
-    if (!isRest) {
-      $('p-online').onchange = function () {
-        var on = $('p-online').checked;
-        API.durum(on).then(function () {
-          S.session.user.online = on;
-          UI.toast(on ? 'Çevrimiçi oldunuz' : 'Çevrimdışı oldunuz', 'success');
-          refresh(true);
-        }).catch(function (e) { $('p-online').checked = !on; UI.toast(e.message || 'Durum değişmedi', 'error'); });
-      };
+    function setStatus(st, reason) {
+      API.durum(st, reason).then(function (r) {
+        S.session.user.online = st === 'online';
+        S.session.user.busy = !!r.busy;
+        S.session.user.busy_reason = r.reason || null;
+        UI.toast(st === 'online' ? 'Çevrimiçi oldunuz' : st === 'busy' ? 'Meşgul olarak işaretlendiniz' : 'Çevrimdışı oldunuz', 'success');
+        render();
+      }).catch(function (e) { UI.toast(e.message || 'Durum değişmedi', 'error'); });
     }
+    Array.prototype.forEach.call(document.querySelectorAll('[data-st2]'), function (b) {
+      b.onclick = function () { setStatus(b.getAttribute('data-st2'), S.session.user.busy_reason); };
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-br]'), function (b) {
+      b.onclick = function () { setStatus('busy', b.getAttribute('data-br')); };
+    });
     $('cta').innerHTML = '';
     nav(isRest ? restaurantTabs() : courierTabs(), {});
   }

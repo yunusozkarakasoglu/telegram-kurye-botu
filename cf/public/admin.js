@@ -203,7 +203,7 @@
         }).map(function (c) {
           return '<div class="acard"><div class="ahd"><b>' + esc(c.name) + '</b>' +
             (c.active ? '<span class="tag ok">Aktif</span>' : '<span class="tag er">Pasif</span>') + '</div>' +
-            '<div class="ameta">' + (c.online ? '🟢 Online' : '⚪ Offline') + ' · Aktif paket: ' + (c.active_packages || 0) + '</div>' +
+            '<div class="ameta">' + (c.busy ? '🟡 Meşgul' + (c.busy_reason ? ' · ' + esc(c.busy_reason) : '') : (c.online ? '🟢 Online' : '⚪ Offline')) + ' · Aktif paket: ' + (c.active_packages || 0) + '</div>' +
             '<div class="ameta">' + (c.phone ? '☎ ' + esc(c.phone) : 'Telefon yok') + '</div>' +
             '<div class="acts"><button class="sm" data-edit="' + c.id + '">Düzenle</button>' +
             '<button class="sm" data-acc="' + c.id + '" data-act="toggle">' + (c.active ? 'Pasif Yap' : 'Aktif Yap') + '</button>' +

@@ -72,6 +72,7 @@ export async function adminRoutes(
     return json({
       couriers: rows.map((c) => ({
         id: c.id, name: c.name, phone: c.phone || null, online: !!c.online, locked: !!c.locked, is_admin: c.role === "yonetici",
+        busy: !!c.busy, busy_reason: c.busy_reason || null,
         active: !!c.active, deleted: !!c.deleted,
         active_packages: counts.find((x) => x.courier === c.id)?.n ?? 0,
       })),

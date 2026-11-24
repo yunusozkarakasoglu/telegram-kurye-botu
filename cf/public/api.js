@@ -384,7 +384,7 @@
     talepVer: function (items) { return req('POST', '/api/restoran/talep', { packages: items }); },
     paketlerimRestoran: function (filter) { return req('GET', '/api/restoran/paketlerim?filter=' + encodeURIComponent(filter || 'all')); },
     profil: function (data) { return req('PATCH', '/api/profil', data); },
-    durum: function (online) { return req('POST', '/api/durum', { online: !!online }); },
+    durum: function (status, reason) { return req('POST', '/api/durum', { status: status, reason: reason || null }); },
     kayit: function (data) { return req('POST', '/api/kayit', data); },
     sistem: function () { return req('GET', '/api/sistem'); },
     bildirimler: function () { return req('GET', '/api/bildirimler'); },

@@ -262,13 +262,16 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     if (path === "/durum" && method === "POST") {
       if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
       const body = await readBody(request);
-      const online = !!body.online;
-      await bot.db.run("UPDATE accounts SET online=? WHERE id=? AND role='kurye'", online ? 1 : 0, user.id);
-      if (!online) {
+      const status = ["online", "offline", "busy"].includes(String(body.status)) ? String(body.status) : (body.online ? "online" : "offline");
+      const reason = ["Mola", "Arıza", "Kaza", "İhtiyaç"].includes(String(body.reason)) ? String(body.reason) : null;
+      const online = status === "online" ? 1 : status === "busy" ? 1 : 0;
+      const busy = status === "busy" ? 1 : 0;
+      await bot.db.run("UPDATE accounts SET online=?, busy=?, busy_reason=? WHERE id=? AND role='kurye'", online, busy, busy ? (reason || "Mola") : null, user.id);
+      if (!online || busy) {
         await bot.db.run("DELETE FROM reservations WHERE courier=?", user.id);
         await bot.db.run("DELETE FROM auto_offers WHERE courier=? AND state='pending'", user.id);
       }
-      return json({ ok: true, online });
+      return json({ ok: true, status, busy: !!busy, reason: busy ? (reason || "Mola") : null });
     }
 
     if (path === "/odeme" && method === "POST") {
