@@ -1234,8 +1234,10 @@
   function pinGate(s) {
     API.pinDurum().then(function (d) {
       if (!d.has_pin) return renderPinCreate(s);
-      var tok = localStorage.getItem('pinToken') || sessionStorage.getItem('pinToken') || '';
+      var tok = localStorage.getItem('pinToken') || '';
+      var tokUser = localStorage.getItem('pinTokenUser') || '';
       var exp = Number((tok.split('.')[0] || '0'));
+      if (tok && String((s.user || {}).id) !== tokUser) { tok = ''; localStorage.removeItem('pinToken'); localStorage.removeItem('pinTokenUser'); }
       if (!window.__pinVerified && (!tok || exp < Math.floor(Date.now() / 1000))) return renderPinEnter(s, d.phone);
       window.__pinVerified = true;
       startSession(s);
@@ -1259,6 +1261,7 @@
       if (p1 !== p2) { err.textContent = 'PIN’ler uyuşmuyor'; return; }
       API.pinOlustur(p1).then(function (r) {
         localStorage.setItem('pinToken', r.token);
+        localStorage.setItem('pinTokenUser', String((s.user || {}).id));
         window.__pinVerified = true;
         UI.toast('PIN oluşturuldu', 'success');
         startSession(s);
@@ -1281,6 +1284,7 @@
       if (!/^\d{4}$/.test(pin)) { err.textContent = 'PIN 4 haneli olmalı'; return; }
       API.pinDogrula(pin).then(function (r) {
         localStorage.setItem('pinToken', r.token);
+        localStorage.setItem('pinTokenUser', String((s.user || {}).id));
         window.__pinVerified = true;
         startSession(s);
       }).catch(function (e) { err.textContent = e.message || 'Hatalı PIN'; });
