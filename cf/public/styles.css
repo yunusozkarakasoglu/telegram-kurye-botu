@@ -377,3 +377,5 @@ header{display:flex;align-items:center;gap:8px}
 .addbtn{width:100%;min-height:46px;margin-top:2px}
 .reqlist .note{color:var(--t2);font-size:13px;text-align:center;padding:14px 8px}
 main{padding-bottom:20px}
+
+.sendfull{width:100%;min-height:50px;font-size:16px;margin:2px 0 8px}
