@@ -71,8 +71,8 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
   const loginTok = request.headers.get("x-login-token") || "";
   let loginId: number | null = null;
   if (loginTok) loginId = await validLoginToken(env, loginTok);
-  if (loginTok && !loginId) return fail("Oturum süresi doldu. Tekrar giriş yapın.", 401, "login_required");
-  if (loginId) {
+  if (loginTok && loginId === null) return fail("Oturum süresi doldu. Tekrar giriş yapın.", 401, "login_required");
+  if (loginId !== null) {
     ident = { id: loginId, name: "", startParam: "" };
   } else {
     try {
@@ -155,7 +155,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
   const method = request.method.toUpperCase();
 
   // PIN kurulumu/doğrulaması (kurye ve restoran için zorunlu ikinci adım)
-  if (!loginId && path !== "/oturum" && (path.startsWith("/pin/") || originalRole !== "yonetici" || actAsCourier)) {
+  if (loginId === null && path !== "/oturum" && (path.startsWith("/pin/") || originalRole !== "yonetici" || actAsCourier)) {
     for (const sql of pinSql()) { try { await env.DB.prepare(sql).run(); } catch {} }
     const fresh = (await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(user.id).first<Account>()) || user;
     user = actAsCourier ? { ...fresh, role: "kurye" } : fresh;

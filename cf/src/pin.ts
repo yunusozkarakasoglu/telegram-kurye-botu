@@ -49,7 +49,7 @@ export async function loginToken(env: Env, account: number): Promise<{ token: st
 export async function validLoginToken(env: Env, token: string): Promise<number | null> {
   const [idS, expS, sig] = (token || "").split(".");
   const id = Number(idS), exp = Number(expS);
-  if (!id || !exp || !sig || exp < Math.floor(Date.now() / 1000)) return null;
+  if (!Number.isInteger(id) || id < 0 || !exp || !sig || exp < Math.floor(Date.now() / 1000)) return null;
   if ((await hmac(env.BOT_TOKEN, `${id}:${exp}`)) !== sig) return null;
   return id;
 }
