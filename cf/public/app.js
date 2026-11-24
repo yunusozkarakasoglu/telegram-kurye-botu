@@ -1306,7 +1306,7 @@
     $('lgok').onclick = function () {
       var phone = ($('lgphone').value || '').trim(), pin = ($('lgpin').value || '').trim(), err = $('lgerr');
       err.textContent = '';
-      if (phone.replace(/\D/g, '').length < 4) { err.textContent = 'Telefon numarasını tam girin'; return; }
+      if (phone.replace(/\D/g, '').length < 3) { err.textContent = 'Telefon numarasını tam girin'; return; }
       if (!/^\d{4}$/.test(pin)) { err.textContent = 'PIN 4 haneli olmalı'; return; }
       $('lgok').disabled = true;
       API.giris(phone, pin).then(function (r) {
@@ -1314,8 +1314,8 @@
         localStorage.setItem('loginTokenUser', String(r.id));
         localStorage.removeItem('pinToken');
         localStorage.removeItem('pinTokenUser');
-        if (r.role === 'yonetici') { location.replace('/admin'); return; }
-        location.reload();
+        if (r.role === 'yonetici' && !sessionStorage.getItem('actAs')) { location.replace('/admin'); return; }
+        location.href = sessionStorage.getItem('actAs') === 'kurye' ? '/?mode=courier' : '/';
       }).catch(function (e) { $('lgok').disabled = false; err.textContent = e.message || 'Giriş yapılamadı'; });
     };
     API.girisKullanicilar().then(function (r) {
@@ -1323,16 +1323,23 @@
       var items = r.items || [];
       var order = function (x) { return x.role === 'restoran' ? 0 : x.role === 'kurye' ? 1 : 2; };
       items.sort(function (a, b) { return order(a) - order(b) || String(a.name).localeCompare(String(b.name)); });
-      box.innerHTML = '<div class="testlist">' + items.map(function (x) {
+      var rows = [];
+      items.forEach(function (x) {
         var id = String(x.phone || x.id).replace(/\D/g, '').slice(-10);
         var label = x.role === 'yonetici' ? 'Yönetici' : x.role === 'restoran' ? 'Restoran' : 'Kurye';
-        return '<button data-phone="' + esc(id) + '"><b>' + esc(x.name) + ' <em>' + label + '</em></b>' +
-          '<span>' + esc(id) + ' · PIN ' + esc(r.pin || '1234') + '</span></button>';
+        rows.push({ id: id, name: x.name, label: label });
+        if (x.role === 'yonetici') rows.push({ id: id, name: x.name, label: 'Yönetici / Kurye', as: 'kurye' });
+      });
+      box.innerHTML = '<div class="testlist">' + rows.map(function (x) {
+        return '<button data-phone="' + esc(x.id) + '" data-as="' + esc(x.as || '') + '"><b>' + esc(x.name) + ' <em>' + x.label + '</em></b>' +
+          '<span>' + esc(x.id) + ' · PIN ' + esc(r.pin || '1234') + '</span></button>';
       }).join('') + '</div>';
       Array.prototype.forEach.call(box.querySelectorAll('[data-phone]'), function (b) {
         b.onclick = function () {
+          var as = b.getAttribute('data-as') || '';
           $('lgphone').value = b.getAttribute('data-phone');
           $('lgpin').value = r.pin || '1234';
+          if (as) sessionStorage.setItem('actAs', as); else sessionStorage.removeItem('actAs');
           $('lgok').click();
         };
       });
