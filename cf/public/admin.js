@@ -279,6 +279,25 @@
     }).catch(showError);
   }
 
+  function accountEdit(id, role, name, phone, contact) {
+    var sh = UI.openSheet(
+      '<h2>Düzenle · ' + esc(name) + '</h2>' +
+      '<div class="fld"><label>Ad</label><input id="e-name" value="' + esc(name) + '"></div>' +
+      (role === 'restoran' ? '<div class="fld"><label>Yetkili adı</label><input id="e-contact" value="' + esc(contact || '') + '"></div>' : '') +
+      '<div class="fld"><label>Telefon</label><input id="e-phone" inputmode="tel" value="' + esc(phone || '') + '"></div>' +
+      '<div class="err" id="e-err"></div>' +
+      '<button class="p" id="e-save">Kaydet</button>' +
+      '<button class="d" id="e-cancel">Vazgeç</button>');
+    sh.querySelector('#e-cancel').onclick = function () { UI.closeSheet(); };
+    sh.querySelector('#e-save').onclick = function () {
+      var body = { id: id, name: sh.querySelector('#e-name').value.trim(), phone: sh.querySelector('#e-phone').value.trim() };
+      if (role === 'restoran') body.contact_name = sh.querySelector('#e-contact').value.trim();
+      API.yonetim('hesapGuncelle', body).then(function () {
+        UI.closeSheet(); UI.toast('Kaydedildi', 'success'); render();
+      }).catch(function (e) { sh.querySelector('#e-err').textContent = e.message || 'Kaydedilemedi'; });
+    };
+  }
+
   function bindAccountActions(all) {
     Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-acc]'), function (b) {
       b.onclick = function () {

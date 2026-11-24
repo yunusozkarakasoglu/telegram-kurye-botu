@@ -120,7 +120,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
   if ((originalRole !== "yonetici" || actAsCourier) && path !== "/oturum") {
     for (const sql of pinSql()) { try { await env.DB.prepare(sql).run(); } catch {} }
     const fresh = (await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(user.id).first<Account>()) || user;
-    user = fresh;
+    user = actAsCourier ? { ...fresh, role: "kurye" } : fresh;
     if (path === "/pin/durum" && method === "GET") {
       return json({ has_pin: !!user.pin_hash, phone: user.phone || null });
     }
