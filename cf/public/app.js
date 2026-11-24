@@ -23,6 +23,7 @@
     histRange: 'today',
     histDate: '',
     histPaid: 'all',
+    paySel: {},
     kazancRange: 'today',
     kazancDate: '',
     sistemTab: 'fiyat',
@@ -379,15 +380,50 @@
     if (S.histPaid !== 'all') {
       items = items.filter(function (p) { return S.histPaid === 'paid' ? p.payment_received === true : p.payment_received === false; });
     }
+    var unpaid = items.filter(function (p) { return p.delivered_at && !p.cancelled_at && p.payment_received !== true; });
+    var payBar = unpaid.length ? '<div class="filters" style="margin-top:6px">' +
+      '<button class="p sm" id="pay-sel">Seçilenleri Ödeme Alındı</button>' +
+      '<button class="sm" id="pay-all">Tümünü Ödeme Alındı (' + unpaid.length + ')</button></div>' : '';
     var body = items.length ? '<div class="card">' + items.map(function (p) {
-      return '<button class="prow" data-hopen="' + p.id + '"><span><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) + '</b>' +
-        '<small>' + esc(p.region || '') + ' · ' + esc(p.status) + ' · ' + dt(p.delivered_at || p.cancelled_at) + '</small></span>' +
-        '<em>' + (p.fee_tl == null ? '' : money(p.fee_tl)) + '</em></button>';
+      var isUnpaid = p.delivered_at && !p.cancelled_at && p.payment_received !== true;
+      return '<div class="hrow">' + (isUnpaid ? '<input type="checkbox" data-pay="' + p.id + '">' : '<span class="hgap"></span>') +
+        '<button class="prow" data-hopen="' + p.id + '"><span><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) + '</b>' +
+        '<small>' + esc(p.region || '') + ' · ' + esc(p.status) + ' · ' + dt(p.delivered_at || p.cancelled_at) +
+        (p.payment_received === true ? ' · ödeme alındı' : p.payment_received === false ? ' · ödeme alınmadı' : '') + '</small></span>' +
+        '<em>' + (p.fee_tl == null ? '' : money(p.fee_tl)) + '</em></button></div>';
     }).join('') + '</div>' : '<div class="empty"><b>Kayıt yok</b>Bu aralıkta tamamlanan/iptal edilen iş bulunmuyor.</div>';
-    main.innerHTML = rseg + paidSeg + body;
+    main.innerHTML = rseg + paidSeg + payBar + body;
     Array.prototype.forEach.call(main.querySelectorAll('[data-hp]'), function (b) {
       b.onclick = function () { S.histPaid = b.getAttribute('data-hp'); render(); };
     });
+    function selCount() { return Object.keys(S.paySel).filter(function (k) { return S.paySel[k]; }).length; }
+    Array.prototype.forEach.call(main.querySelectorAll('[data-pay]'), function (c) {
+      c.checked = !!S.paySel[c.getAttribute('data-pay')];
+      c.onchange = function () {
+        var id = c.getAttribute('data-pay');
+        if (c.checked) S.paySel[id] = 1; else delete S.paySel[id];
+        var btn = main.querySelector('#pay-sel');
+        if (btn) btn.textContent = 'Seçilenleri Ödeme Alındı (' + selCount() + ')';
+      };
+    });
+    var paySelBtn = main.querySelector('#pay-sel');
+    if (paySelBtn) paySelBtn.onclick = function () {
+      var ids = Object.keys(S.paySel).filter(function (k) { return S.paySel[k]; }).map(Number);
+      if (!ids.length) { UI.toast('Paket seçin', 'error'); return; }
+      confirmSheet(ids.length + ' paket için ödeme alındı olarak işaretlensin mi?', function () {
+        API.odeme(ids, false).then(function (r) {
+          S.paySel = {}; UI.closeSheet(); UI.toast((r.count || 0) + ' paket ödeme alındı', 'success'); refresh(true);
+        }).catch(function (e) { UI.toast(e.message || 'Kaydedilemedi', 'error'); });
+      });
+    };
+    var payAllBtn = main.querySelector('#pay-all');
+    if (payAllBtn) payAllBtn.onclick = function () {
+      confirmSheet(unpaid.length + ' paketin tamamı ödeme alındı olarak işaretlensin mi?', function () {
+        API.odeme([], true).then(function (r) {
+          S.paySel = {}; UI.closeSheet(); UI.toast((r.count || 0) + ' paket ödeme alındı', 'success'); refresh(true);
+        }).catch(function (e) { UI.toast(e.message || 'Kaydedilemedi', 'error'); });
+      });
+    };
     Array.prototype.forEach.call(main.querySelectorAll('[data-r]'), function (b) {
       b.onclick = function () { S.histRange = b.getAttribute('data-r'); S.histDate = ''; render(); };
     });

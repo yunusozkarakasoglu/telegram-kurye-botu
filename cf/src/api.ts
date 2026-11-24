@@ -204,6 +204,16 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       return json({ ok: true, online });
     }
 
+    if (path === "/odeme" && method === "POST") {
+      if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const body = await readBody(request);
+      const ids = Array.isArray(body.ids) ? body.ids.map(Number) : [];
+      const all = body.all === true;
+      if (!all && !ids.length) return fail("Paket seçilmedi.", 422, "invalid");
+      const r = await apiCourier.markPaid(bot, user, ids, all);
+      return r.ok ? json(r) : fail(r.error || "Kaydedilemedi", 422, "invalid");
+    }
+
     if (path === "/bildirimler" && method === "GET") {
       await bot.db.run("CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, created_at REAL NOT NULL)");
       await bot.db.run("CREATE TABLE IF NOT EXISTS notif_targets(notif INTEGER NOT NULL, account INTEGER NOT NULL, PRIMARY KEY(notif,account))");

@@ -267,6 +267,7 @@
   Mock.prototype.aktarimKuryeler = function () { var self = this; return this.delay(function () { return { couriers: self.couriers.filter(function (c) { return c.id !== self.me.id; }).map(function (c) { return { id: c.id, name: c.name }; }) }; }); };
   Mock.prototype.aktarimTeklifler = function () { return this.delay(function () { return { offers: [] }; }); };
   Mock.prototype.aktarimKarar = function () { return this.delay(function () { return { ok: true }; }); };
+  Mock.prototype.odeme = function () { return this.delay(function () { return { ok: true, count: 1 }; }); };
 
   Mock.prototype.talepVer = function (items) {
     var self = this;
@@ -380,6 +381,7 @@
     bildirimler: function () { return req('GET', '/api/bildirimler'); },
     bildirimOkundu: function (upto) { return req('POST', '/api/bildirimler/okundu', { upto: upto }); },
     bildirimTemizle: function () { return req('POST', '/api/bildirimler/temizle'); },
+    odeme: function (ids, all) { return req('POST', '/api/odeme', { ids: ids || [], all: !!all }); },
     aktarimKuryeler: function () { return req('GET', '/api/aktarim/kuryeler'); },
     aktarimTeklifler: function () { return req('GET', '/api/aktarim/teklifler'); },
     aktarimKarar: function (token, kabul) { return req('POST', '/api/aktarim/' + token + (kabul ? '/kabul' : '/reddet')); },
@@ -443,7 +445,7 @@
     }
   };
   ['oturum', 'havuz', 'kabul', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
-    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'yonetim'].forEach(function (m) {
+    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);
         var target = mode === 'real' ? real : mock;

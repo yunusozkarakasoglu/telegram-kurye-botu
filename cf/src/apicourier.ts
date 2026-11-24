@@ -105,6 +105,25 @@ export async function offerStep(bot: Bot, user: Account, token: string, accepted
   return { ok: false, error: typeof result === "string" ? result : "Aktarım tamamlanamadı." };
 }
 
+export async function markPaid(bot: Bot, user: Account, ids: number[], all: boolean) {
+  if (user.role !== "kurye") return { ok: false, error: "Bu işlem kullanılamıyor.", count: 0 };
+  let list: number[] = [];
+  if (all) {
+    const rows = await bot.db.all<{ id: number }>(
+      "SELECT id FROM packages WHERE courier=? AND delivered_at IS NOT NULL AND cancelled_at IS NULL AND (payment_received IS NULL OR payment_received=0)", user.id);
+    list = rows.map((r) => r.id);
+  } else {
+    list = ids.filter((n) => Number.isInteger(n) && n > 0);
+  }
+  if (!list.length) return { ok: false, error: "Ödeme alınacak paket yok.", count: 0 };
+  let count = 0;
+  for (const id of list) {
+    count += await bot.db.run(
+      "UPDATE packages SET payment_received=1 WHERE id=? AND courier=? AND delivered_at IS NOT NULL AND cancelled_at IS NULL", id, user.id);
+  }
+  return { ok: true, count };
+}
+
 export async function transferAllToPool(bot: Bot, user: Account) {
   if (user.role !== "kurye") return { ok: false, error: "Bu işlem kullanılamıyor." };
   const rows = await bot.activePackages(user.id);
