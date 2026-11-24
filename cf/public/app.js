@@ -954,20 +954,9 @@
     if (role === 'yonetici') { hr.innerHTML = ''; return; }
     var unread = (S.notifs && S.notifs.unread) || 0;
     hr.innerHTML = '<span class="hicons">' +
-      '<button class="ico" id="hdr-ref" title="Yenile">↻</button>' +
-      '<button class="ico" id="hdr-sys" title="Sistem">⚙</button>' +
-      '<button class="ico" id="hdr-bell" title="Bildirimler">🔔' + (unread ? '<em>' + unread + '</em>' : '') + '</button>' +
-      ((S.session && S.session.can_admin) ? '<button class="ico admin-btn" id="hdr-admin" title="Yönetici paneline dön">Admin</button>' : '') +
-      '<button class="ico" id="hdr-prof" title="Profil">👤</button></span>';
-    $('hdr-ref').onclick = hardReload;
-    $('hdr-sys').onclick = function () { S.sistem = null; S.tab = 'sistem'; render(); };
+      '<button class="ico" id="hdr-bell" title="Bildirimler">🔔' + (unread ? '<em>' + unread + '</em>' : '') + '</button></span>';
     $('hdr-bell').onclick = notifSheet;
-    $('hdr-prof').onclick = function () { S.tab = 'profil'; render(); };
-    var adm = $('hdr-admin');
-    if (adm) adm.onclick = function () {
-      API.setActAs('');
-      location.replace('/admin' + location.hash);
-    };
+    renderDrawer();
   }
 
   function assignmentPopup(items) {
@@ -1026,6 +1015,44 @@
     }
   }
 
+  function renderDrawer() {
+    var d = $('drawer-nav');
+    if (!d) return;
+    var role = curRole();
+    var pages = role === 'restoran' ? restaurantTabs() : courierTabs();
+    var h = '<h3>Sayfalar</h3>' + pages.map(function (p) {
+      return '<button data-dt="' + p[0] + '" class="' + (S.tab === p[0] ? 'on' : '') + '"><i>' + p[1] + '</i>' + p[2] + '</button>';
+    }).join('');
+    h += '<h3>İşlemler</h3>';
+    h += '<button data-da="refresh"><i>↻</i>Yenile</button>';
+    h += '<button data-dt="sistem" class="' + (S.tab === 'sistem' ? 'on' : '') + '"><i>⚙</i>Sistem</button>';
+    h += '<button data-dt="profil" class="' + (S.tab === 'profil' ? 'on' : '') + '"><i>👤</i>Profil</button>';
+    if (S.session && S.session.can_admin) h += '<button data-da="admin"><i>🛠</i>Yönetici Paneli</button>';
+    d.innerHTML = h;
+    Array.prototype.forEach.call(d.querySelectorAll('[data-dt]'), function (b) {
+      b.onclick = function () { S.tab = b.getAttribute('data-dt'); closeDrawer(); render(); refresh(false); };
+    });
+    Array.prototype.forEach.call(d.querySelectorAll('[data-da]'), function (b) {
+      b.onclick = function () {
+        var a = b.getAttribute('data-da');
+        closeDrawer();
+        if (a === 'refresh') hardReload();
+        else if (a === 'admin') { API.setActAs(''); location.replace('/admin' + location.hash); }
+      };
+    });
+  }
+  function closeDrawer() {
+    var d = $('drawer'), sc = $('dscrim');
+    if (d) d.hidden = true;
+    if (sc) sc.hidden = true;
+  }
+  function bindDrawer() {
+    var h = $('hmb'), d = $('drawer'), sc = $('dscrim');
+    if (!h || !d) return;
+    h.onclick = function () { d.hidden = false; if (sc) sc.hidden = false; };
+    if (sc) sc.onclick = closeDrawer;
+  }
+
   function render() {
     var role = curRole();
     if (role === 'restoran') {
@@ -1042,6 +1069,7 @@
     else if (S.tab === 'kazanc') renderKazanc();
     else renderHavuz();
     renderIcons();
+    renderDrawer();
   }
 
   function loadRest() {
@@ -1192,5 +1220,5 @@
     }, { passive: true });
   }
 
-  document.addEventListener('DOMContentLoaded', function () { bindPullToRefresh(); boot(); });
+  document.addEventListener('DOMContentLoaded', function () { bindPullToRefresh(); bindDrawer(); boot(); });
 })();
