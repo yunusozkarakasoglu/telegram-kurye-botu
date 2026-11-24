@@ -207,6 +207,17 @@ export async function adminRoutes(
     return json({ ok: true, count: rows.length, delivered });
   }
 
+  if (path === "/yonetim/odemeler" && method === "GET") {
+    const rows = await bot.db.all<any>(
+      `SELECT p.id, p.batch, p.number, p.region, p.courier_fee, p.delivered_at, p.payment_received,
+         r.name AS restaurant, c.name AS courier_name
+       FROM packages p JOIN batches b ON b.id=p.batch JOIN accounts r ON r.id=b.owner
+       LEFT JOIN accounts c ON c.id=p.courier
+       WHERE p.delivered_at IS NOT NULL AND p.cancelled_at IS NULL AND (p.payment_received IS NULL OR p.payment_received=0)
+       ORDER BY p.delivered_at ASC LIMIT 300`);
+    return json({ items: rows });
+  }
+
   if (path === "/yonetim/kurye-paketler" && method === "GET") {
     const courierId = Number(url.searchParams.get("courier") || 0);
     if (!courierId) return fail("Kurye seçilmedi.", 422, "invalid");

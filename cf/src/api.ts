@@ -347,10 +347,14 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const row = await bot.db.first<{ total: number | null; count: number; km: number | null }>(
         `SELECT sum(courier_fee) AS total, count(*) AS count, sum(CAST(distance_km AS REAL)) AS km
          FROM packages WHERE courier=? AND delivered_at IS NOT NULL${cond}`, ...params);
+      const pcond = start != null ? "p.courier=? AND p.delivered_at>=? AND p.delivered_at<?" : "p.courier=? AND p.delivered_at IS NOT NULL";
+      const pparams: unknown[] = start != null ? [user.id, start, end] : [user.id];
+      const pkgs = await bot.packages(pcond, pparams);
       return json({
         total_tl: row?.total ?? 0,
         count: row?.count ?? 0,
         total_km: Math.round((row?.km ?? 0) * 10) / 10,
+        items: pkgs.map((p) => pkgDto(p, "Teslim edildi")),
       });
     }
 
@@ -407,7 +411,8 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     if (path === "/restoran/paketlerim" && method === "GET") {
       if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
       const filter = url.searchParams.get("filter") || "all";
-      const where = filter === "waiting" ? "p.courier IS NULL AND p.cancelled_at IS NULL"
+      const where = filter === "unpaid" ? "p.delivered_at IS NOT NULL AND p.cancelled_at IS NULL AND (p.payment_received IS NULL OR p.payment_received=0)"
+        : filter === "waiting" ? "p.courier IS NULL AND p.cancelled_at IS NULL"
         : filter === "active" ? "p.courier IS NOT NULL AND p.delivered_at IS NULL AND p.cancelled_at IS NULL"
         : filter === "delivered" ? "p.delivered_at IS NOT NULL"
         : "p.cancelled_at IS NULL";

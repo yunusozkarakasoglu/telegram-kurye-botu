@@ -26,6 +26,7 @@
     paySel: {},
     kazancRange: 'today',
     kazancDate: '',
+    kazancPaid: 'all',
     sistemTab: 'fiyat',
     lateGroup: '',
     notifs: { items: [], unread: 0 },
@@ -447,14 +448,41 @@
       return '<button data-kr="' + r[0] + '" class="' + (!S.kazancDate && S.kazancRange === r[0] ? 'on' : '') + '">' + r[1] + '</button>';
     }).join('') + '</div>' +
       '<div class="filters" style="margin-top:8px"><input type="date" id="kdate" value="' + esc(S.kazancDate) + '"></div>';
-    $('mn').innerHTML = seg +
+    var items = (e.items || []);
+    var paidSeg = '<div class="seg three" style="margin-top:6px">' + [['all', 'Tümü'], ['paid', 'Ödeme alındı'], ['unpaid', 'Ödeme alınmadı']].map(function (v) {
+      return '<button data-kp="' + v[0] + '" class="' + (S.kazancPaid === v[0] ? 'on' : '') + '">' + v[1] + '</button>';
+    }).join('') + '</div>';
+    var shown = items.filter(function (p) {
+      if (S.kazancPaid === 'paid') return p.payment_received === true;
+      if (S.kazancPaid === 'unpaid') return p.payment_received !== true;
+      return true;
+    });
+    var listHtml = shown.length ? '<div class="card" style="margin-top:10px">' + shown.map(function (p) {
+      return '<button class="prow" data-kopen="' + p.id + '"><span><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) + '</b>' +
+        '<small>' + esc(p.region || '') + ' · ' + dt(p.delivered_at) + ' · ' +
+        (p.payment_received === true ? 'ödeme alındı' : p.payment_received === false ? 'ödeme alınmadı' : 'ödeme —') + '</small></span>' +
+        '<em>' + (p.fee_tl == null ? '' : money(p.fee_tl)) + '</em></button>';
+    }).join('') + '</div>' : '<div class="empty">Bu dönemde paket yok.</div>';
+    $('mn').innerHTML = seg + paidSeg +
       '<div class="krow">' +
         '<div class="big"><span>Toplam hakediş</span><div>' + money(e.total_tl) + '</div></div>' +
         '<div class="big"><span>Teslim paket</span><div>' + (e.count || 0) + '</div></div>' +
         '<div class="big"><span>Toplam km</span><div>' + (Math.round((e.total_km || 0) * 10) / 10) + '</div></div>' +
       '</div>';
+    $('mn').innerHTML += listHtml;
     Array.prototype.forEach.call($('mn').querySelectorAll('[data-kr]'), function (b) {
       b.onclick = function () { S.kazancRange = b.getAttribute('data-kr'); S.kazancDate = ''; loadKazanc(); };
+    });
+    Array.prototype.forEach.call($('mn').querySelectorAll('[data-kp]'), function (b) {
+      b.onclick = function () { S.kazancPaid = b.getAttribute('data-kp'); renderKazanc(); };
+    });
+    Array.prototype.forEach.call($('mn').querySelectorAll('[data-kopen]'), function (b) {
+      b.onclick = function () {
+        var p = items.filter(function (x) { return String(x.id) === b.getAttribute('data-kopen'); })[0];
+        if (!p) return;
+        var sh = UI.openSheet(pkgCard(p, {}), { onClose: function () { renderKazanc(); } });
+        bindPkgActions(sh, [p]);
+      };
     });
     $('kdate').onchange = function () { S.kazancDate = $('kdate').value; loadKazanc(); };
     $('cta').innerHTML = '';
@@ -660,7 +688,7 @@
 
   function renderRestPaketlerim() {
     setHeader('Paketlerim', '');
-    var filters = [['all', 'Tümü'], ['waiting', 'Bekleyen'], ['active', 'Yolda (Aktif)'], ['delivered', 'Teslim Edilen']];
+    var filters = [['all', 'Tümü'], ['waiting', 'Bekleyen'], ['active', 'Yolda (Aktif)'], ['delivered', 'Teslim Edilen'], ['unpaid', 'Ödeme Alınmadı']];
     var main = $('mn');
     var items = (S.restItems && S.restItems.items) || [];
     main.innerHTML = '<div class="seg four">' + filters.map(function (f) {

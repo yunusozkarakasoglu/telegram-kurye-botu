@@ -399,6 +399,7 @@
       if (what === 'mesaj') return req('POST', '/api/yonetim/mesaj', arg || {});
       if (what === 'mesajlar') return req('GET', '/api/yonetim/mesajlar');
       if (what === 'kuryePaketler') return req('GET', '/api/yonetim/kurye-paketler?courier=' + encodeURIComponent(arg && arg.courier || 0));
+      if (what === 'odemeler') return req('GET', '/api/yonetim/odemeler');
       if (what === 'kuryeAta') return req('POST', '/api/yonetim/ata', arg || {});
       if (what === 'bildirimTemizle') return req('POST', '/api/bildirimler/temizle');
       if (what === 'temizle') return req('POST', '/api/yonetim/temizle', arg || {});

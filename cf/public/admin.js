@@ -12,7 +12,7 @@
     ['ozet', 'Özet'], ['havuz', 'Havuz'], ['sontalepler', 'Son Talepler'],
     ['limit', 'Kurye Paket Limiti'], ['tarife', 'Ücret Tarifesi'], ['bolgeler', 'Bölgeler'],
     ['restoranlar', 'Restoranlar'], ['kuryeler', 'Kuryeler'], ['iptaller', 'İptal Siparişler'],
-    ['kuryedurum', 'Kurye Durumu'], ['rapor', 'Raporlar'], ['mesaj', 'Mesaj']
+    ['kuryedurum', 'Kurye Durumu'], ['rapor', 'Raporlar'], ['odemeler', 'Ödemeler'], ['mesaj', 'Mesaj']
   ];
 
   function head(t, s) { $('adm-title').textContent = t; $('adm-sub').textContent = s || ''; }
@@ -518,6 +518,62 @@
     });
   }
 
+  function viewOdemeler() {
+    head('Ödemeler', 'Tahsil edilmemiş siparişler');
+    function load(refresh) {
+      API.yonetim('odemeler').then(function (d) {
+        var all = d.items || [], q = '', group = '';
+        function draw() {
+          var rows = all.filter(function (x) {
+            if (!q) return true;
+            return (x.restaurant || '').toLocaleLowerCase('tr').indexOf(q) >= 0 ||
+              (x.courier_name || '').toLocaleLowerCase('tr').indexOf(q) >= 0;
+          });
+          var sum = rows.reduce(function (t, x) { return t + (x.courier_fee || 0); }, 0);
+          function rowHtml(x) {
+            return '<tr><td>' + dt(new Date(x.delivered_at * 1000).toISOString()) + '</td>' +
+              '<td>' + esc(x.restaurant) + '</td><td>' + esc(x.courier_name || '—') + '</td>' +
+              '<td class="num">' + money(x.courier_fee || 0) + '</td></tr>';
+          }
+          var table;
+          if (!group) {
+            table = '<table class="tbl"><thead><tr><th>Tarih</th><th>Restoran</th><th>Kurye</th><th class="num">Ödeme tutarı</th></tr></thead><tbody>' +
+              (rows.map(rowHtml).join('') || '<tr><td colspan="4">Ödenmemiş sipariş yok</td></tr>') + '</tbody></table>';
+          } else {
+            var key = group === 'restaurant' ? 'restaurant' : 'courier_name';
+            var g = {};
+            rows.forEach(function (x) { var k = x[key] || '—'; (g[k] = g[k] || []).push(x); });
+            table = Object.keys(g).sort().map(function (k) {
+              var arr = g[k];
+              var t = arr.reduce(function (s2, x) { return s2 + (x.courier_fee || 0); }, 0);
+              return '<h3 style="font-size:14px;margin:14px 0 6px">' + esc(k) + ' · ' + arr.length + ' paket · ' + money(t) + '</h3>' +
+                '<table class="tbl"><thead><tr><th>Tarih</th><th>Restoran</th><th>Kurye</th><th class="num">Ödeme tutarı</th></tr></thead><tbody>' +
+                arr.map(rowHtml).join('') + '</tbody></table>';
+            }).join('') || '<div class="empty">Ödenmemiş sipariş yok</div>';
+          }
+          panel('<div class="filters" style="margin-bottom:8px"><input id="oq" placeholder="Restoran veya kurye ara…">' +
+            '<button class="sm ' + (group === 'restaurant' ? 'p' : '') + '" data-og2="restaurant">Restorana göre</button>' +
+            '<button class="sm ' + (group === 'courier' ? 'p' : '') + '" data-og2="courier">Kuryeye göre</button>' +
+            '<button class="p" id="od-ref" style="padding:10px 16px">↻ Yenile</button></div>' +
+            '<p class="note">Toplam tahsil edilmemiş: <b>' + money(sum) + '</b> · ' + rows.length + ' paket</p>' + table);
+          $('oq').value = q;
+          $('oq').oninput = function () { q = ($('oq').value || '').toLocaleLowerCase('tr'); draw(); };
+          $('od-ref').onclick = function () { this.disabled = true; this.textContent = 'Yükleniyor…'; load(true); };
+          Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-og2]'), function (b) {
+            b.onclick = function () {
+              var gk = b.getAttribute('data-og2');
+              group = group === gk ? '' : gk;
+              draw();
+            };
+          });
+        }
+        draw();
+        if (refresh) UI.toast('Güncellendi', 'success');
+      }).catch(showError);
+    }
+    load(false);
+  }
+
   function viewMesaj() {
     head('Mesaj', 'Kurye ve restoranlara toplu bildirim');
     panel('<div class="fld"><label>Kime</label><select id="m-role"><option value="kurye">Kuryeler</option><option value="restoran">Restoranlar</option></select></div>' +
@@ -605,7 +661,7 @@
     ({
       ozet: viewOzet, havuz: viewHavuz, kuryeler: viewKuryeler, restoranlar: viewRestoranlar,
       bolgeler: viewBolgeler, tarife: viewTarife, rapor: viewRapor, iptaller: viewIptaller,
-      limit: viewLimit, sontalepler: viewSonTalepler, kuryedurum: viewKuryeDurum, mesaj: viewMesaj
+      limit: viewLimit, sontalepler: viewSonTalepler, kuryedurum: viewKuryeDurum, mesaj: viewMesaj, odemeler: viewOdemeler
     })[view]();
   }
 
