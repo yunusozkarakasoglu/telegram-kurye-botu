@@ -426,3 +426,5 @@ textarea{width:100%;font:inherit;font-size:15px;padding:10px 12px;border:1px sol
 #rf-clear-page{flex:0 0 104px;color:var(--er);border-color:var(--er)}
 #ovl .seg button{border:1px solid var(--ln);background:transparent}
 #ovl .seg button.on{border-color:var(--ac)}
+
+.seg.two{grid-template-columns:repeat(2,minmax(0,1fr));display:grid}

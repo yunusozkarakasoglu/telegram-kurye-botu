@@ -810,11 +810,12 @@
       if (f.to && p.created_at && p.created_at > f.to) return false;
       if (f.status) {
         var s = String(p.status || '');
-        if (f.status === 'havuz' && !/Havuz|Bekliyor/i.test(s)) return false;
-        if (f.status === 'kabul' && !/Kabul/i.test(s)) return false;
-        if (f.status === 'alindi' && (!p.picked_up_at || p.delivered_at)) return false;
-        if (f.status === 'teslim' && !p.delivered_at) return false;
-        if (f.status === 'iptal' && !p.cancelled_at) return false;
+        if (f.status === 'havuz' && !/Havuzda bekliyor/i.test(s)) return false;
+        if (f.status === 'kabul' && s !== 'Kabul edildi') return false;
+        if (f.status === 'aktarim' && !/Aktarım onayı/i.test(s)) return false;
+        if (f.status === 'yolda' && !/Yolda|Kuryede/i.test(s)) return false;
+        if (f.status === 'teslim' && s !== 'Teslim edildi') return false;
+        if (f.status === 'iptal' && s !== 'İptal edildi') return false;
       }
       if (f.pay === 'var' && p.payment_received !== true) return false;
       if (f.pay === 'yok' && p.payment_received !== false) return false;
@@ -844,8 +845,9 @@
         '<div class="fld"><label>Başlangıç</label><input id="rf-from" type="date" value="' + iso(start) + '"></div>' +
         '<div class="fld"><label>Bitiş</label><input id="rf-to" type="date" value="' + iso(end) + '"></div>' +
       '</div>' +
-      '<div class="fld"><label>Durum</label><div class="seg four">' +
-        [['', 'Tümü'], ['havuz', 'Havuz'], ['kabul', 'Kabul'], ['alindi', 'Teslim alındı'], ['teslim', 'Teslim edildi'], ['iptal', 'İptal']]
+      '<div class="fld"><label>Durum</label><div class="seg two">' +
+        [['havuz', 'Havuzda bekliyor'], ['kabul', 'Kabul edildi'], ['aktarim', 'Aktarım onayı bekleniyor'],
+         ['yolda', 'Kuryede / Yolda'], ['teslim', 'Teslim edildi'], ['iptal', 'İptal edildi']]
           .map(function (x) { return '<button data-st="' + x[0] + '" class="' + ((f.status || '') === x[0] ? 'on' : '') + '">' + x[1] + '</button>'; }).join('') +
       '</div></div>' +
       '<div class="fld"><label>Ödeme durumu</label><div class="seg four">' +
@@ -858,7 +860,10 @@
     Array.prototype.forEach.call(sh.querySelectorAll('[data-t],[data-st],[data-pay]'), function (b) {
       b.onclick = function () {
         if (b.hasAttribute('data-t')) pick.preset = b.getAttribute('data-t');
-        else if (b.hasAttribute('data-st')) pick.status = b.getAttribute('data-st');
+        else if (b.hasAttribute('data-st')) {
+          var v = b.getAttribute('data-st');
+          pick.status = pick.status === v ? '' : v;
+        }
         else pick.pay = b.getAttribute('data-pay');
         var group = b.parentElement;
         Array.prototype.forEach.call(group.children, function (x) { x.classList.remove('on'); });
