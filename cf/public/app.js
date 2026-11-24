@@ -753,7 +753,7 @@
 
   function renderRestPaketlerim() {
     setHeader('Paketlerim', '');
-    var filters = [['all', 'Tümü'], ['waiting', 'Bekleyen'], ['active', 'Yolda (Aktif)'], ['delivered', 'Teslim Edilen'], ['unpaid', 'Ödeme Alınmadı']];
+    var filters = [['all', 'Tümü'], ['waiting', 'Bekleyen'], ['active', 'Yolda (Aktif)'], ['delivered', 'Teslim Edilen']];
     var main = $('mn');
     var items = (S.restItems && S.restItems.items) || [];
     main.innerHTML = '<div class="seg four">' + filters.map(function (f) {
