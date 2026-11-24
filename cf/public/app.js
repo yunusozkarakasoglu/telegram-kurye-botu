@@ -381,9 +381,12 @@
     }
     setHeader('Geçmiş', items.length + ' kayıt');
     var main = $('mn');
-    var rseg = '<div class="seg four">' + [['today', 'Bugün'], ['yesterday', 'Dün'], ['all', 'Tümü']].map(function (r) {
-      return '<button data-r="' + r[0] + '" class="' + (!S.histDate && !S.histPay && S.histRange === r[0] ? 'on' : '') + '">' + r[1] + '</button>';
-    }).join('') + '<button data-paymode="1" class="' + (S.histPay ? 'on' : '') + '">Ödeme</button></div>' +
+    var rseg = '<div class="seg two">' +
+      '<button data-hmode="list" class="' + (!S.histPay ? 'on' : '') + '">Paketler</button>' +
+      '<button data-hmode="pay" class="' + (S.histPay ? 'on' : '') + '">Ödeme</button></div>' +
+      '<div class="seg three" style="margin-top:6px">' + [['today', 'Bugün'], ['yesterday', 'Dün'], ['all', 'Tümü']].map(function (r) {
+      return '<button data-r="' + r[0] + '" class="' + (!S.histDate && S.histRange === r[0] ? 'on' : '') + '">' + r[1] + '</button>';
+    }).join('') + '</div>' +
       '<div class="filters" style="margin-top:8px"><input type="date" id="hdate" value="' + esc(S.histDate) + '"></div>';
     if (S.histPay) {
       items = items.filter(function (p) { return p.delivered_at && !p.cancelled_at && p.payment_received !== true; });
@@ -401,8 +404,8 @@
         '<em>' + (p.fee_tl == null ? '' : money(p.fee_tl)) + '</em></button></div>';
     }).join('') + '</div>' : '<div class="empty"><b>Kayıt yok</b>Bu aralıkta tamamlanan/iptal edilen iş bulunmuyor.</div>';
     main.innerHTML = rseg + payBar + body;
-    Array.prototype.forEach.call(main.querySelectorAll('[data-paymode]'), function (b) {
-      b.onclick = function () { S.histPay = !S.histPay; render(); };
+    Array.prototype.forEach.call(main.querySelectorAll('[data-hmode]'), function (b) {
+      b.onclick = function () { S.histPay = b.getAttribute('data-hmode') === 'pay'; S.paySel = {}; render(); };
     });
     function selCount() { return Object.keys(S.paySel).filter(function (k) { return S.paySel[k]; }).length; }
     Array.prototype.forEach.call(main.querySelectorAll('[data-pay]'), function (c) {
