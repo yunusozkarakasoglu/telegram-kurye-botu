@@ -276,7 +276,7 @@
         '<dt>Ödeme</dt><dd>' + esc(p.payment || '—') + '</dd>' +
         '<dt>Yetkili</dt><dd>' + esc(p.restaurant_contact || '—') + '</dd>' +
         '<dt>Kabul</dt><dd>' + dt(p.accepted_at) + '</dd>' +
-        '<dt>Alım</dt><dd>' + dt(p.picked_at) + '</dd>' +
+        '<dt>Alım</dt><dd>' + dt(p.picked_up_at) + '</dd>' +
         '<dt>Teslim</dt><dd>' + dt(p.delivered_at) + '</dd>' +
         '<dt>Mesafe</dt><dd>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</dd>' +
         '<dt>Paket ücreti</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +

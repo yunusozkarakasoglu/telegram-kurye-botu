@@ -20,10 +20,13 @@
     return (Math.round(v * 10) / 10).toLocaleString('tr-TR') + ' km';
   }
 
-  function dt(iso) {
-    if (!iso) return '—';
-    var d = new Date(iso);
-    if (isNaN(d.getTime())) return '—';
+  function dt(value) {
+    if (value == null || value === '') return '—';
+    var d;
+    if (typeof value === 'number') d = new Date(value < 1e12 ? value * 1000 : value);
+    else if (/^\d+(\.\d+)?$/.test(String(value))) { var n = Number(value); d = new Date(n < 1e12 ? n * 1000 : n); }
+    else d = new Date(value);
+    if (!d || isNaN(d.getTime())) return '—';
     return d.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   }
 
