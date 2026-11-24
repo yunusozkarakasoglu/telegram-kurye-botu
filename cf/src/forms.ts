@@ -129,7 +129,7 @@ export async function submit(bot: Bot, chat: number, selected: (string | null)[]
   }
   await bot.db.batch(stmts);
   await bot.db.run("DELETE FROM drafts WHERE owner=?", chat);
-  const couriers = await bot.db.all<{ id: number }>("SELECT id FROM accounts WHERE role='kurye' AND online=1 AND locked=0 AND active=1 AND deleted=0");
+  const couriers = await bot.db.all<{ id: number }>("SELECT id FROM accounts WHERE role='kurye' AND online=1 AND locked=0 AND active=1 AND deleted=0 AND pin_ok_until > ?", bot.now());
   for (const c of couriers) {
     const rows = await bot.packages("p.batch=?", [batchId]);
     for (const row of rows) await bot.send(c.id, await (await import("./views")).details(bot.db, row, false), (await import("./pool")).cardMarkup(bot, row, "kurye"), "HTML");

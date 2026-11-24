@@ -46,5 +46,6 @@ export function pinSql(): string[] {
     "ALTER TABLE accounts ADD COLUMN pin_hash TEXT",
     "ALTER TABLE accounts ADD COLUMN pin_fail INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE accounts ADD COLUMN pin_lock REAL NOT NULL DEFAULT 0",
+    "ALTER TABLE accounts ADD COLUMN pin_ok_until REAL NOT NULL DEFAULT 0",
   ];
 }

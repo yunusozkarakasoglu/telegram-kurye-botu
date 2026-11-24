@@ -130,7 +130,8 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const pin = String(body.pin || "");
       if (!validPin(pin)) return fail("PIN 4 haneli olmalı.", 422, "invalid");
       const hash = await makePinHash(pin);
-      await env.DB.prepare("UPDATE accounts SET pin_hash=?, pin_fail=0, pin_lock=0 WHERE id=?").bind(hash, user.id).run();
+      await env.DB.prepare("UPDATE accounts SET pin_hash=?, pin_fail=0, pin_lock=0, pin_ok_until=?, online=CASE WHEN role='kurye' THEN 1 ELSE online END WHERE id=?")
+        .bind(hash, Math.floor(Date.now() / 1000) + 12 * 3600, user.id).run();
       const t = await pinToken(env, user.id);
       return json({ ok: true, ...t });
     }
@@ -141,7 +142,8 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const body = await readBody(request);
       const pin = String(body.pin || "");
       if (await checkPinHash(pin, user.pin_hash)) {
-        await env.DB.prepare("UPDATE accounts SET pin_fail=0, pin_lock=0 WHERE id=?").bind(user.id).run();
+        await env.DB.prepare("UPDATE accounts SET pin_fail=0, pin_lock=0, pin_ok_until=?, online=CASE WHEN role='kurye' THEN 1 ELSE online END WHERE id=?")
+          .bind(Math.floor(Date.now() / 1000) + 12 * 3600, user.id).run();
         const t = await pinToken(env, user.id);
         return json({ ok: true, ...t });
       }
@@ -163,6 +165,10 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
   try {
     // ---------- oturum ----------
     if (path === "/oturum" && method === "GET") {
+      if (originalRole !== "yonetici" && (user.pin_ok_until || 0) < Math.floor(Date.now() / 1000) && user.online) {
+        await env.DB.prepare("UPDATE accounts SET online=0 WHERE id=?").bind(user.id).run();
+        user = { ...user, online: 0 };
+      }
       const incomplete = originalRole !== "yonetici" && (!user.phone ||
         (user.role === "kurye" && !validFullName(user.name)) ||
         (user.role === "restoran" && (!user.contact_name || !user.phone)));

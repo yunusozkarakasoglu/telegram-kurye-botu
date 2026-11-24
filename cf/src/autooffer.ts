@@ -44,9 +44,9 @@ async function createOffers(bot: Bot) {
     const recent = await bot.db.first<{ c: number }>("SELECT max(created) AS c FROM auto_offers WHERE package=? AND created>?", pkg.id, bot.nowF() - AUTO_OFFER_RETRY);
     if (recent?.c) continue;
     const tried = new Set((await bot.db.all<{ courier: number }>("SELECT DISTINCT courier FROM auto_offers WHERE package=?", pkg.id)).map((r) => r.courier));
-    const eligible = (await bot.db.all<Account>(`SELECT * FROM accounts a WHERE a.role='kurye' AND a.online=1 AND a.locked=0
+    const eligible = (await bot.db.all<Account>(`SELECT * FROM accounts a WHERE a.role='kurye' AND a.online=1 AND a.locked=0 AND a.pin_ok_until > ?
       AND a.active=1 AND a.deleted=0 AND NOT EXISTS (SELECT 1 FROM packages p WHERE p.courier=a.id
-      AND p.delivered_at IS NULL AND p.cancelled_at IS NULL) ORDER BY a.name`)).filter((c) => !tried.has(c.id));
+      AND p.delivered_at IS NULL AND p.cancelled_at IS NULL) ORDER BY a.name`, bot.now())).filter((c) => !tried.has(c.id));
     if (!eligible.length) continue;
     const roundRow = await bot.db.first<{ r: number }>("SELECT coalesce(max(round),0)+1 AS r FROM auto_offers WHERE package=?", pkg.id);
     const round = roundRow?.r ?? 1;

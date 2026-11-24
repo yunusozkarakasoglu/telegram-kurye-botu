@@ -446,9 +446,9 @@ export async function chooseCourier(bot: Bot, user: Account, packageId: number, 
   if (user.role !== "yonetici") return "Bu işlem kullanılamıyor.";
   const pkg = await bot.db.first("SELECT 1 FROM packages WHERE id=? AND courier IS NULL AND cancelled_at IS NULL", packageId);
   if (!pkg) return "Bu paket artık açık değil.";
-  const couriers = await bot.db.all<Account>(`SELECT * FROM accounts a WHERE a.role='kurye' AND a.online=1 AND a.locked=0
+  const couriers = await bot.db.all<Account>(`SELECT * FROM accounts a WHERE a.role='kurye' AND a.online=1 AND a.locked=0 AND a.pin_ok_until > ?
     AND a.active=1 AND a.deleted=0 AND NOT EXISTS (SELECT 1 FROM packages p WHERE p.courier=a.id
-    AND p.delivered_at IS NULL AND p.cancelled_at IS NULL) ORDER BY a.name, a.id LIMIT 11 OFFSET ?`, page * 10);
+    AND p.delivered_at IS NULL AND p.cancelled_at IS NULL) ORDER BY a.name, a.id LIMIT 11 OFFSET ?`, bot.now(), page * 10);
   if (!couriers.length) return "Bu sayfada uygun kurye yok.";
   const buttons: any[] = couriers.slice(0, 10).map((c) => [[c.name, `give:${packageId}:${c.id}`]]);
   const nav: [string, string][] = [];

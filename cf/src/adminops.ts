@@ -123,6 +123,9 @@ export async function courierCommands(bot: Bot, user: Account, command: string, 
 }
 
 export async function setOnline(bot: Bot, user: Account, online: boolean): Promise<any> {
+  if (online && (user.pin_ok_until || 0) < Math.floor(Date.now() / 1000)) {
+    return "Çevrimiçi olmak için Mini App'e girip PIN ile giriş yapın.";
+  }
   await bot.db.run("UPDATE accounts SET online=? WHERE id=? AND role='kurye'", online ? 1 : 0, user.id);
   if (!online) {
     await bot.db.run("DELETE FROM reservations WHERE courier=?", user.id);
