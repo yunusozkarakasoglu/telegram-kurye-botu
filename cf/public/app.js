@@ -1398,7 +1398,7 @@
     $('nv').innerHTML = '';
     $('mn').innerHTML = '<div class="card" style="padding:14px">' +
       '<div class="fld"><label>Telefon</label><input id="lgphone" inputmode="tel" autocomplete="tel" placeholder="05xx xxx xx xx"></div>' +
-      '<div class="fld"><label>4 haneli PIN</label><input id="lgpin" inputmode="numeric" maxlength="4" type="password" autocomplete="current-password" placeholder="••••"></div>' +
+      '<div class="fld"><label>4 haneli PIN</label><div class="pinwrap"><input id="lgpin" inputmode="numeric" maxlength="4" type="password" autocomplete="current-password" placeholder="••••"><button type="button" class="eye" data-eye="lgpin">👁</button></div></div>' +
       '<div class="err" id="lgerr"></div>' +
       '<button class="p" id="lgok" style="width:100%">Giriş Yap</button>' +
       '<p class="note" style="margin-top:10px">Hesabınızın rolüne göre kurye, restoran veya yönetici paneli açılır.</p>' +
@@ -1419,6 +1419,14 @@
         location.href = sessionStorage.getItem('actAs') === 'kurye' ? '/?mode=courier' : '/';
       }).catch(function (e) { $('lgok').disabled = false; err.textContent = e.message || 'Giriş yapılamadı'; });
     };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-eye]'), function (b) {
+      b.onclick = function () {
+        var inp = document.getElementById(b.getAttribute('data-eye'));
+        if (!inp) return;
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+        b.textContent = inp.type === 'password' ? '👁' : '🙈';
+      };
+    });
     API.girisKullanicilar().then(function (r) {
       var box = $('lglistbox');
       var items = r.items || [];
