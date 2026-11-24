@@ -117,7 +117,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
   const method = request.method.toUpperCase();
 
   // PIN kurulumu/doğrulaması (kurye ve restoran için zorunlu ikinci adım)
-  if (originalRole !== "yonetici" && path !== "/oturum") {
+  if ((originalRole !== "yonetici" || actAsCourier) && path !== "/oturum") {
     for (const sql of pinSql()) { try { await env.DB.prepare(sql).run(); } catch {} }
     const fresh = (await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(user.id).first<Account>()) || user;
     user = fresh;
@@ -132,6 +132,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const hash = await makePinHash(pin);
       await env.DB.prepare("UPDATE accounts SET pin_hash=?, pin_fail=0, pin_lock=0, pin_ok_until=?, online=CASE WHEN role='kurye' THEN 1 ELSE online END WHERE id=?")
         .bind(hash, Math.floor(Date.now() / 1000) + 12 * 3600, user.id).run();
+      if (actAsCourier) await env.DB.prepare("UPDATE accounts SET online=1 WHERE id=?").bind(user.id).run();
       const t = await pinToken(env, user.id);
       return json({ ok: true, ...t });
     }
@@ -144,6 +145,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       if (await checkPinHash(pin, user.pin_hash)) {
         await env.DB.prepare("UPDATE accounts SET pin_fail=0, pin_lock=0, pin_ok_until=?, online=CASE WHEN role='kurye' THEN 1 ELSE online END WHERE id=?")
           .bind(Math.floor(Date.now() / 1000) + 12 * 3600, user.id).run();
+        if (actAsCourier) await env.DB.prepare("UPDATE accounts SET online=1 WHERE id=?").bind(user.id).run();
         const t = await pinToken(env, user.id);
         return json({ ok: true, ...t });
       }
@@ -162,6 +164,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const hash = await makePinHash(newPin);
       await env.DB.prepare("UPDATE accounts SET pin_hash=?, pin_fail=0, pin_lock=0, pin_ok_until=? WHERE id=?")
         .bind(hash, Math.floor(Date.now() / 1000) + 12 * 3600, user.id).run();
+      if (actAsCourier) await env.DB.prepare("UPDATE accounts SET online=1 WHERE id=?").bind(user.id).run();
       return json({ ok: true });
     }
     if (path.startsWith("/pin/")) return fail("Bulunamadı", 404, "not_found");

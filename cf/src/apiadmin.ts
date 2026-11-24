@@ -66,12 +66,12 @@ export async function adminRoutes(
   }
 
   if (path === "/yonetim/kuryeler" && method === "GET") {
-    const rows = await bot.db.all<Account>("SELECT * FROM accounts WHERE role='kurye' AND deleted=0 ORDER BY name");
+    const rows = await bot.db.all<Account>("SELECT * FROM accounts WHERE role IN ('kurye','yonetici') AND deleted=0 ORDER BY role DESC, name");
     const counts = await bot.db.all<{ courier: number; n: number }>(
       "SELECT courier, count(*) AS n FROM packages WHERE courier IS NOT NULL AND delivered_at IS NULL AND cancelled_at IS NULL GROUP BY courier");
     return json({
       couriers: rows.map((c) => ({
-        id: c.id, name: c.name, phone: c.phone || null, online: !!c.online, locked: !!c.locked,
+        id: c.id, name: c.name, phone: c.phone || null, online: !!c.online, locked: !!c.locked, is_admin: c.role === "yonetici",
         active: !!c.active, deleted: !!c.deleted,
         active_packages: counts.find((x) => x.courier === c.id)?.n ?? 0,
       })),
