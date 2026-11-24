@@ -1039,6 +1039,7 @@
 
   function boot() {
     API.init().then(function (s) {
+      if (s && s.role === 'yonetici') { location.replace('/admin' + location.hash); return; }
       if (s && s.need_register) { renderRegister(s); return; }
       if (s && s.incomplete) { renderIncomplete(s); return; }
       S.session = s;

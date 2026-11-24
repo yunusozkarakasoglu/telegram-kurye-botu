@@ -118,8 +118,9 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
   try {
     // ---------- oturum ----------
     if (path === "/oturum" && method === "GET") {
-      const incomplete = !user.phone || (user.role === "kurye" && !validFullName(user.name)) ||
-        (user.role === "restoran" && (!user.contact_name || !user.phone));
+      const incomplete = user.role !== "yonetici" && (!user.phone ||
+        (user.role === "kurye" && !validFullName(user.name)) ||
+        (user.role === "restoran" && (!user.contact_name || !user.phone)));
       return json({
         incomplete,
         role: user.role,
