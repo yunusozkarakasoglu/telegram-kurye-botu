@@ -241,6 +241,9 @@
       actions += '<button class="w" data-a="aktar" data-i="' + p.id + '">Aktar</button>' +
                  '<button class="d w" data-a="iptal" data-i="' + p.id + '">İptal et</button>';
     }
+    if (opts.pay && !cancelled && delivered && p.payment_received !== true) {
+      actions += '<button class="p w" data-a="odeme" data-i="' + p.id + '">Ödeme Aldım</button>';
+    }
     var warn = (S.kmPending && opts.own) ? '<div class="pk-warn">Km girişi bekleniyor. Önce km girişini tamamlayın.</div>' : '';
     return '<div class="pk">' +
       '<div class="pk-hd"><b>' + esc(p.restaurant) + '</b><em class="lb r">' + esc(p.region || '—') + '</em>' +
@@ -274,6 +277,13 @@
           else if (p) TG.map((p.restaurant || '') + ' ' + (p.region || ''));
         } else if (a === 'km') kmSheet(findPkg(id));
         else if (a === 'teslim') deliverConfirm(p);
+        else if (a === 'odeme') {
+          confirmSheet('#' + p.batch + '-' + p.number + ' için ödeme alındı olarak işaretlensin mi?', function () {
+            API.odeme([Number(id)], false).then(function () {
+              UI.closeSheet(); UI.toast('Ödeme alındı olarak kaydedildi', 'success'); refresh(true);
+            }).catch(function (e) { UI.toast(e.message || 'Kaydedilemedi', 'error'); });
+          });
+        }
  else if (a === 'aktar') transferSheet(findPkg(id));
         else if (a === 'iptal') cancelSheet(findPkg(id));
       };
@@ -433,7 +443,7 @@
       b.onclick = function () {
         var p = items.filter(function (x) { return String(x.id) === b.getAttribute('data-hopen'); })[0];
         if (!p) return;
-        var sh = UI.openSheet(pkgCard(p, {}), { onClose: function () { render(); } });
+        var sh = UI.openSheet(pkgCard(p, { pay: true }), { onClose: function () { render(); } });
         bindPkgActions(sh, [p]);
       };
     });
@@ -480,7 +490,7 @@
       b.onclick = function () {
         var p = items.filter(function (x) { return String(x.id) === b.getAttribute('data-kopen'); })[0];
         if (!p) return;
-        var sh = UI.openSheet(pkgCard(p, {}), { onClose: function () { renderKazanc(); } });
+        var sh = UI.openSheet(pkgCard(p, { pay: true }), { onClose: function () { renderKazanc(); } });
         bindPkgActions(sh, [p]);
       };
     });
