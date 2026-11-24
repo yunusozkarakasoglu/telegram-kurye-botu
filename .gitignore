@@ -12,3 +12,6 @@ cf/.wrangler/
 cf/package-lock.json
 .wrangler/
 .dev.vars
+
+cloudflare api token.txt
+*api token*.txt

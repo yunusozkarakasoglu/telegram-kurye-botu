@@ -70,6 +70,7 @@ Mantık dosyaları 300 satır altında tutulur. UI metinleri ve tekrar eden say�
 - Farklar: gönderim kuyruğu yerine doğrudan `sendMessage` (429 riski), tek kart yerine paket kartları.
 - Bildirim: `notifications` + `notif_targets` + `notif_read`; yönetici toplu mesajı hem Telegram hem 🔔; atamada `kind='assign'` → otomatik sarı popup + rozet.
 - Kayıt/davet: `invites` (ad/telefon/contact ön dolu olabilir) → `/api/kayit`; silinmiş hesap reaktivasyonu.
+- Yayın: `kurye.packonexpress.com` → zone hesabındaki `kurye-proxy` Worker → `telegram-kurye-botu...workers.dev` (DNS AAAA 100:: proxied + route).
 - Mini App admin paneli: 3 sütun ızgara + mobil hamburger, kart görünümleri, arama, bölge sıralama (▲▼), özet KPI + geciken sipariş atama, davet paylaş/kopyala.
 - Mini App kimlik: `initData` HMAC (Telegram yeni imzası **`signature` dahil**), 24 saat; süre dolunca istemci bir kez otomatik yeniler.
 - Ödeme: `payment_received` sütunu; API `/api/odeme` (tekil/çoklu/tümü), `/api/kazanc` paket listesi, `/yonetim/odemeler`.
