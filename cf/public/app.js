@@ -58,10 +58,10 @@
       var c = counts && counts[x[0]];
       return '<button class="' + (S.tab === x[0] ? 'on' : '') + '" data-p="' + x[0] + '"><i>' + x[1] + '</i>' + x[2] +
         (c ? '<em>' + c + '</em>' : '') + '</button>';
-    }).join('');
+    }).join('') + '<button class="nv-menu" id="nv-menu"><i>☰</i>Menü</button>';
     Array.prototype.forEach.call(nv.children, function (b) {
-      if (b.id === 'nv-ref') {
-        b.onclick = function () { hardReload(); };
+      if (b.id === 'nv-menu') {
+        b.onclick = function () { var d = $('drawer'), sc = $('dscrim'); if (d) d.hidden = false; if (sc) sc.hidden = false; };
         return;
       }
       b.onclick = function () { S.tab = b.getAttribute('data-p'); UI.closeSheet(); render(); refresh(false); };
@@ -1047,9 +1047,7 @@
     if (sc) sc.hidden = true;
   }
   function bindDrawer() {
-    var h = $('hmb'), d = $('drawer'), sc = $('dscrim');
-    if (!h || !d) return;
-    h.onclick = function () { d.hidden = false; if (sc) sc.hidden = false; };
+    var sc = $('dscrim');
     if (sc) sc.onclick = closeDrawer;
   }
 
