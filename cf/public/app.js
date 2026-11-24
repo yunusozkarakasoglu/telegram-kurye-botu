@@ -957,7 +957,7 @@
       '<button class="ico" id="hdr-ref" title="Yenile">↻</button>' +
       '<button class="ico" id="hdr-sys" title="Sistem">⚙</button>' +
       '<button class="ico" id="hdr-bell" title="Bildirimler">🔔' + (unread ? '<em>' + unread + '</em>' : '') + '</button>' +
-      ((S.session && S.session.can_admin) ? '<button class="ico" id="hdr-admin" title="Yönetici paneline dön">🛠</button>' : '') +
+      ((S.session && S.session.can_admin) ? '<button class="ico admin-btn" id="hdr-admin" title="Yönetici paneline dön">Admin</button>' : '') +
       '<button class="ico" id="hdr-prof" title="Profil">👤</button></span>';
     $('hdr-ref').onclick = hardReload;
     $('hdr-sys').onclick = function () { S.sistem = null; S.tab = 'sistem'; render(); };
