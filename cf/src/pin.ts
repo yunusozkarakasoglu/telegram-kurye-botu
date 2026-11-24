@@ -31,7 +31,7 @@ async function hmac(key: string, msg: string): Promise<string> {
   return hex(await crypto.subtle.sign("HMAC", k, enc.encode(msg)));
 }
 export async function pinToken(env: Env, account: number): Promise<{ token: string; exp: number }> {
-  const exp = Math.floor(Date.now() / 1000) + 12 * 3600;
+  const exp = Math.floor(Date.now() / 1000) + 24 * 3600;
   const sig = await hmac(env.BOT_TOKEN, `${account}:${exp}`);
   return { token: `${exp}.${sig}`, exp };
 }

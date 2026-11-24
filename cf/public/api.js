@@ -339,7 +339,7 @@
     }
     if (initData) h['X-Telegram-Init-Data'] = initData;
     if (actAs) h['X-Act-As'] = actAs;
-    var pin = sessionStorage.getItem('pinToken');
+    var pin = localStorage.getItem('pinToken') || sessionStorage.getItem('pinToken');
     if (pin) h['X-Pin-Token'] = pin;
     var t = sessionStorage.getItem('dev_auth');
     if (t) { h['X-Dev-Auth'] = t; h['X-Dev-Tg'] = sessionStorage.getItem('dev_tg') || ''; }
