@@ -173,7 +173,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         return result.ok ? json(result) : fail(result.error || "Kilometre kaydedilemedi.", 422, "invalid");
       }
       if (action === "teslim") {
-        const result = await apiCourier.deliver(bot, user, packageId);
+        const result = await apiCourier.deliver(bot, user, packageId, body.paid == null ? null : !!body.paid);
         return result.ok ? json(result) : fail(result.error || "İşlem tamamlanamadı.", 409, "conflict");
       }
       if (action === "iptal") {

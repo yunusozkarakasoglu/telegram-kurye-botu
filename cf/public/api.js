@@ -155,13 +155,14 @@
     });
   };
 
-  Mock.prototype.teslim = function (id) {
+  Mock.prototype.teslim = function (id, paid) {
     var self = this;
     return this.delay(function () {
       var p = self.packages.filter(function (x) { return x.id === Number(id); })[0];
       if (!p || p.courier_id !== self.me.id) return { ok: false, error: 'Bu paket size ait değil.' };
       if (!p.picked_up_at) return { ok: false, error: 'Önce paketi restorandan aldığınızı işaretleyin.' };
       p.delivered_at = Math.floor(Date.now() / 1000);
+      if (paid != null) p.payment_received = !!paid;
       p.status = 'Teslim edildi';
       return { ok: true };
     });
@@ -364,7 +365,7 @@
     havuz: function () { return req('GET', '/api/havuz'); },
     kabul: function (ids) { return req('POST', '/api/kabul', { ids: ids }); },
     kmGir: function (id, km) { return req('POST', '/api/paket/' + id + '/km', { km: km }); },
-    teslim: function (id) { return req('POST', '/api/paket/' + id + '/teslim'); },
+    teslim: function (id, paid) { return req('POST', '/api/paket/' + id + '/teslim', paid == null ? {} : { paid: !!paid }); },
     iptal: function (id, reason) { return req('POST', '/api/paket/' + id + '/iptal', { reason: reason }); },
     aktar: function (id, payload) { return req('POST', '/api/paket/' + id + '/aktar', payload || {}); },
     paketlerim: function () { return req('GET', '/api/paketlerim'); },

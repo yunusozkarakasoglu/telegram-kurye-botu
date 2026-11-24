@@ -22,6 +22,7 @@
     histView: (localStorage.getItem('histView') === 'card' ? 'card' : 'list'),
     histRange: 'today',
     histDate: '',
+    histPaid: 'all',
     kazancRange: 'today',
     kazancDate: '',
     sistemTab: 'fiyat',
@@ -253,6 +254,7 @@
         '<dt>Teslim</dt><dd>' + dt(p.delivered_at) + '</dd>' +
         '<dt>Mesafe</dt><dd>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</dd>' +
         '<dt>Paket ücreti</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +
+        '<dt>Ödeme (hakediş)</dt><dd>' + (p.payment_received === true ? 'Alındı' : p.payment_received === false ? 'Alınmadı' : '—') + '</dd>' +
         '<dt>Durum</dt><dd>' + esc(st.t) + '</dd>' +
         '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
       '</dl>' + (p.transfer_from ? '<p class="note">Aktarma bilgisi: önceki kurye ' + esc(p.transfer_from) + '</p>' : '') + warn + '</div>' +
@@ -281,22 +283,27 @@
       '<h2>Teslim onayı</h2>' +
       '<p><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) + '</b><br>' +
       (p.fee_tl == null ? '' : 'Kurye ücreti: <b>' + money(p.fee_tl) + '</b><br>') +
-      'Paketi teslim ettiğinizi onaylıyor musunuz?</p>' +
-      '<button class="p" id="dv-ok">Evet, teslim ettim</button>' +
-      '<button class="d" id="dv-no">Vazgeç</button>');
+      'Paketi teslim ettiniz. <b>Ödemeyi aldınız mı?</b></p>' +
+      '<button class="p" id="dv-paid">Evet, ödemeyi aldım</button>' +
+      '<button class="p" id="dv-unpaid" style="margin-top:6px;background:var(--t2)">Hayır, ödeme almadım</button>' +
+      '<button class="d" id="dv-no" style="margin-top:6px">Vazgeç</button>');
     sh.querySelector('#dv-no').onclick = function () { UI.closeSheet(); };
-    sh.querySelector('#dv-ok').onclick = function () {
-      sh.querySelector('#dv-ok').disabled = true;
-      API.teslim(p.id).then(function () {
+    function send(paid) {
+      sh.querySelector('#dv-paid').disabled = true;
+      sh.querySelector('#dv-unpaid').disabled = true;
+      API.teslim(p.id, paid).then(function () {
         UI.closeSheet();
         TG.haptic('success');
-        UI.toast('Teslim edildi', 'success');
+        UI.toast(paid ? 'Teslim edildi · ödeme alındı' : 'Teslim edildi · ödeme alınmadı', 'success');
         refresh(true);
       }).catch(function (e) {
-        sh.querySelector('#dv-ok').disabled = false;
+        sh.querySelector('#dv-paid').disabled = false;
+        sh.querySelector('#dv-unpaid').disabled = false;
         UI.toast(e.message || 'İşlem başarısız', 'error');
       });
-    };
+    }
+    sh.querySelector('#dv-paid').onclick = function () { send(true); };
+    sh.querySelector('#dv-unpaid').onclick = function () { send(false); };
   }
 
   function findPkg(id) {
@@ -366,12 +373,21 @@
       return '<button data-r="' + r[0] + '" class="' + (!S.histDate && S.histRange === r[0] ? 'on' : '') + '">' + r[1] + '</button>';
     }).join('') + '</div>' +
       '<div class="filters" style="margin-top:8px"><input type="date" id="hdate" value="' + esc(S.histDate) + '"></div>';
+    var paidSeg = '<div class="seg three" style="margin-top:6px">' + [['all', 'Tümü'], ['paid', 'Ödeme alındı'], ['unpaid', 'Ödeme alınmadı']].map(function (v) {
+      return '<button data-hp="' + v[0] + '" class="' + (S.histPaid === v[0] ? 'on' : '') + '">' + v[1] + '</button>';
+    }).join('') + '</div>';
+    if (S.histPaid !== 'all') {
+      items = items.filter(function (p) { return S.histPaid === 'paid' ? p.payment_received === true : p.payment_received === false; });
+    }
     var body = items.length ? '<div class="card">' + items.map(function (p) {
       return '<button class="prow" data-hopen="' + p.id + '"><span><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) + '</b>' +
         '<small>' + esc(p.region || '') + ' · ' + esc(p.status) + ' · ' + dt(p.delivered_at || p.cancelled_at) + '</small></span>' +
         '<em>' + (p.fee_tl == null ? '' : money(p.fee_tl)) + '</em></button>';
     }).join('') + '</div>' : '<div class="empty"><b>Kayıt yok</b>Bu aralıkta tamamlanan/iptal edilen iş bulunmuyor.</div>';
-    main.innerHTML = rseg + body;
+    main.innerHTML = rseg + paidSeg + body;
+    Array.prototype.forEach.call(main.querySelectorAll('[data-hp]'), function (b) {
+      b.onclick = function () { S.histPaid = b.getAttribute('data-hp'); render(); };
+    });
     Array.prototype.forEach.call(main.querySelectorAll('[data-r]'), function (b) {
       b.onclick = function () { S.histRange = b.getAttribute('data-r'); S.histDate = ''; render(); };
     });
@@ -626,6 +642,7 @@
         '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
         '<dt>Mesafe</dt><dd>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</dd>' +
         '<dt>Ücret</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +
+        '<dt>Ödeme (hakediş)</dt><dd>' + (p.payment_received === true ? 'Alındı' : p.payment_received === false ? 'Alınmadı' : '—') + '</dd>' +
         '</dl></div>' + (callBtn ? '<div class="pk-ft">' + callBtn + '</div>' : '') + '</div>';
     }).join('') : '<div class="empty"><b>Kayıt yok</b>Bu filtrede paket bulunmuyor.</div>');
     Array.prototype.forEach.call(main.querySelectorAll('button[data-f]'), function (b) {

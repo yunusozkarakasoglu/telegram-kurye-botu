@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS packages (
   id INTEGER PRIMARY KEY, batch INTEGER NOT NULL REFERENCES batches, number INTEGER NOT NULL,
   region TEXT NOT NULL, courier INTEGER REFERENCES accounts, payment TEXT,
   accepted_at INTEGER, picked_up_at INTEGER, delivered_at INTEGER,
-  distance_km TEXT, courier_fee INTEGER, incoming INTEGER NOT NULL DEFAULT 0,
+  distance_km TEXT, courier_fee INTEGER, incoming INTEGER NOT NULL DEFAULT 0, payment_received INTEGER,
   incoming_from INTEGER, incoming_at REAL, cancelled_at INTEGER,
   cancel_reason TEXT, cancel_note TEXT, cancelled_by INTEGER, UNIQUE(batch, number)
 );

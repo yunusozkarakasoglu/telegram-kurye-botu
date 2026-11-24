@@ -55,11 +55,12 @@ export async function setDistance(bot: Bot, user: Account, packageId: number, va
 }
 
 /** Teslim: teslim alma (picked_up_at) zorunlu, iptal ücret kuralı chat ile aynı. */
-export async function deliver(bot: Bot, user: Account, packageId: number) {
+export async function deliver(bot: Bot, user: Account, packageId: number, paid?: boolean | null) {
   const rows = await bot.packages("p.id=? AND p.courier=? AND p.cancelled_at IS NULL", [packageId, user.id]);
   if (!rows.length) return { ok: false, error: "Bu paket size ait değil." };
   if (rows[0].delivered_at) return { ok: false, error: "Bu paket zaten teslim edildi." };
   if (!rows[0].picked_up_at) return { ok: false, error: "Önce paketi restorandan aldığınızı işaretleyin." };
+  if (paid != null) await bot.db.run("UPDATE packages SET payment_received=? WHERE id=? AND courier=?", paid ? 1 : 0, packageId, user.id);
   await ops.advance(bot, user, packageId, "deliver");
   return { ok: true };
 }

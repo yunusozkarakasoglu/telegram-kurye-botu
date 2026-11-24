@@ -35,6 +35,7 @@ export function pkgDto(pkg: PackageRow, state: string) {
     fee_tl: pkg.courier_fee ?? null,
     status: state,
     incoming: !!pkg.incoming,
+    payment_received: pkg.payment_received == null ? null : !!pkg.payment_received,
     cancel_reason: pkg.cancel_reason || null,
     created_at: pkg.created_at ?? null,
     accepted_at: pkg.accepted_at ?? null,
