@@ -7,16 +7,20 @@
 <meta name="theme-color" content="#f4f5f7" id="mcolor">
 <title>Kurye Operasyon</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🛵</text></svg>">
-<link rel="stylesheet" href="styles.css?v=26">
+<link rel="stylesheet" href="styles.css?v=27">
 <script src="vendor/telegram-web-app.js"></script>
 </head>
 <body>
 <div class="app">
   <header>
     <h1 id="ttl">Kurye</h1>
-    <div id="who" hidden><i id="wdot"></i><span id="wname"></span><span id="wst"></span></div>
-    <div id="hdr-right"></div>
-    <p><span id="sub">Yükleniyor…</span> <span id="mode" class="badge"></span></p>
+    <div id="who" hidden><i id="wdot"></i><span id="wname"></span></div>
+    <div class="hstats">
+      <span id="pkb" hidden title="Bekleyen paket">📦<b id="pkn">0</b></span>
+      <i id="sysd" title="Sistem durumu"></i>
+      <div id="hdr-right"></div>
+    </div>
+    <p hidden><span id="sub"></span><span id="mode"></span></p>
   </header>
   <div class="dscrim" id="dscrim" hidden></div>
 <div class="drawer" id="drawer" hidden><nav id="drawer-nav"></nav></div>
@@ -28,9 +32,9 @@
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="ovl"></div>
-<script src="theme.js?v=26"></script>
-<script src="ui.js?v=26"></script>
-<script src="api.js?v=26"></script>
-<script src="app.js?v=26"></script>
+<script src="theme.js?v=27"></script>
+<script src="ui.js?v=27"></script>
+<script src="api.js?v=27"></script>
+<script src="app.js?v=27"></script>
 </body>
 </html>

@@ -59,8 +59,13 @@
     el.hidden = false;
     var st = u.busy ? 'busy' : (u.online ? 'online' : 'offline');
     el.className = 'who ' + st;
-    $('wname').textContent = u.name || '';
-    $('wst').textContent = st === 'busy' ? ('Meşgul' + (u.busy_reason ? ' · ' + u.busy_reason : '')) : st === 'online' ? 'Online' : 'Offline';
+    var parts = String(u.name || '').trim().split(/\s+/);
+    $('wname').textContent = parts.length > 1 ? parts[0] + ' ' + parts[parts.length - 1].charAt(0).toUpperCase() + '.' : (parts[0] || '');
+    el.title = st === 'busy' ? ('Meşgul' + (u.busy_reason ? ' · ' + u.busy_reason : '')) : st === 'online' ? 'Online' : 'Offline';
+    var pkb = $('pkb');
+    if (pkb) { pkb.hidden = false; $('pkn').textContent = String(S.pending || 0); }
+    var sd = $('sysd');
+    if (sd) { sd.className = (API.mode === 'real' && !API.lastError) ? 'ok' : 'err'; sd.title = sd.className === 'ok' ? 'Sistem çalışıyor' : 'Bağlantı sorunu'; }
   }
 
   function setHeader(title, sub) { $('ttl').textContent = title; $('sub').textContent = sub || ''; }
@@ -83,9 +88,11 @@
 
   /* ---------------- KURYE: HAVUZ ---------------- */
   function renderHavuz() {
+    S.pending = 0;
     var pool = S.pool || { packages: [] };
     var L = pool.packages.slice();
-    setHeader('Havuz', L.length + ' paket bekliyor');
+    S.pending = L.length;
+    setHeader('Havuz', '');
 
     var main = $('mn'), ctaEl = $('cta');
     if (!L.length) {

@@ -339,3 +339,12 @@ header{display:flex;align-items:center;gap:8px}
 #wname{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38vw}
 #wst{color:var(--t2);white-space:nowrap;font-size:11px}
 #who:not(.online):not(.busy) #wst{opacity:.75}
+
+.hstats{display:flex;align-items:center;gap:8px;margin-left:auto}
+#pkb{display:inline-flex;align-items:center;gap:2px;font-size:14px;font-weight:600}
+#pkb b{font-size:13px}
+#sysd{width:8px;height:8px;border-radius:50%;background:#1fa855;display:inline-block;flex:none}
+#sysd.err{background:#e5484d;box-shadow:0 0 0 3px rgba(229,72,77,.16)}
+#sysd.ok{box-shadow:0 0 0 3px rgba(31,168,85,.16)}
+#who{gap:5px}
+#wname{max-width:28vw;font-size:12px}
