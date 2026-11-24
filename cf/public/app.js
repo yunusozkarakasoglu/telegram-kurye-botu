@@ -996,7 +996,8 @@
     setHeader('Sistem', 'Fiyatlandırma · Restoranlar · Kuryeler · Bölgeler · v10');
     var main = $('mn');
     var admin = S.session && S.session.role === 'yonetici';
-    var seg = '<div class="seg four">' + [['fiyat', 'Fiyatlandırma'], ['restoran', 'Restoranlar'], ['kurye', 'Kuryeler'], ['bolge', 'Bölgeler'], ['log', 'Tanılama']].map(function (x) {
+    if (!admin) S.sistemTab = 'log';
+    var seg = '<div class="seg four">' + (admin ? [['fiyat', 'Fiyatlandırma'], ['restoran', 'Restoranlar'], ['kurye', 'Kuryeler'], ['bolge', 'Bölgeler'], ['log', 'Tanılama']] : [['log', 'Tanılama']]).map(function (x) {
       return '<button data-st="' + x[0] + '" class="' + (S.sistemTab === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
     }).join('') + '</div>';
     function bindSeg() {
