@@ -556,7 +556,7 @@
       err.textContent = '';
       var v = parseFloat(String(input.value).replace(',', '.'));
       if (!(v > 0)) { pv.innerHTML = ''; return; }
-      pv.innerHTML = '<p>Bu paketten alacağınız: <b>' + API.feePreview(tariff, v) + '</b></p>';
+      pv.innerHTML = '<p>Bu paketten alacağınız: <b>' + API.feePreview(tariff, v, base.extra_per_km) + '</b></p>';
     }
     input.oninput = calc;
     sh.querySelector('#kback').onclick = function () { UI.closeSheet(); };
