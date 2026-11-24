@@ -29,17 +29,21 @@
   }
   function nav() {
     var items = TABS.filter(function (t) { return MAIN.indexOf(t[0]) < 0; });
-    $('adm-nav').innerHTML = '<div class="mode-switch"><button id="mode-courier">Kurye</button><button class="on">Yönetici</button></div>' +
+    $('adm-nav').innerHTML =
       '<button class="' + (S.tab === 'anasayfa' ? 'on' : '') + '" data-t="anasayfa">Anasayfa</button>' +
       items.map(function (t) {
         return '<button class="' + (S.tab === t[0] ? 'on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</button>';
-      }).join('');
-    var mc = document.getElementById('mode-courier');
-    if (mc) mc.onclick = function () { location.href = '/?mode=courier'; };
+      }).join('') + '<button id="adm-logout" style="margin-top:6px;border-top:1px solid var(--ln)">⏻ Çıkış</button>';
     Array.prototype.forEach.call($('adm-nav').children, function (b) {
       if (!b.getAttribute || !b.getAttribute('data-t')) return;
       b.onclick = function () { S.tab = b.getAttribute('data-t'); render(); };
     });
+    var lo = document.getElementById('adm-logout');
+    if (lo) lo.onclick = function () {
+      localStorage.removeItem('loginToken'); localStorage.removeItem('loginTokenUser');
+      localStorage.removeItem('pinToken'); localStorage.removeItem('pinTokenUser');
+      location.replace('/');
+    };
   }
 
   function panel(html) { var el = $('adm-body'); el.innerHTML = html; return el; }

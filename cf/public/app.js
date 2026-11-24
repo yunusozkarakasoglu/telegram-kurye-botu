@@ -1191,7 +1191,6 @@
     h += '<button data-da="refresh"><i>↻</i>Yenile</button>';
     h += '<button data-dt="sistem" class="' + (S.tab === 'sistem' ? 'on' : '') + '"><i>⚙</i>Sistem</button>';
     h += '<button data-dt="profil" class="' + (S.tab === 'profil' ? 'on' : '') + '"><i>👤</i>Profil</button>';
-    if (S.session && S.session.can_admin) h += '<button data-da="admin"><i>🛠</i>Yönetici Paneli</button>';
     h += '<button data-da="logout"><i>⏻</i>Çıkış</button>';
     d.innerHTML = h;
     Array.prototype.forEach.call(d.querySelectorAll('[data-dt]'), function (b) {
@@ -1203,7 +1202,6 @@
         if (a === 'logout') { localStorage.removeItem('loginToken'); localStorage.removeItem('loginTokenUser'); localStorage.removeItem('pinToken'); localStorage.removeItem('pinTokenUser'); location.reload(); return; }
         closeDrawer();
         if (a === 'refresh') hardReload();
-        else if (a === 'admin') { API.setActAs(''); location.replace('/admin' + location.hash); }
       };
     });
   }
@@ -1415,8 +1413,8 @@
         localStorage.setItem('loginTokenUser', String(r.id));
         localStorage.removeItem('pinToken');
         localStorage.removeItem('pinTokenUser');
-        if (r.role === 'yonetici' && !sessionStorage.getItem('actAs')) { location.replace('/admin'); return; }
-        location.href = sessionStorage.getItem('actAs') === 'kurye' ? '/?mode=courier' : '/';
+        if (r.role === 'yonetici') { location.replace('/admin'); return; }
+        location.reload();
       }).catch(function (e) { $('lgok').disabled = false; err.textContent = e.message || 'Giriş yapılamadı'; });
     };
     Array.prototype.forEach.call(document.querySelectorAll('[data-eye]'), function (b) {
@@ -1437,20 +1435,17 @@
         var id = String(x.phone || x.id).replace(/\D/g, '').slice(-10);
         var label = x.role === 'yonetici' ? 'Yönetici' : x.role === 'restoran' ? 'Restoran' : 'Kurye';
         rows.push({ id: id, name: x.name, label: label });
-        if (x.role === 'yonetici') rows.push({ id: id, name: x.name, label: 'Yönetici / Kurye', as: 'kurye' });
       });
       box.innerHTML = '<div class="testlist">' + rows.map(function (x) {
-        return '<button data-phone="' + esc(x.id) + '" data-as="' + esc(x.as || '') + '"><b>' + esc(x.name) + ' <em>' + x.label + '</em></b>' +
+        return '<button data-phone="' + esc(x.id) + '"><b>' + esc(x.name) + ' <em>' + x.label + '</em></b>' +
           '<span>' + esc(x.id) + ' · PIN ' + esc(r.pin || '1234') + '</span></button>';
       }).join('') + '</div>';
       Array.prototype.forEach.call(box.querySelectorAll('[data-phone]'), function (b) {
         b.onclick = function () {
-          var as = b.getAttribute('data-as') || '';
           Array.prototype.forEach.call(box.querySelectorAll('[data-phone]'), function (x) { x.classList.remove('on'); });
           b.classList.add('on');
           $('lgphone').value = b.getAttribute('data-phone');
           $('lgpin').value = r.pin || '1234';
-          if (as) sessionStorage.setItem('actAs', as); else sessionStorage.removeItem('actAs');
           $('lgok').focus();
         };
       });
@@ -1483,13 +1478,10 @@
   }
 
   function boot() {
+    sessionStorage.removeItem('actAs');
     API.init().then(function (s) {
       if (API.mode === 'real' && !localStorage.getItem('loginToken')) { renderLogin(); return; }
       if (s && s.role === 'yonetici') { location.replace('/admin' + location.hash); return; }
-      if (s && s.can_admin) {
-        // yönetici hesabı kurye modunda: geri dönüş düğmesi
-        var hr0 = $('hdr-right');
-      }
       if (s && s.need_register) { renderRegister(s); return; }
       if (s && s.incomplete) { renderIncomplete(s); return; }
       if (API.mode === 'real' && !localStorage.getItem('loginToken') && s && s.role !== 'yonetici') { pinGate(s); return; }
