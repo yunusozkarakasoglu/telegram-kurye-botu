@@ -758,10 +758,11 @@
     (items.length ? items.map(function (p) {
       var callBtn = p.courier_name && p.courier_phone
         ? '<a class="btn" href="tel:' + esc(p.courier_phone) + '">Kuryeyi Ara</a>' : '';
-      return '<div class="pk"><div class="pk-hd"><b>' + esc(p.restaurant) + '</b>' + UI.statusTag(p.status) + '</div>' +
+      var mins = p.created_at ? Math.max(0, Math.floor((Date.now() / 1000 - p.created_at) / 60)) : null;
+      return '<div class="pk"><div class="pk-hd"><b>' + esc(p.status || '—') + '</b>' +
+        '<span class="ago">' + (mins == null ? '—' : mins + ' dk') + '</span></div>' +
         '<div class="pk-bd"><dl class="pk-fields">' +
         '<dt>Sipariş no</dt><dd>Talep #' + p.batch + '-' + p.number + '</dd>' +
-        '<dt>Yetkili</dt><dd>' + esc(p.restaurant_contact || '—') + '</dd>' +
         '<dt>Bölge</dt><dd>' + esc(p.region || '—') + '</dd>' +
         '<dt>Ödeme</dt><dd>' + esc(p.payment || '—') + '</dd>' +
         '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
