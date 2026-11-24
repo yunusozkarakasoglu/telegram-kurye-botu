@@ -6,13 +6,13 @@
   'use strict';
   var $ = UI.$, esc = UI.esc, money = UI.money, kmf = UI.km, dt = UI.dt;
 
-  var S = { tab: 'anasayfa', homeTab: 'ozet', data: {}, session: null, ozetGroup: '' };
+  var S = { tab: 'anasayfa', homeTab: 'ozet', kuryeTab: 'list', restTab: 'list', data: {}, session: null, ozetGroup: '' };
 
   var TABS = [
     ['ozet', 'Özet'], ['havuz', 'Havuz'], ['sontalepler', 'Son Talepler'],
     ['limit', 'Kurye Paket Limiti'], ['tarife', 'Ücret Tarifesi'], ['bolgeler', 'Bölgeler'],
     ['restoranlar', 'Restoranlar'], ['kuryeler', 'Kuryeler'], ['iptaller', 'İptal Siparişler'],
-    ['kuryedurum', 'Kurye Durumu'], ['rapor', 'Raporlar'], ['davet', 'Davet'], ['mesaj', 'Mesaj']
+    ['kuryedurum', 'Kurye Durumu'], ['rapor', 'Raporlar'], ['mesaj', 'Mesaj']
   ];
 
   function head(t, s) { $('adm-title').textContent = t; $('adm-sub').textContent = s || ''; }
@@ -174,6 +174,14 @@
 
   function viewKuryeler() {
     head('Kuryeler', 'Aktif/pasif yönetimi');
+    var kseg = '<div class="seg two"><button data-kt="list" class="' + (S.kuryeTab === 'list' ? 'on' : '') + '">Kuryeler</button>' +
+      '<button data-kt="davet" class="' + (S.kuryeTab === 'davet' ? 'on' : '') + '">Kurye Daveti</button></div>';
+    if (S.kuryeTab === 'davet') {
+      panel(kseg);
+      var kh = document.createElement('div'); kh.id = 'invite-host'; $('adm-body').appendChild(kh);
+      invitePane(kh, 'kurye');
+      return;
+    }
     API.yonetim('kuryeler').then(function (d) {
       var all = d.couriers || [];
       var filter = 'all', q = '';
@@ -196,10 +204,13 @@
             '<button class="sm d" data-acc="' + c.id + '" data-act="delete">Sil</button>' +
             (c.phone ? '<a class="tel big" href="tel:' + esc(c.phone) + '" title="Ara">📞</a>' : '') + '</div></div>';
         }).join('');
-        panel('<div class="filters"><input id="q" placeholder="İsim veya telefon ara…"><select id="f">' +
+        panel(kseg + '<div class="filters"><input id="q" placeholder="İsim veya telefon ara…"><select id="f">' +
           '<option value="all">Tümü</option><option value="online">Online</option><option value="offline">Offline</option>' +
           '<option value="active">Aktif</option><option value="passive">Pasif</option></select></div>' +
           '<div class="acards">' + (rows || '<div class="empty">Kayıt yok</div>') + '</div>');
+        Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-kt]'), function (bb) {
+          bb.onclick = function () { S.kuryeTab = bb.getAttribute('data-kt'); render(); };
+        });
         $('f').value = filter; $('q').value = q;
         $('f').onchange = function () { filter = $('f').value; draw(); };
         $('q').oninput = function () { q = ($('q').value || '').toLocaleLowerCase('tr'); draw(); };
@@ -211,6 +222,14 @@
 
   function viewRestoranlar() {
     head('Restoranlar', 'Hesap yönetimi');
+    var rseg = '<div class="seg two"><button data-rt2="list" class="' + (S.restTab === 'list' ? 'on' : '') + '">Restoranlar</button>' +
+      '<button data-rt2="davet" class="' + (S.restTab === 'davet' ? 'on' : '') + '">Restoran Daveti</button></div>';
+    if (S.restTab === 'davet') {
+      panel(rseg);
+      var rh = document.createElement('div'); rh.id = 'invite-host'; $('adm-body').appendChild(rh);
+      invitePane(rh, 'restoran');
+      return;
+    }
     API.yonetim('restoranlar').then(function (d) {
       var all = d.restaurants || [];
       var filter = 'all', q = '';
@@ -230,12 +249,15 @@
             '<button class="sm" data-acc="' + r.id + '" data-act="toggle">' + (r.active ? 'Pasif Yap' : 'Aktif Yap') + '</button>' +
             '<button class="sm d" data-acc="' + r.id + '" data-act="delete">Sil</button></div></div>';
         }).join('');
-        panel('<div class="filters"><input id="rq" placeholder="Restoran / yetkili / telefon ara…">' +
+        panel(rseg + '<div class="filters"><input id="rq" placeholder="Restoran / yetkili / telefon ara…">' +
           '<button class="sm ' + (filter === 'all' ? 'p' : '') + '" data-f="all">Tümü</button>' +
           '<button class="sm ' + (filter === 'active' ? 'p' : '') + '" data-f="active">Aktif</button>' +
           '<button class="sm ' + (filter === 'passive' ? 'p' : '') + '" data-f="passive">Pasif</button></div>' +
           '<div class="acards">' + (rows || '<div class="empty">Kayıt yok</div>') + '</div>' +
           '<p class="note">Pasif yapılan hesap giriş yapamaz; raporlar korunur (soft delete).</p>');
+        Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-rt2]'), function (bb) {
+          bb.onclick = function () { S.restTab = bb.getAttribute('data-rt2'); render(); };
+        });
         $('rq').value = q;
         $('rq').oninput = function () { q = ($('rq').value || '').toLocaleLowerCase('tr'); draw(); };
         Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-f]'), function (b) {
@@ -533,35 +555,31 @@
     };
   }
 
-  function viewDavet() {
-    head('Davet', 'Kurye / restoran daveti oluştur');
-    panel('<div class="fld"><label>Kime</label><select id="d-role"><option value="kurye">Kurye</option><option value="restoran">Restoran</option></select></div>' +
-      '<div class="fld"><label id="d-nl">Ad Soyad</label><input id="d-name" placeholder="Ahmet Yılmaz"></div>' +
-      '<div class="fld" id="d-cw" style="display:none"><label>Yetkili adı</label><input id="d-contact" placeholder="Ali Usta"></div>' +
-      '<div class="fld"><label>Telefon</label><input id="d-phone" inputmode="tel" placeholder="0546 208 99 00"></div>' +
-      '<button class="p" id="d-create">Davet Oluştur</button>' +
-      '<div id="d-out" style="margin-top:14px"></div>' +
-      '<p class="note">Ad ve telefon girilirse kurye linke tıklayınca doğrudan kaydolur; boş bırakılırsa kendi girer.</p>');
-    $('d-role').onchange = function () {
-      var r = $('d-role').value === 'restoran';
-      $('d-nl').textContent = r ? 'Restoran adı' : 'Ad Soyad';
-      $('d-cw').style.display = r ? '' : 'none';
-    };
-    $('d-create').onclick = function () {
-      var role = $('d-role').value;
-      API.yonetim('davet', { role: role === 'restoran' ? 'restoran' : 'kurye', name: $('d-name').value.trim(), phone: $('d-phone').value.trim(), contact_name: $('d-contact').value.trim() }).then(function (d) {
+  function invitePane(host, role) {
+    var isRest = role === 'restoran';
+    host.innerHTML = '<div class="fld"><label>' + (isRest ? 'Restoran adı' : 'Ad Soyad') + '</label>' +
+      '<input id="iv-name" placeholder="' + (isRest ? 'Lezzet Döner' : 'Ahmet Yılmaz') + '"></div>' +
+      (isRest ? '<div class="fld"><label>Yetkili adı</label><input id="iv-contact" placeholder="Ali Usta"></div>' : '') +
+      '<div class="fld"><label>Telefon</label><input id="iv-phone" inputmode="tel" placeholder="0546 208 99 00"></div>' +
+      '<button class="p" id="iv-create">' + (isRest ? 'Restoran Daveti Oluştur' : 'Kurye Daveti Oluştur') + '</button>' +
+      '<div id="iv-out" style="margin-top:14px"></div>' +
+      '<p class="note">Ad ve telefon girilirse davet linkine tıklayan doğrudan kaydolur; boş bırakılırsa kendi girer.</p>';
+    host.querySelector('#iv-create').onclick = function () {
+      API.yonetim('davet', { role: role, name: host.querySelector('#iv-name').value.trim(),
+        phone: host.querySelector('#iv-phone').value.trim(),
+        contact_name: isRest ? host.querySelector('#iv-contact').value.trim() : '' }).then(function (d) {
         var link = d.url || ('https://t.me/YunusKuryePilot_4862_bot?startapp=' + (d.token || ''));
-        $('d-out').innerHTML = '<div class="fld"><label>Davet bağlantısı</label><input id="dk-link" readonly value="' + esc(link) + '"></div>' +
-          '<div class="fld"><label>Davet kodu</label><input id="dk-code" readonly value="' + esc(d.token || '') + '"></div>' +
-          '<div class="acts" style="gap:8px;flex-wrap:nowrap"><button class="p" id="dk-share" style="flex:1">Bağlantıyı Paylaş</button>' +
-          '<button class="p" id="dk-copy" style="flex:1">Kopyala</button></div>';
-        $('dk-share').onclick = function () {
+        host.querySelector('#iv-out').innerHTML = '<div class="fld"><label>Davet bağlantısı</label><input id="iv-link" readonly value="' + esc(link) + '"></div>' +
+          '<div class="fld"><label>Davet kodu</label><input id="iv-code" readonly value="' + esc(d.token || '') + '"></div>' +
+          '<div class="acts" style="gap:8px;flex-wrap:nowrap"><button class="p" id="iv-share" style="flex:1">Bağlantıyı Paylaş</button>' +
+          '<button class="p" id="iv-copy" style="flex:1">Kopyala</button></div>';
+        host.querySelector('#iv-share').onclick = function () {
           var text = 'Kurye Paket Bot daveti: ' + link;
           if (navigator.share) { navigator.share({ title: 'Kurye Paket daveti', text: text, url: link }).catch(function () {}); return; }
           var u = 'https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent('Kurye Paket daveti');
           if (window.TG && TG.openLink) TG.openLink(u); else window.open(u, '_blank');
         };
-        $('dk-copy').onclick = function () {
+        host.querySelector('#iv-copy').onclick = function () {
           var msg = 'Kurye Paket Bot sistemine kayıt olmak için verilen linkteki bağlantıdan ulaşabilirsiniz.\n' +
             'Bağlantı Linki : ' + link + '\n\n' +
             'Sistem sizden ilk kayıt için ad soyad ve telefon bilgileri isteyecektir.';
@@ -580,7 +598,7 @@
     if (S.tab === 'anasayfa' && renderTabs) { /* tabs already rendered */ }
     ({
       ozet: viewOzet, havuz: viewHavuz, kuryeler: viewKuryeler, restoranlar: viewRestoranlar,
-      bolgeler: viewBolgeler, tarife: viewTarife, rapor: viewRapor, iptaller: viewIptaller, davet: viewDavet,
+      bolgeler: viewBolgeler, tarife: viewTarife, rapor: viewRapor, iptaller: viewIptaller,
       limit: viewLimit, sontalepler: viewSonTalepler, kuryedurum: viewKuryeDurum, mesaj: viewMesaj
     })[view]();
   }
