@@ -394,6 +394,7 @@
     pinDurum: function () { return req('GET', '/api/pin/durum'); },
     pinOlustur: function (pin) { return req('POST', '/api/pin/olustur', { pin: pin }); },
     pinDogrula: function (pin) { return req('POST', '/api/pin/dogrula', { pin: pin }); },
+    pinDegistir: function (oldPin, newPin) { return req('POST', '/api/pin/degistir', { old_pin: oldPin, new_pin: newPin }); },
     aktarimKuryeler: function () { return req('GET', '/api/aktarim/kuryeler'); },
     aktarimTeklifler: function () { return req('GET', '/api/aktarim/teklifler'); },
     aktarimKarar: function (token, kabul) { return req('POST', '/api/aktarim/' + token + (kabul ? '/kabul' : '/reddet')); },
@@ -459,7 +460,7 @@
     }
   };
   ['oturum', 'havuz', 'kabul', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
-    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'pinDurum', 'pinOlustur', 'pinDogrula', 'yonetim'].forEach(function (m) {
+    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);
         var target = mode === 'real' ? real : mock;

@@ -152,6 +152,18 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       await env.DB.prepare("UPDATE accounts SET pin_fail=?, pin_lock=? WHERE id=?").bind(fails, lock, user.id).run();
       return fail(fails >= 3 ? "3 hatalı deneme. 5 dakika kilitlendi." : `Hatalı PIN. Kalan deneme: ${3 - fails}`, 401, "wrong_pin");
     }
+    if (path === "/pin/degistir" && method === "POST") {
+      if (!user.pin_hash) return fail("Önce PIN oluşturun.", 409, "pin_setup");
+      const body = await readBody(request);
+      const oldPin = String(body.old_pin || "");
+      const newPin = String(body.new_pin || "");
+      if (!validPin(newPin)) return fail("Yeni PIN 4 haneli olmalı.", 422, "invalid");
+      if (!(await checkPinHash(oldPin, user.pin_hash))) return fail("Mevcut PIN hatalı.", 401, "wrong_pin");
+      const hash = await makePinHash(newPin);
+      await env.DB.prepare("UPDATE accounts SET pin_hash=?, pin_fail=0, pin_lock=0, pin_ok_until=? WHERE id=?")
+        .bind(hash, Math.floor(Date.now() / 1000) + 12 * 3600, user.id).run();
+      return json({ ok: true });
+    }
     if (path.startsWith("/pin/")) return fail("Bulunamadı", 404, "not_found");
     if (!user.pin_hash) return fail("PIN oluşturmanız gerekiyor.", 403, "pin_setup");
     if (!(await validPinToken(env, user.id, request.headers.get("x-pin-token") || ""))) {

@@ -24,6 +24,7 @@
     histDate: '',
     histPay: false,
     paySel: {},
+    pinEdit: false,
     kazancRange: 'today',
     kazancDate: '',
     kazancPaid: 'all',
@@ -743,15 +744,46 @@
         (isRest ? '<dt>Yetkili</dt><dd>' + esc(u.contact_name || '—') + '</dd>' : '') +
         '<dt>Telefon</dt><dd>' + esc(u.phone || '—') + '</dd>' +
         '</dl>';
+    var pinSection = '<div class="pinset" style="border-top:1px solid var(--ln);margin-top:12px;padding-top:10px">' +
+      (S.pinEdit
+        ? '<div class="fld"><label>Mevcut PIN</label><div class="pinwrap"><input id="po" type="password" inputmode="numeric" maxlength="4"><button type="button" class="eye" data-eye="po">👁</button></div></div>' +
+          '<div class="fld"><label>Yeni PIN</label><div class="pinwrap"><input id="pn" type="password" inputmode="numeric" maxlength="4"><button type="button" class="eye" data-eye="pn">👁</button></div></div>' +
+          '<div class="fld"><label>Yeni PIN (tekrar)</label><div class="pinwrap"><input id="pn2" type="password" inputmode="numeric" maxlength="4"><button type="button" class="eye" data-eye="pn2">👁</button></div></div>' +
+          '<div class="err" id="pinerr"></div>' +
+          '<div class="acts"><button class="p sm" id="pin-save">Kaydet</button><button class="sm" id="pin-cancel">İptal</button></div>'
+        : '<div class="pinrow"><span>PIN: ••••</span><button class="sm" id="pin-edit">Düzenle</button></div>') +
+      '</div>';
     var sw = (!isRest ? '<label class="hdr-sw" style="margin-right:auto"><input type="checkbox" id="p-online"' + (u.online ? ' checked' : '') + '><span>' + (u.online ? 'Açık' : 'Kapalı') + '</span></label>' : '');
     var actionRow = '<div class="acts" style="margin-top:12px;align-items:center">' + sw +
       (editing
         ? '<button class="p sm" id="p-save">Kaydet</button><button class="sm" id="p-cancel">İptal</button>'
         : '<button class="sm" id="p-edit">Düzenle</button>') + '</div>';
-    main.innerHTML = '<div class="card oc" style="padding:12px">' + fields + actionRow + '</div>' +
+    main.innerHTML = '<div class="card oc" style="padding:12px">' + fields + pinSection + actionRow + '</div>' +
       (!isRest ? '<p class="note" style="padding:10px 4px">Kurye paket sınırı: <b>' + (((S.session || {}).settings || {}).limit || '—') +
         '</b> paket · Yönetici tarafından belirlenir.</p>' : '');
 
+    var pe = $('pin-edit');
+    if (pe) pe.onclick = function () { S.pinEdit = true; render(); };
+    var pc = $('pin-cancel');
+    if (pc) pc.onclick = function () { S.pinEdit = false; render(); };
+    var ps = $('pin-save');
+    if (ps) ps.onclick = function () {
+      var po = $('po').value.trim(), pn = $('pn').value.trim(), pn2 = $('pn2').value.trim(), perr = $('pinerr');
+      perr.textContent = '';
+      if (!/^\d{4}$/.test(pn)) { perr.textContent = 'Yeni PIN 4 haneli olmalı'; return; }
+      if (pn !== pn2) { perr.textContent = 'Yeni PIN’ler uyuşmuyor'; return; }
+      API.pinDegistir(po, pn).then(function () {
+        S.pinEdit = false; UI.toast('PIN güncellendi', 'success'); render();
+      }).catch(function (e) { perr.textContent = e.message || 'Güncellenemedi'; });
+    };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-eye]'), function (b) {
+      b.onclick = function () {
+        var inp = document.getElementById(b.getAttribute('data-eye'));
+        if (!inp) return;
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+        b.textContent = inp.type === 'password' ? '👁' : '🙈';
+      };
+    });
     if (editing) {
       $('p-save').onclick = function () {
         var body = { name: $('p-name').value.trim(), phone: $('p-phone').value.trim() };
