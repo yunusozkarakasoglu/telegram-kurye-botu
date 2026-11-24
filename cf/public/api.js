@@ -333,7 +333,11 @@
   function headers() {
     var h = { 'Content-Type': 'application/json' };
     var tg = window.TG && window.TG.app;
-    if (tg && tg.initData) h['X-Telegram-Init-Data'] = tg.initData;
+    var initData = (tg && tg.initData) || '';
+    if (!initData && location.hash) {
+      try { initData = new URLSearchParams(location.hash.replace(/^#/, '')).get('tgWebAppData') || ''; } catch (e) {}
+    }
+    if (initData) h['X-Telegram-Init-Data'] = initData;
     if (actAs) h['X-Act-As'] = actAs;
     var t = sessionStorage.getItem('dev_auth');
     if (t) { h['X-Dev-Auth'] = t; h['X-Dev-Tg'] = sessionStorage.getItem('dev_tg') || ''; }
