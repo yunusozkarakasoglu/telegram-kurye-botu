@@ -996,8 +996,7 @@
     setHeader('Sistem', 'Fiyatlandırma · Restoranlar · Kuryeler · Bölgeler · v10');
     var main = $('mn');
     var admin = S.session && S.session.role === 'yonetici';
-    if (!admin) S.sistemTab = 'log';
-    var seg = '<div class="seg four">' + (admin ? [['fiyat', 'Fiyatlandırma'], ['restoran', 'Restoranlar'], ['kurye', 'Kuryeler'], ['bolge', 'Bölgeler'], ['log', 'Tanılama']] : [['log', 'Tanılama']]).map(function (x) {
+    var seg = '<div class="seg four">' + (admin ? [['fiyat', 'Fiyatlandırma'], ['restoran', 'Restoranlar'], ['kurye', 'Kuryeler'], ['bolge', 'Bölgeler'], ['log', 'Tanılama']] : [['fiyat', 'Fiyatlandırma'], ['log', 'Tanılama']]).map(function (x) {
       return '<button data-st="' + x[0] + '" class="' + (S.sistemTab === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
     }).join('') + '</div>';
     function bindSeg() {
@@ -1009,8 +1008,9 @@
       var d = S.sistem;
       if (!d) { main.innerHTML = seg + '<div class="empty">Yükleniyor…</div>'; bindSeg(); return; }
       var body = '';
+      var st = d.settings || {};
       if (S.sistemTab === 'fiyat') {
-        var st = d.settings || {}, tariff = st.tariff || [], labels = st.tariff_intervals || [];
+        var tariff = st.tariff || [], labels = st.tariff_intervals || [];
         body = '<div class="card" style="padding:12px"><b>Mesafe ücretleri (sabit)</b>' + tariff.map(function (v, i) {
           return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--ln);font-size:13px">' +
             '<span>' + esc(labels[i] || (i === 0 ? '0–3' : i + '. aralık')) + ' km</span><b>' + money(v) + '</b></div>';
@@ -1042,7 +1042,10 @@
             (admin ? '<button class="sm" data-editc="' + c.id + '">Düzenle</button>' : '') + '</span></div>';
         }).join('') : '<div class="empty">Kurye yok</div>') + '</div>';
       }
-      main.innerHTML = seg + body;
+      var hours = '<div class="card" style="padding:12px;margin-bottom:8px"><b>Çalışma saatleri</b>' +
+        '<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:14px"><span>Açılış</span><b>' + esc(st.open_time || '07:00') + '</b></div>' +
+        '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:14px"><span>Kapanış</span><b>' + esc(st.close_time || '22:00') + '</b></div></div>';
+      main.innerHTML = hours + seg + body;
       bindSeg();
       function editSheet(row, role) {
         var sh = UI.openSheet('<h2>' + (role === 'restoran' ? 'Restoran' : 'Kurye') + ' düzenle</h2>' +

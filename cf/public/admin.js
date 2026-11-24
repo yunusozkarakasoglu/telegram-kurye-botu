@@ -12,7 +12,7 @@
     ['ozet', 'Özet'], ['havuz', 'Havuz'], ['sontalepler', 'Son Talepler'],
     ['limit', 'Kurye Paket Limiti'], ['tarife', 'Ücret Tarifesi'], ['bolgeler', 'Bölgeler'],
     ['restoranlar', 'Restoranlar'], ['kuryeler', 'Kuryeler'], ['iptaller', 'İptal Siparişler'],
-    ['kuryedurum', 'Kurye Durumu'], ['rapor', 'Raporlar'], ['odemeler', 'Ödemeler'], ['mesaj', 'Mesaj']
+    ['kuryedurum', 'Kurye Durumu'], ['rapor', 'Raporlar'], ['odemeler', 'Ödemeler'], ['mesaj', 'Mesaj'], ['sistem', 'Sistem']
   ];
 
   function head(t, s) { $('adm-title').textContent = t; $('adm-sub').textContent = s || ''; }
@@ -438,6 +438,23 @@
     }).catch(showError);
   }
 
+  function viewSistem() {
+    head('Sistem', 'Çalışma saatleri');
+    API.yonetim('tarife').then(function (d) {
+      var s = d.settings || {};
+      panel('<div class="fld" style="max-width:240px"><label>Açılış saati</label>' +
+        '<input id="open" type="time" value="' + esc(s.open_time || "07:00") + '"></div>' +
+        '<div class="fld" style="max-width:240px"><label>Kapanış saati</label>' +
+        '<input id="close" type="time" value="' + esc(s.close_time || "22:00") + '"></div>' +
+        '<button class="p" id="ssave">Kaydet</button>');
+      $('ssave').onclick = function () {
+        API.yonetim('sistem', { open_time: $('open').value, close_time: $('close').value }).then(function () {
+          UI.toast('Çalışma saatleri kaydedildi', 'success');
+        }).catch(function (e) { UI.toast(e.message || 'Kaydedilemedi', 'error'); });
+      };
+    }).catch(showError);
+  }
+
   function viewSonTalepler() {
     head('Son Talepler', 'Son 30 talep');
     function load(refresh) {
@@ -684,7 +701,7 @@
     ({
       ozet: viewOzet, havuz: viewHavuz, kuryeler: viewKuryeler, restoranlar: viewRestoranlar,
       bolgeler: viewBolgeler, tarife: viewTarife, rapor: viewRapor, iptaller: viewIptaller,
-      limit: viewLimit, sontalepler: viewSonTalepler, kuryedurum: viewKuryeDurum, mesaj: viewMesaj, odemeler: viewOdemeler
+      limit: viewLimit, sontalepler: viewSonTalepler, kuryedurum: viewKuryeDurum, mesaj: viewMesaj, odemeler: viewOdemeler, sistem: viewSistem
     })[view]();
   }
 

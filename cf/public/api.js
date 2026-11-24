@@ -408,6 +408,7 @@
       if (what === 'hesap') return req('POST', '/api/yonetim/hesap', arg || {});
       if (what === 'hesapGuncelle') return req('POST', '/api/yonetim/hesap-guncelle', arg || {});
       if (what === 'limit') return req('PUT', '/api/yonetim/limit', arg || {});
+      if (what === 'sistem') return req('PUT', '/api/yonetim/sistem', arg || {});
       if (what === 'tarifeKaydet') return req('PUT', '/api/yonetim/tarife', arg || {});
       if (what === 'bolge') return req('POST', '/api/yonetim/bolge', arg || {});
       if (what === 'bolgeSirala') return req('POST', '/api/yonetim/bolge-sirala', arg || {});

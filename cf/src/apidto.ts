@@ -67,6 +67,10 @@ export async function statesFor(bot: Bot, pkgs: PackageRow[]): Promise<string[]>
 /** Yönetici tarafından yönetilen ayarlar (tarife, limit, bölgeler, gerekçeler). */
 export async function settings(bot: Bot) {
   const tariff = await bot.tariff();
+  const hour = async (key: string, fallback: string) => {
+    const row = await bot.db.first<{ value: string }>("SELECT value FROM settings WHERE key=?", key);
+    return row?.value || fallback;
+  };
   return {
     base_tl: tariff[0] ?? 0,
     tariff,
@@ -78,5 +82,7 @@ export async function settings(bot: Bot) {
     reasons: [...CANCEL_REASONS],
     max_packages: MAX_PACKAGES,
     priority_seconds: PRIORITY_SECONDS,
+    open_time: await hour("open_time", "07:00"),
+    close_time: await hour("close_time", "22:00"),
   };
 }

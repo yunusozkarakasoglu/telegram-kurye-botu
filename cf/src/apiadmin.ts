@@ -138,6 +138,17 @@ export async function adminRoutes(
     return json({ ok: true, message: typeof message === "string" ? message : "Atandı." });
   }
 
+  if (path === "/yonetim/sistem" && method === "PUT") {
+    const body = await readBody(request);
+    const ok = (v: unknown) => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v || ""));
+    const open = String(body.open_time || "");
+    const close = String(body.close_time || "");
+    if (!ok(open) || !ok(close)) return fail("Saat biçimi SS:DD olmalı (ör. 07:00).", 422, "invalid");
+    await bot.db.run("INSERT OR REPLACE INTO settings(key,value) VALUES ('open_time',?)", open);
+    await bot.db.run("INSERT OR REPLACE INTO settings(key,value) VALUES ('close_time',?)", close);
+    return json({ ok: true, open_time: open, close_time: close });
+  }
+
   if (path === "/yonetim/limit" && method === "PUT") {
     const body = await readBody(request);
     const limit = Number(body.limit);
