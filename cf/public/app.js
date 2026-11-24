@@ -38,7 +38,7 @@
   function curRole() { return S.session && S.session.role ? S.session.role : 'courier'; }
 
   function courierTabs() {
-    return [['havuz', '▤', 'Havuz'], ['paketlerim', '✓', 'Açık Paketler'], ['gecmis', '◷', 'Geçmiş'], ['kazanc', '₺', 'Kazanç']];
+    return [['havuz', '▤', 'Havuz'], ['paketlerim', '✓', 'Açık Paketler'], ['gecmis', '◷', 'Geçmiş']];
   }
   function restaurantTabs() {
     return [['talep', '＋', 'Talep Ver'], ['paketlerim', '▤', 'Paketlerim']];
@@ -1020,6 +1020,7 @@
     if (!d) return;
     var role = curRole();
     var pages = role === 'restoran' ? restaurantTabs() : courierTabs();
+    if (role !== 'restoran') pages = pages.concat([['kazanc', '₺', 'Kazanç']]);
     var h = '<h3>Sayfalar</h3>' + pages.map(function (p) {
       return '<button data-dt="' + p[0] + '" class="' + (S.tab === p[0] ? 'on' : '') + '"><i>' + p[1] + '</i>' + p[2] + '</button>';
     }).join('');
