@@ -394,8 +394,6 @@
     bildirimTemizle: function () { return req('POST', '/api/bildirimler/temizle'); },
     odeme: function (ids, all) { return req('POST', '/api/odeme', { ids: ids || [], all: !!all }); },
     giris: function (phone, pin) { return req('POST', '/api/giris', { phone: phone, pin: pin }); },
-    girisBilgi: function (username, password) { return req('POST', '/api/giris-bilgi', { username: username, password: password }); },
-    girisKullanicilar: function () { return req('GET', '/api/giris/kullanicilar'); },
     pinDurum: function () { return req('GET', '/api/pin/durum'); },
     pinOlustur: function (pin) { return req('POST', '/api/pin/olustur', { pin: pin }); },
     pinDogrula: function (pin) { return req('POST', '/api/pin/dogrula', { pin: pin }); },
@@ -465,7 +463,7 @@
     }
   };
   ['oturum', 'havuz', 'kabul', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
-    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'girisBilgi', 'girisKullanicilar', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
+    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);
         var target = mode === 'real' ? real : mock;

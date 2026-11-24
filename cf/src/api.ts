@@ -24,22 +24,6 @@ async function readBody(request: Request): Promise<any> {
   }
 }
 
-async function ensureLogins(env: Env): Promise<void> {
-  for (const sql of [
-    "ALTER TABLE accounts ADD COLUMN username TEXT",
-    "ALTER TABLE accounts ADD COLUMN password TEXT",
-  ]) { try { await env.DB.prepare(sql).run(); } catch {} }
-  const missing = await env.DB.prepare("SELECT id,role,name FROM accounts WHERE username IS NULL OR password IS NULL").all<any>();
-  for (const a of missing.results || []) {
-    const slug = String(a.name || "kullanici").toLowerCase()
-      .replace(/[çğıöşü]/g, (c: string) => ({ "ç": "c", "ğ": "g", "ı": "i", "ö": "o", "ş": "s", "ü": "u" } as any)[c])
-      .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 20) || "kullanici";
-    const pref = a.role === "yonetici" ? "adm" : a.role === "restoran" ? "res" : "kur";
-    await env.DB.prepare("UPDATE accounts SET username=?, password=? WHERE id=?")
-      .bind(`${slug}-${a.id}`, `${pref}${String(a.id).slice(-4)}`, a.id).run();
-  }
-}
-
 export async function handleApi(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const bot = new Bot(env);
@@ -52,21 +36,6 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     return json({ ok: true });
   }
   bot.ignoreNotifyErrors = true; // Mini App akışında bildirim hatası isteği bozmasın.
-  if (url.pathname === "/api/giris/kullanicilar" && request.method === "GET") {
-    await ensureLogins(env);
-    const rows = await env.DB.prepare("SELECT id,role,name,username,password FROM accounts WHERE deleted=0 ORDER BY role DESC, name").all<any>();
-    return json({ items: rows.results || [] });
-  }
-  if (url.pathname === "/api/giris-bilgi" && request.method === "POST") {
-    const body = await readBody(request);
-    const username = String(body.username || "").trim().toLowerCase();
-    const password = String(body.password || "");
-    await ensureLogins(env);
-    const acc = await env.DB.prepare("SELECT * FROM accounts WHERE lower(username)=? AND password=? AND deleted=0 AND active=1").bind(username, password).first<Account>();
-    if (!acc) return fail("Kullanıcı adı veya şifre hatalı.", 401, "wrong_login");
-    const t = await loginToken(env, acc.id);
-    return json({ ok: true, token: t.token, exp: t.exp, role: acc.role, name: acc.name, id: acc.id });
-  }
   if (url.pathname === "/api/giris" && request.method === "POST") {
     const body = await readBody(request);
     const phone = String(body.phone || "").replace(/\D/g, "").slice(-10);

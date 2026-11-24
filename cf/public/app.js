@@ -1292,56 +1292,29 @@
   }
 
   function renderLogin() {
-    setHeader('Giriş', 'Kullanıcı adı ve şifre');
+    setHeader('Giriş', 'Telefon ve PIN');
     $('hdr-right').innerHTML = '';
     $('nv').innerHTML = '';
     $('mn').innerHTML = '<div class="card" style="padding:14px">' +
-      '<div class="fld"><label>Kullanıcı adı</label><input id="lguser" autocomplete="username" placeholder="kullanici-adi"></div>' +
-      '<div class="fld"><label>Şifre</label><input id="lgpass" type="password" autocomplete="current-password" placeholder="••••••"></div>' +
+      '<div class="fld"><label>Telefon</label><input id="lgphone" inputmode="tel" autocomplete="tel" placeholder="05xx xxx xx xx"></div>' +
+      '<div class="fld"><label>4 haneli PIN</label><input id="lgpin" inputmode="numeric" maxlength="4" type="password" autocomplete="current-password" placeholder="••••"></div>' +
       '<div class="err" id="lgerr"></div>' +
-      '<button class="p" id="lgok2" style="width:100%">Giriş Yap</button>' +
-      '<div class="orn">veya telefon + PIN</div>' +
-      '<div class="fld"><label>Telefon</label><input id="lgphone" inputmode="tel" placeholder="05xx xxx xx xx"></div>' +
-      '<div class="fld"><label>4 haneli PIN</label><input id="lgpin" inputmode="numeric" maxlength="4" type="password" placeholder="••••"></div>' +
-      '<button class="d" id="lgok" style="width:100%">Telefon ile Giriş</button>' +
-      '<button class="d" id="lglist" style="width:100%;margin-top:8px">Kayıtlı kullanıcılar (test)</button>' +
-      '<div id="lglistbox"></div></div>';
-    function go(r) {
-      localStorage.setItem('loginToken', r.token);
-      localStorage.setItem('loginTokenUser', String(r.id));
-      localStorage.removeItem('pinToken');
-      localStorage.removeItem('pinTokenUser');
-      if (r.role === 'yonetici') { location.replace('/admin'); return; }
-      location.reload();
-    }
-    $('lgok2').onclick = function () {
-      var u = ($('lguser').value || '').trim(), pw = ($('lgpass').value || ''), err = $('lgerr');
-      err.textContent = '';
-      if (!u || !pw) { err.textContent = 'Kullanıcı adı ve şifre girin'; return; }
-      $('lgok2').disabled = true;
-      API.girisBilgi(u, pw).then(go).catch(function (e) { $('lgok2').disabled = false; err.textContent = e.message || 'Giriş yapılamadı'; });
-    };
-    $('lglist').onclick = function () {
-      var box = $('lglistbox');
-      if (box.innerHTML) { box.innerHTML = ''; return; }
-      box.innerHTML = '<p class="note">Yükleniyor…</p>';
-      API.girisKullanicilar().then(function (r) {
-        box.innerHTML = '<div class="testlist">' + (r.items || []).map(function (x) {
-          return '<button data-u="' + esc(x.username) + '" data-p="' + esc(x.password) + '"><b>' + esc(x.name) + '</b>' +
-            '<span>' + esc(x.role) + ' · ' + esc(x.username) + ' · ' + esc(x.password) + '</span></button>';
-        }).join('') + '</div>';
-        Array.prototype.forEach.call(box.querySelectorAll('[data-u]'), function (b) {
-          b.onclick = function () { $('lguser').value = b.getAttribute('data-u'); $('lgpass').value = b.getAttribute('data-p'); $('lgok2').click(); };
-        });
-      }).catch(function (e) { box.innerHTML = '<p class="err">' + esc(e.message || 'Liste alınamadı') + '</p>'; });
-    };
+      '<button class="p" id="lgok" style="width:100%">Giriş Yap</button>' +
+      '<p class="note" style="margin-top:10px">Hesabınızın rolüne göre kurye, restoran veya yönetici paneli açılır. Yönetici hesabı, telefon yerine Telegram ID ile giriş yapabilir.</p></div>';
     $('lgok').onclick = function () {
       var phone = ($('lgphone').value || '').trim(), pin = ($('lgpin').value || '').trim(), err = $('lgerr');
       err.textContent = '';
       if (phone.replace(/\D/g, '').length < 10) { err.textContent = 'Telefon numarasını tam girin'; return; }
       if (!/^\d{4}$/.test(pin)) { err.textContent = 'PIN 4 haneli olmalı'; return; }
       $('lgok').disabled = true;
-      API.giris(phone, pin).then(go).catch(function (e) { $('lgok').disabled = false; err.textContent = e.message || 'Giriş yapılamadı'; });
+      API.giris(phone, pin).then(function (r) {
+        localStorage.setItem('loginToken', r.token);
+        localStorage.setItem('loginTokenUser', String(r.id));
+        localStorage.removeItem('pinToken');
+        localStorage.removeItem('pinTokenUser');
+        if (r.role === 'yonetici') { location.replace('/admin'); return; }
+        location.reload();
+      }).catch(function (e) { $('lgok').disabled = false; err.textContent = e.message || 'Giriş yapılamadı'; });
     };
   }
 
