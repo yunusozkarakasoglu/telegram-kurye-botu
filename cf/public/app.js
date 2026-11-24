@@ -1219,6 +1219,7 @@
     var role = curRole();
     if (role === 'restoran') {
       if (S.tab === 'talep') renderTalep();
+      else if (S.tab === 'sistem') renderSistem();
       else if (S.tab === 'profil') renderProfil();
       else renderRestPaketlerim();
       renderDrawer();
@@ -1360,8 +1361,8 @@
     $('nv').innerHTML = '';
     $('mn').innerHTML = '<div class="card" style="padding:14px">' +
       '<p class="note">Uygulamayı her açtığınızda sorulacak 4 haneli PIN belirleyin.</p>' +
-      '<div class="fld"><label>Yeni PIN</label><input id="pin1" inputmode="numeric" maxlength="4" type="password"></div>' +
-      '<div class="fld"><label>PIN (tekrar)</label><input id="pin2" inputmode="numeric" maxlength="4" type="password"></div>' +
+      '<div class="fld"><label>Yeni PIN</label><div class="pinwrap"><input id="pin1" inputmode="numeric" maxlength="4" type="password" placeholder="••••" autocomplete="new-password"><button type="button" class="eye" data-eye="pin1">👁</button></div></div>' +
+      '<div class="fld"><label>PIN (tekrar)</label><div class="pinwrap"><input id="pin2" inputmode="numeric" maxlength="4" type="password" placeholder="••••" autocomplete="new-password"><button type="button" class="eye" data-eye="pin2">👁</button></div></div>' +
       '<div class="err" id="pinerr"></div>' +
       '<button class="p" id="pinsave" style="width:100%">PIN Oluştur</button></div>';
     $('pinsave').onclick = function () {
@@ -1377,6 +1378,14 @@
         startSession(s);
       }).catch(function (e) { err.textContent = e.message || 'Oluşturulamadı'; });
     };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-eye]'), function (b) {
+      b.onclick = function () {
+        var inp = document.getElementById(b.getAttribute('data-eye'));
+        if (!inp) return;
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+        b.textContent = inp.type === 'password' ? '👁' : '🙈';
+      };
+    });
   }
 
   function renderLogin() {
