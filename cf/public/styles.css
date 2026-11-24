@@ -303,3 +303,9 @@ header{display:flex;align-items:center;gap:8px}
 
 #nv button{justify-content:flex-start;text-align:left}
 #nv .nv-menu{justify-content:center;text-align:center}
+
+/* alt menü: eşit aralık, ikon üstte etiket altta */
+#nv{display:flex;align-items:stretch;gap:0}
+#nv button{flex:1 1 0;justify-content:center;text-align:center;flex-direction:column;gap:2px;padding:6px 2px}
+#nv button i{font-style:normal;font-size:18px;line-height:1.1}
+#nv .nv-menu{margin-left:0;border-left:0}
