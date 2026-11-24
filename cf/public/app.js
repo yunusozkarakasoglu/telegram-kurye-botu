@@ -835,8 +835,10 @@
         '<button data-t="yesterday" class="' + (f.preset === 'yesterday' ? 'on' : '') + '">Dün</button>' +
         '<button data-t="range" class="' + (f.preset === 'range' ? 'on' : '') + '">Tarih aralığı</button>' +
       '</div></div>' +
-      '<div class="fld"><label>Başlangıç</label><input id="rf-from" type="date" value="' + iso(start) + '"></div>' +
-      '<div class="fld"><label>Bitiş</label><input id="rf-to" type="date" value="' + iso(end) + '"></div>' +
+      '<div id="rf-dates" style="display:' + ((f.preset || 'today') === 'range' ? 'block' : 'none') + '">' +
+        '<div class="fld"><label>Başlangıç</label><input id="rf-from" type="date" value="' + iso(start) + '"></div>' +
+        '<div class="fld"><label>Bitiş</label><input id="rf-to" type="date" value="' + iso(end) + '"></div>' +
+      '</div>' +
       '<div class="fld"><label>Durum</label><div class="seg four">' +
         [['', 'Tümü'], ['havuz', 'Havuz'], ['kabul', 'Kabul'], ['alindi', 'Teslim alındı'], ['teslim', 'Teslim edildi'], ['iptal', 'İptal']]
           .map(function (x) { return '<button data-st="' + x[0] + '" class="' + ((f.status || '') === x[0] ? 'on' : '') + '">' + x[1] + '</button>'; }).join('') +
@@ -860,6 +862,7 @@
           var d0 = pick.preset === 'yesterday' ? day(-1) : day(0);
           sh.querySelector('#rf-from').value = iso(d0);
           sh.querySelector('#rf-to').value = iso(d0);
+          sh.querySelector('#rf-dates').style.display = pick.preset === 'range' ? 'block' : 'none';
         }
       };
     });
