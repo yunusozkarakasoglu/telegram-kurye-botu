@@ -190,6 +190,14 @@ Kullanıcının **Bölgeler** ekranında tanımladığı listeden 4 bölge seçi
 - Silinmiş/pasif hesap davetle yeniden aktifleşir; davetsiz girişte mock yerine engel ekranı.
 - `startapp` kodu taşınmazsa `tgWebAppStartParam` yedeği ve elle kod girme var.
 
+### Ödeme takibi
+
+- Teslim onayında "Ödemeyi aldınız mı?" → `payment_received`.
+- Kurye Geçmiş: ödeme filtresi + checkbox ile tekil/çoklu/tümü "Ödeme Aldım" (onaylı).
+- Kurye Kazanç: dönem filtresi + 3 kart + sipariş listesi ve ödeme filtresi.
+- Restoran Paketlerim: "Ödeme Alınmadı" filtresi.
+- Yönetici ☰ → **Ödemeler**: tarih/restoran/kurye/tutar, restoran veya kurye gruplama, toplam tahsil edilmemiş.
+
 ### Yönetici paneli (tamam)
 
 - ☰ menüsünün başında **Anasayfa**; Alt sekmeler: **Özet · Havuz · Son Talepler**. Diğer sayfalar çekmecede.

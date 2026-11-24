@@ -72,6 +72,8 @@ Mantık dosyaları 300 satır altında tutulur. UI metinleri ve tekrar eden say�
 - Kayıt/davet: `invites` (ad/telefon/contact ön dolu olabilir) → `/api/kayit`; silinmiş hesap reaktivasyonu.
 - Mini App admin paneli: 3 sütun ızgara + mobil hamburger, kart görünümleri, arama, bölge sıralama (▲▼), özet KPI + geciken sipariş atama, davet paylaş/kopyala.
 - Mini App kimlik: `initData` HMAC (Telegram yeni imzası **`signature` dahil**), 24 saat; süre dolunca istemci bir kez otomatik yeniler.
+- Ödeme: `payment_received` sütunu; API `/api/odeme` (tekil/çoklu/tümü), `/api/kazanc` paket listesi, `/yonetim/odemeler`.
+- Rol geçişi: yönetici hesabı `X-Act-As: kurye` ile kurye uçlarını kullanır; `can_admin` ile geri dönüş.
 - Ücret: km aralığı başına **sabit ücret** (taban+kademe kaldırıldı).
 - Mini App katmanı: `auth.ts` (initData HMAC + `auth_date` 1 saat; `DEV_AUTH` yalnız yerelde) → `api.ts` yönlendirme → iş kuralları mevcut modüllerden (`accept`, `ops`, `forms`, `accept.adminGive`). Frontend vanilla JS (`public/`), Telegram SDK vendor'da; yönetici paneli `admin.html`.
 - Doğrulama: `tsc --noEmit` + canlı Telegram (yönetici ve kurye kaydı) + `/api/*` için 401/403 testleri.

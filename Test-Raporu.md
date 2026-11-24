@@ -148,6 +148,14 @@ Bilinen mesaj kimliğiyle yapılan güncellemeler çökme sonrası aynı mesajı
 - Kurye kartı **Paketler** popup'ı (aktif paket listesi) yerel testte çalıştı.
 - **382/382** Python testi, `ruff` ve `tsc` temiz.
 
+### Son doğrulama (ödeme + rol modu)
+
+- Yerel: teslim `{paid:false}` → `payment_received=0`; Geçmiş "Tümünü Ödeme Alındı" → 2 paket `true`.
+- Kazanç: 3 kart + ödeme filtresi + 2 sipariş.
+- Yönetici Ödemeler: "700 TL · 5 paket", restoran grupları.
+- Yönetici `X-Act-As: kurye` → `role:kurye, can_admin:true`; kurye UI + 🛠.
+- **382/382** Python, `ruff`/`tsc` temiz.
+
 ## Kanıtlar ve tekrar çalıştırma
 
 ```bash

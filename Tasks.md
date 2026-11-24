@@ -24,6 +24,9 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] Ödeme takibi: teslimde Evet/Hayır, geçmişte toplu "Ödeme Aldım", kazanç listesi+filtre, restoran ödenmemiş filtresi, yönetici **Ödemeler** (restoran/kurye gruplama).
+- [x] Yönetici **Kurye Modu** (aynı hesap) + 🛠 ile panele dönüş.
+- [x] Davet sekmeleri Kuryeler/Restoranlar içine taşındı; ☰ başında Anasayfa.
 - [x] ☰ başına **Anasayfa**; Özet/Havuz/Son Talepler onun alt sekmeleri.
 - [x] Kuryeler kartında **Paketler** düğmesi → aktif paket popup'ı (restoran/bölge/durum/km/ücret).
 - [x] Yönetici paneli 3 sekme + ☰; kart/arama/yenile; bölge ▲▼; Raporlar 3 sekme + tarih; Mesaj geçmişi; Geciken→boştaki kuryeye atama.
