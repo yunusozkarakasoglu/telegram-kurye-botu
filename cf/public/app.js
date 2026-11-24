@@ -22,7 +22,7 @@
     histView: (localStorage.getItem('histView') === 'card' ? 'card' : 'list'),
     histRange: 'today',
     histDate: '',
-    histPaid: 'all',
+    histPay: false,
     paySel: {},
     kazancRange: 'today',
     kazancDate: '',
@@ -381,31 +381,28 @@
     }
     setHeader('Geçmiş', items.length + ' kayıt');
     var main = $('mn');
-    var rseg = '<div class="seg three">' + [['today', 'Bugün'], ['yesterday', 'Dün'], ['all', 'Tümü']].map(function (r) {
-      return '<button data-r="' + r[0] + '" class="' + (!S.histDate && S.histRange === r[0] ? 'on' : '') + '">' + r[1] + '</button>';
-    }).join('') + '</div>' +
+    var rseg = '<div class="seg four">' + [['today', 'Bugün'], ['yesterday', 'Dün'], ['all', 'Tümü']].map(function (r) {
+      return '<button data-r="' + r[0] + '" class="' + (!S.histDate && !S.histPay && S.histRange === r[0] ? 'on' : '') + '">' + r[1] + '</button>';
+    }).join('') + '<button data-paymode="1" class="' + (S.histPay ? 'on' : '') + '">Ödeme</button></div>' +
       '<div class="filters" style="margin-top:8px"><input type="date" id="hdate" value="' + esc(S.histDate) + '"></div>';
-    var paidSeg = '<div class="seg three" style="margin-top:6px">' + [['all', 'Tümü'], ['paid', 'Ödeme alındı'], ['unpaid', 'Ödeme alınmadı']].map(function (v) {
-      return '<button data-hp="' + v[0] + '" class="' + (S.histPaid === v[0] ? 'on' : '') + '">' + v[1] + '</button>';
-    }).join('') + '</div>';
-    if (S.histPaid !== 'all') {
-      items = items.filter(function (p) { return S.histPaid === 'paid' ? p.payment_received === true : p.payment_received === false; });
+    if (S.histPay) {
+      items = items.filter(function (p) { return p.delivered_at && !p.cancelled_at && p.payment_received !== true; });
     }
     var unpaid = items.filter(function (p) { return p.delivered_at && !p.cancelled_at && p.payment_received !== true; });
-    var payBar = unpaid.length ? '<div class="filters" style="margin-top:6px">' +
+    var payBar = (S.histPay && unpaid.length) ? '<div class="filters" style="margin-top:6px">' +
       '<button class="p sm" id="pay-sel">Seçilenleri Ödeme Alındı</button>' +
       '<button class="sm" id="pay-all">Tümünü Ödeme Alındı (' + unpaid.length + ')</button></div>' : '';
     var body = items.length ? '<div class="card">' + items.map(function (p) {
-      var isUnpaid = p.delivered_at && !p.cancelled_at && p.payment_received !== true;
+      var isUnpaid = S.histPay && p.delivered_at && !p.cancelled_at && p.payment_received !== true;
       return '<div class="hrow">' + (isUnpaid ? '<input type="checkbox" data-pay="' + p.id + '">' : '<span class="hgap"></span>') +
         '<button class="prow" data-hopen="' + p.id + '"><span><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) + '</b>' +
         '<small>' + esc(p.region || '') + ' · ' + esc(p.status) + ' · ' + dt(p.delivered_at || p.cancelled_at) +
         (p.payment_received === true ? ' · ödeme alındı' : p.payment_received === false ? ' · ödeme alınmadı' : '') + '</small></span>' +
         '<em>' + (p.fee_tl == null ? '' : money(p.fee_tl)) + '</em></button></div>';
     }).join('') + '</div>' : '<div class="empty"><b>Kayıt yok</b>Bu aralıkta tamamlanan/iptal edilen iş bulunmuyor.</div>';
-    main.innerHTML = rseg + paidSeg + payBar + body;
-    Array.prototype.forEach.call(main.querySelectorAll('[data-hp]'), function (b) {
-      b.onclick = function () { S.histPaid = b.getAttribute('data-hp'); render(); };
+    main.innerHTML = rseg + payBar + body;
+    Array.prototype.forEach.call(main.querySelectorAll('[data-paymode]'), function (b) {
+      b.onclick = function () { S.histPay = !S.histPay; render(); };
     });
     function selCount() { return Object.keys(S.paySel).filter(function (k) { return S.paySel[k]; }).length; }
     Array.prototype.forEach.call(main.querySelectorAll('[data-pay]'), function (c) {
