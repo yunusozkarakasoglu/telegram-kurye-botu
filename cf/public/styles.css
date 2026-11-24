@@ -359,3 +359,8 @@ header{display:flex;align-items:center;gap:8px}
 .testlist button em{font-style:normal;font-size:10px;font-weight:600;color:var(--t2);margin-left:4px}
 
 .testlist button.on{background:rgba(31,168,85,.12);border-left:3px solid #1fa855}
+
+.reqcard{padding:10px 12px;margin-bottom:8px}
+.rowline{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.rowline span{font-size:13px;color:var(--t2)}
+.pkg-row .fld:last-child{margin-bottom:0}
