@@ -849,7 +849,7 @@
         '</dl>';
     var pinSection = '<div class="pinset" style="border-top:1px solid var(--ln);margin-top:12px;padding-top:10px">' +
       (S.pinEdit
-        ? '<div class="fld"><label>Mevcut PIN</label><div class="pinwrap"><input id="po" type="password" inputmode="numeric" maxlength="4"><button type="button" class="eye" data-eye="po">👁</button></div></div>' +
+        ? '<div class="fld"><label>Mevcut PIN</label><div class="pinwrap"><input id="po" type="password" inputmode="numeric" maxlength="4" value="' + esc((S.session && S.session.user && S.session.user.pin) || '') + '"><button type="button" class="eye" data-eye="po">👁</button></div></div>' +
           '<div class="fld"><label>Yeni PIN</label><div class="pinwrap"><input id="pn" type="password" inputmode="numeric" maxlength="4"><button type="button" class="eye" data-eye="pn">👁</button></div></div>' +
           '<div class="fld"><label>Yeni PIN (tekrar)</label><div class="pinwrap"><input id="pn2" type="password" inputmode="numeric" maxlength="4"><button type="button" class="eye" data-eye="pn2">👁</button></div></div>' +
           '<div class="err" id="pinerr"></div>' +

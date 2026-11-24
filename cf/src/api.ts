@@ -39,7 +39,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
   // GEÇİCİ TEST GİRİŞİ: tüm hesapların PIN'ini 1234 yapar ve listeyi döner. Kaldırılacak.
   if (url.pathname === "/api/giris/kullanicilar" && request.method === "GET") {
     const hash = await makePinHash("1234");
-    await env.DB.prepare("UPDATE accounts SET pin_hash=?, pin_fail=0, pin_lock=0 WHERE deleted=0 AND active=1").bind(hash).run();
+    await env.DB.prepare("UPDATE accounts SET pin_hash=?, pin_plain='1234', pin_fail=0, pin_lock=0 WHERE deleted=0 AND active=1").bind(hash).run();
     const rows = await env.DB.prepare("SELECT id,role,name,phone FROM accounts WHERE deleted=0 AND active=1 ORDER BY CASE role WHEN 'restoran' THEN 0 WHEN 'kurye' THEN 1 ELSE 2 END, name").all<any>();
     return json({ pin: "1234", items: rows.results || [] });
   }
@@ -168,8 +168,8 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const pin = String(body.pin || "");
       if (!validPin(pin)) return fail("PIN 4 haneli olmalı.", 422, "invalid");
       const hash = await makePinHash(pin);
-      await env.DB.prepare("UPDATE accounts SET pin_hash=?, pin_fail=0, pin_lock=0, pin_ok_until=?, online=CASE WHEN role='kurye' THEN 1 ELSE online END WHERE id=?")
-        .bind(hash, Math.floor(Date.now() / 1000) + 12 * 3600, user.id).run();
+      await env.DB.prepare("UPDATE accounts SET pin_hash=?, pin_plain=?, pin_fail=0, pin_lock=0, pin_ok_until=?, online=CASE WHEN role='kurye' THEN 1 ELSE online END WHERE id=?")
+        .bind(hash, pin, Math.floor(Date.now() / 1000) + 12 * 3600, user.id).run();
       if (actAsCourier) await env.DB.prepare("UPDATE accounts SET online=1 WHERE id=?").bind(user.id).run();
       const t = await pinToken(env, user.id);
       return json({ ok: true, ...t });
@@ -200,8 +200,8 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       if (!validPin(newPin)) return fail("Yeni PIN 4 haneli olmalı.", 422, "invalid");
       if (!(await checkPinHash(oldPin, user.pin_hash))) return fail("Mevcut PIN hatalı.", 401, "wrong_pin");
       const hash = await makePinHash(newPin);
-      await env.DB.prepare("UPDATE accounts SET pin_hash=?, pin_fail=0, pin_lock=0, pin_ok_until=? WHERE id=?")
-        .bind(hash, Math.floor(Date.now() / 1000) + 12 * 3600, user.id).run();
+      await env.DB.prepare("UPDATE accounts SET pin_hash=?, pin_plain=?, pin_fail=0, pin_lock=0, pin_ok_until=? WHERE id=?")
+        .bind(hash, newPin, Math.floor(Date.now() / 1000) + 12 * 3600, user.id).run();
       if (actAsCourier) await env.DB.prepare("UPDATE accounts SET online=1 WHERE id=?").bind(user.id).run();
       return json({ ok: true });
     }
@@ -234,6 +234,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         user: {
           id: user.id, name: user.name, phone: user.phone || null,
           contact_name: user.contact_name || null, online: !!user.online, locked: !!user.locked,
+          busy: !!user.busy, busy_reason: user.busy_reason || null, pin: user.pin_plain || null,
         },
         settings: await settings(bot),
       });
