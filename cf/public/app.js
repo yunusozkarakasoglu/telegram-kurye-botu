@@ -759,7 +759,13 @@
     main.innerHTML = '<div class="seg four">' + filters.map(function (f) {
       return '<button data-f="' + f[0] + '" class="' + (S.restFilter === f[0] ? 'on' : '') + '">' + f[1] + '</button>';
     }).join('') + '</div>' +
-    (items.length ? items.map(function (p) {
+    (function () {
+      var n = restAdvCount();
+      return '<button class="btn sm" id="rf-open" style="width:100%;margin:0 0 8px">⚙ Filtre' + (n ? ' (' + n + ')' : '') + '</button>';
+    })() +
+    (function () {
+      var list = restApplyAdv(items);
+      return list.length ? list.map(function (p) {
       var mins = p.created_at ? Math.max(0, Math.floor((Date.now() / 1000 - p.created_at) / 60)) : null;
       var st = String(p.status || '');
       var cls = /İptal/i.test(st) ? 'cancelled' : /Teslim/i.test(st) ? 'delivered' : /Yolda/i.test(st) ? 'onway'
@@ -768,7 +774,8 @@
         '<span class="rl"><b>Talep #' + p.batch + '-' + p.number + '</b>' +
           '<small>' + esc(p.region || 'Bölge yok') + ' · ' + esc(p.payment || 'Ödeme yok') + '</small></span>' +
         '<span class="rr"><em class="stg">' + esc(st || '—') + '</em><i>' + (mins == null ? '—' : mins + ' dk') + '</i></span></button>';
-    }).join('') : '<div class="empty"><b>Kayıt yok</b>Bu filtrede paket bulunmuyor.</div>');
+      }).join('') : '<div class="empty"><b>Kayıt yok</b>Bu filtrede paket bulunmuyor.</div>';
+    })();
     Array.prototype.forEach.call(main.querySelectorAll('button[data-f]'), function (b) {
       b.onclick = function () { S.restFilter = b.getAttribute('data-f'); loadRest(); };
     });
@@ -779,8 +786,94 @@
         if (p) restPkgSheet(p);
       };
     });
+    var rf = main.querySelector('#rf-open');
+    if (rf) rf.onclick = restFilterSheet;
     $('cta').innerHTML = '';
     nav(restaurantTabs(), {});
+  }
+
+  function restAdvCount() {
+    var f = S.restAdv || {}, n = 0;
+    if (f.from || f.to) n++;
+    if (f.status) n++;
+    if (f.pay) n++;
+    return n;
+  }
+
+  function restApplyAdv(items) {
+    var f = S.restAdv || {};
+    return items.filter(function (p) {
+      if (f.from && p.created_at && p.created_at < f.from) return false;
+      if (f.to && p.created_at && p.created_at > f.to) return false;
+      if (f.status) {
+        var s = String(p.status || '');
+        if (f.status === 'havuz' && !/Havuz|Bekliyor/i.test(s)) return false;
+        if (f.status === 'kabul' && !/Kabul/i.test(s)) return false;
+        if (f.status === 'alindi' && (!p.picked_up_at || p.delivered_at)) return false;
+        if (f.status === 'teslim' && !p.delivered_at) return false;
+        if (f.status === 'iptal' && !p.cancelled_at) return false;
+      }
+      if (f.pay === 'var' && p.payment_received !== true) return false;
+      if (f.pay === 'yok' && p.payment_received !== false) return false;
+      return true;
+    });
+  }
+
+  function restFilterSheet() {
+    var f = S.restAdv || {};
+    var day = function (offset) {
+      var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + offset);
+      return d;
+    };
+    var iso = function (d) { return d.toISOString().slice(0, 10); };
+    var start = f.from ? new Date(f.from * 1000) : day(0);
+    var end = f.to ? new Date(f.to * 1000) : day(0);
+    var sh = UI.openSheet(
+      '<h2>Filtrele</h2>' +
+      '<div class="fld"><label>Zaman</label><div class="seg four">' +
+        '<button data-t="today" class="' + (f.preset === 'today' ? 'on' : '') + '">Bugün</button>' +
+        '<button data-t="yesterday" class="' + (f.preset === 'yesterday' ? 'on' : '') + '">Dün</button>' +
+        '<button data-t="range" class="' + (f.preset === 'range' ? 'on' : '') + '">Tarih aralığı</button>' +
+      '</div></div>' +
+      '<div class="fld"><label>Başlangıç</label><input id="rf-from" type="date" value="' + iso(start) + '"></div>' +
+      '<div class="fld"><label>Bitiş</label><input id="rf-to" type="date" value="' + iso(end) + '"></div>' +
+      '<div class="fld"><label>Durum</label><div class="seg four">' +
+        [['', 'Tümü'], ['havuz', 'Havuz'], ['kabul', 'Kabul'], ['alindi', 'Teslim alındı'], ['teslim', 'Teslim edildi'], ['iptal', 'İptal']]
+          .map(function (x) { return '<button data-st="' + x[0] + '" class="' + ((f.status || '') === x[0] ? 'on' : '') + '">' + x[1] + '</button>'; }).join('') +
+      '</div></div>' +
+      '<div class="fld"><label>Ödeme durumu</label><div class="seg four">' +
+        [['', 'Tümü'], ['var', 'Ödeme yapıldı'], ['yok', 'Ödeme yapılmadı']]
+          .map(function (x) { return '<button data-pay="' + x[0] + '" class="' + ((f.pay || '') === x[0] ? 'on' : '') + '">' + x[1] + '</button>'; }).join('') +
+      '</div></div>' +
+      '<button class="p" id="rf-apply" style="width:100%">Filtrele</button>' +
+      '<button class="d" id="rf-clear" style="width:100%;margin-top:6px">Filtreyi temizle</button>');
+    var pick = { preset: f.preset || 'today', status: f.status || '', pay: f.pay || '' };
+    Array.prototype.forEach.call(sh.querySelectorAll('[data-t],[data-st],[data-pay]'), function (b) {
+      b.onclick = function () {
+        if (b.hasAttribute('data-t')) pick.preset = b.getAttribute('data-t');
+        else if (b.hasAttribute('data-st')) pick.status = b.getAttribute('data-st');
+        else pick.pay = b.getAttribute('data-pay');
+        var group = b.parentElement;
+        Array.prototype.forEach.call(group.children, function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        if (b.hasAttribute('data-t')) {
+          var d0 = pick.preset === 'yesterday' ? day(-1) : day(0);
+          sh.querySelector('#rf-from').value = iso(d0);
+          sh.querySelector('#rf-to').value = iso(d0);
+        }
+      };
+    });
+    sh.querySelector('#rf-clear').onclick = function () {
+      S.restAdv = null; UI.closeSheet(); loadRest();
+    };
+    sh.querySelector('#rf-apply').onclick = function () {
+      var fromS = sh.querySelector('#rf-from').value, toS = sh.querySelector('#rf-to').value;
+      var from = fromS ? Math.floor(new Date(fromS + 'T00:00:00').getTime() / 1000) : null;
+      var to = toS ? Math.floor(new Date(toS + 'T23:59:59').getTime() / 1000) : null;
+      if (from && to && from > to) { UI.toast('Bitiş tarihi başlangıçtan önce olamaz', 'error'); return; }
+      S.restAdv = { from: from, to: to, status: pick.status, pay: pick.pay, preset: pick.preset };
+      UI.closeSheet(); loadRest();
+    };
   }
 
   var CANCEL_REASONS = ['Müşteri iptal etti', 'Adres yanlış', 'Restoran kapandı', 'Gecikme', 'Paket hasarlı', 'Müşteriye ulaşılamadı', 'Diğer'];
