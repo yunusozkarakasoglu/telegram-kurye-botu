@@ -316,7 +316,7 @@
           var items = r.packages || [];
           UI.openSheet('<h2>Aktif paketler</h2>' + (items.length ? items.map(function (p) {
             return '<div class="offeritem"><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) + '</b>' +
-              '<small>' + esc(p.region || '') + ' · ' + esc(p.status) + ' · ' +
+              '<small>' + esc(p.region || '') + ' · ' + esc(p.status) + (p.cancelled_by_name ? ' · İptal: ' + esc((p.cancelled_by_role === 'restoran' ? 'Restoran' : p.cancelled_by_role === 'kurye' ? 'Kurye' : 'Yönetici') + ' ' + p.cancelled_by_name) : '') + ' · ' +
               (p.distance_km == null ? 'km yok' : esc(String(p.distance_km)) + ' km') + ' · ' +
               (p.fee_tl == null ? 'ücret yok' : money(p.fee_tl)) + '</small></div>';
           }).join('') : '<div class="empty">Aktif paket yok.</div>') +

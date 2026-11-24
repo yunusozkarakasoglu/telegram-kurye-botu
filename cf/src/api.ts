@@ -525,7 +525,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         : filter === "waiting" ? "p.courier IS NULL AND p.cancelled_at IS NULL"
         : filter === "active" ? "p.courier IS NOT NULL AND p.delivered_at IS NULL AND p.cancelled_at IS NULL"
         : filter === "delivered" ? "p.delivered_at IS NOT NULL"
-        : "p.cancelled_at IS NULL";
+        : "1=1";
       const items = await bot.packages(`b.owner=? AND ${where}`, [user.id]);
       const states = await statesFor(bot, items);
       return json({ items: items.map((p, i) => pkgDto(p, states[i])) });

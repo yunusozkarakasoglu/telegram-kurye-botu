@@ -382,3 +382,10 @@ main{padding-bottom:20px}
 
 .pk-hd .ago{margin-left:auto;font-size:12px;color:var(--t2);font-variant-numeric:tabular-nums;white-space:nowrap}
 .pk-hd b{text-transform:none;letter-spacing:0}
+
+.rrow{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;padding:12px;background:var(--card);border:1px solid var(--ln);border-radius:10px;margin-bottom:7px}
+.rrow .rl{display:flex;flex-direction:column;gap:2px;min-width:0}
+.rrow .rl b{font-size:14px}
+.rrow .rl small{color:var(--t2);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rrow em{font-style:normal;font-size:12px;color:var(--t2);white-space:nowrap}
+.sheet-st{margin-top:2px}
