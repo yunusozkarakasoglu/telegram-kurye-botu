@@ -682,11 +682,11 @@
     }).join('');
     main.innerHTML =
       '<div class="card addcard">' +
-        '<div class="fld"><label>Bölge</label><select id="ar">' +
+        '<div class="frow"><label>Bölge</label><select id="ar">' +
           '<option value="">— seçin —</option>' +
           regions.map(function (r) { return '<option' + (d.region === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
         '</select></div>' +
-        '<div class="fld"><label>Ödeme tipi</label><select id="ap">' +
+        '<div class="frow"><label>Ödeme tipi</label><select id="ap">' +
           '<option value="">— seçin —</option>' +
           payments.map(function (r) { return '<option' + (d.payment === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
         '</select></div>' +
