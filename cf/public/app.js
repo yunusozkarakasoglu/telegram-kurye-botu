@@ -761,10 +761,13 @@
     }).join('') + '</div>' +
     (items.length ? items.map(function (p) {
       var mins = p.created_at ? Math.max(0, Math.floor((Date.now() / 1000 - p.created_at) / 60)) : null;
-      return '<button class="rrow" data-pkg="' + p.id + '">' +
+      var st = String(p.status || '');
+      var cls = /İptal/i.test(st) ? 'cancelled' : /Teslim/i.test(st) ? 'delivered' : /Yolda/i.test(st) ? 'onway'
+        : /Kabul/i.test(st) ? 'accepted' : 'waiting';
+      return '<button class="rrow ' + cls + '" data-pkg="' + p.id + '">' +
         '<span class="rl"><b>Talep #' + p.batch + '-' + p.number + '</b>' +
-          '<small>' + esc(p.status || '—') + ' · ' + esc(p.region || 'Bölge yok') + '</small></span>' +
-        '<em>' + (mins == null ? '—' : mins + ' dk') + '</em></button>';
+          '<small>' + esc(p.region || 'Bölge yok') + ' · ' + esc(p.payment || 'Ödeme yok') + '</small></span>' +
+        '<span class="rr"><em class="stg">' + esc(st || '—') + '</em><i>' + (mins == null ? '—' : mins + ' dk') + '</i></span></button>';
     }).join('') : '<div class="empty"><b>Kayıt yok</b>Bu filtrede paket bulunmuyor.</div>');
     Array.prototype.forEach.call(main.querySelectorAll('button[data-f]'), function (b) {
       b.onclick = function () { S.restFilter = b.getAttribute('data-f'); loadRest(); };
@@ -784,17 +787,25 @@
 
   function restPkgSheet(p) {
     var roleName = function (r) { return r === 'restoran' ? 'Restoran' : r === 'kurye' ? 'Kurye' : 'Yönetici'; };
+    var ts = function (v) { return v ? dt(new Date(v * 1000).toISOString()) : '—'; };
+    var mins = p.created_at ? Math.max(0, Math.floor((Date.now() / 1000 - p.created_at) / 60)) : null;
     var cancelInfo = p.cancelled_at
       ? '<p class="note">İptal: ' + esc(p.cancel_reason || '—') + ' · İptal eden: ' + esc(roleName(p.cancelled_by_role)) + ' · ' + esc(p.cancelled_by_name || '—') + '</p>'
       : '';
     var sh = UI.openSheet(
-      '<h2>Talep #' + p.batch + '-' + p.number + '</h2>' +
+      '<div class="sheethead"><h2>Talep #' + p.batch + '-' + p.number + '</h2>' +
+        '<span class="ago">' + (mins == null ? '—' : mins + ' dk') + '</span></div>' +
       '<div class="sheet-st"><span class="tag ' + (UI.STATUS[p.status] || '') + '">' + esc(p.status || '—') + '</span></div>' +
       '<dl class="pk-fields" style="margin:10px 0">' +
+        '<dt>Oluşturma</dt><dd>' + ts(p.created_at) + '</dd>' +
+        '<dt>Kabul</dt><dd>' + ts(p.accepted_at) + '</dd>' +
+        '<dt>Alım</dt><dd>' + ts(p.picked_up_at) + '</dd>' +
+        '<dt>Teslim</dt><dd>' + ts(p.delivered_at) + '</dd>' +
+        '<dt>İptal</dt><dd>' + ts(p.cancelled_at) + '</dd>' +
+        '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
         '<dt>Bölge</dt><dd>' + esc(p.region || '—') + '</dd>' +
         '<dt>Ödeme</dt><dd>' + esc(p.payment || '—') + '</dd>' +
-        (p.note ? '<dt>Not</dt><dd>' + esc(p.note) + '</dd>' : '') +
-        '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
+        '<dt>Not</dt><dd>' + esc(p.note || '—') + '</dd>' +
         '<dt>Mesafe</dt><dd>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</dd>' +
         '<dt>Ücret</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +
         '<dt>Hakediş</dt><dd>' + (p.payment_received === true ? 'Alındı' : p.payment_received === false ? 'Alınmadı' : '—') + '</dd>' +
@@ -1210,7 +1221,6 @@
       if (S.tab === 'talep') renderTalep();
       else if (S.tab === 'profil') renderProfil();
       else renderRestPaketlerim();
-      renderDrawer();
       return;
     }
     if (S.tab === 'loglar') renderLogs();

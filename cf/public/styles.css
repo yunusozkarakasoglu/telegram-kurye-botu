@@ -400,3 +400,19 @@ main{padding-bottom:20px}
 
 textarea{width:100%;font:inherit;font-size:15px;padding:10px 12px;border:1px solid var(--ln);border-radius:10px;background:var(--card);color:var(--tx);resize:vertical}
 .fld textarea{margin-top:2px}
+
+.rrow .rr{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none}
+.rrow .stg{font-style:normal;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.rrow .rr i{font-style:normal;font-size:11px;color:var(--t2);font-variant-numeric:tabular-nums}
+.rrow.waiting .stg{background:rgba(128,128,128,.16);color:var(--t2)}
+.rrow.accepted .stg{background:rgba(230,168,23,.18);color:#b07d00}
+.rrow.onway .stg{background:rgba(240,120,30,.16);color:#c25a00}
+.rrow.delivered .stg{background:rgba(31,168,85,.15);color:#178a44}
+.rrow.cancelled .stg{background:rgba(229,72,77,.14);color:#c0353a}
+.rrow.waiting{border-left:3px solid rgba(128,128,128,.35)}
+.rrow.accepted{border-left:3px solid rgba(230,168,23,.6)}
+.rrow.onway{border-left:3px solid rgba(240,120,30,.6)}
+.rrow.delivered{border-left:3px solid rgba(31,168,85,.55)}
+.rrow.cancelled{border-left:3px solid rgba(229,72,77,.55)}
+.sheethead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sheethead .ago{font-size:12px;color:var(--t2);white-space:nowrap}
