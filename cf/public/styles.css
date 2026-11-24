@@ -419,3 +419,10 @@ textarea{width:100%;font:inherit;font-size:15px;padding:10px 12px;border:1px sol
 
 #an,#en{border:2px solid var(--ac);box-shadow:0 0 0 1px rgba(0,122,255,.15)}
 #an:focus,#en:focus{outline:none;border-color:var(--ac);box-shadow:0 0 0 3px rgba(0,122,255,.18)}
+
+.filterbar{display:flex;gap:6px;margin:0 0 8px}
+.filterbar button{flex:1;min-height:40px;border:1px solid var(--ln);background:var(--card);border-radius:10px;font-size:13px;font-weight:600;color:var(--tx)}
+#rf-open{color:var(--ac);border-color:var(--ac)}
+#rf-clear-page{flex:0 0 104px;color:var(--er);border-color:var(--er)}
+#ovl .seg button{border:1px solid var(--ln);background:transparent}
+#ovl .seg button.on{border-color:var(--ac)}

@@ -761,7 +761,8 @@
     }).join('') + '</div>' +
     (function () {
       var n = restAdvCount();
-      return '<button class="btn sm" id="rf-open" style="width:100%;margin:0 0 8px">⚙ Filtre' + (n ? ' (' + n + ')' : '') + '</button>';
+      return '<div class="filterbar"><button id="rf-open">⚙ Filtre' + (n ? ' (' + n + ')' : '') + '</button>' +
+        (n ? '<button id="rf-clear-page">✕ Temizle</button>' : '') + '</div>';
     })() +
     (function () {
       var list = restApplyAdv(items);
@@ -788,6 +789,8 @@
     });
     var rf = main.querySelector('#rf-open');
     if (rf) rf.onclick = restFilterSheet;
+    var rc = main.querySelector('#rf-clear-page');
+    if (rc) rc.onclick = function () { S.restAdv = null; loadRest(); };
     $('cta').innerHTML = '';
     nav(restaurantTabs(), {});
   }
@@ -828,14 +831,16 @@
     var iso = function (d) { return d.toISOString().slice(0, 10); };
     var start = f.from ? new Date(f.from * 1000) : day(0);
     var end = f.to ? new Date(f.to * 1000) : day(0);
+    var preset = f.preset || '';
     var sh = UI.openSheet(
       '<h2>Filtrele</h2>' +
       '<div class="fld"><label>Zaman</label><div class="seg four">' +
-        '<button data-t="today" class="' + (f.preset === 'today' ? 'on' : '') + '">Bugün</button>' +
-        '<button data-t="yesterday" class="' + (f.preset === 'yesterday' ? 'on' : '') + '">Dün</button>' +
-        '<button data-t="range" class="' + (f.preset === 'range' ? 'on' : '') + '">Tarih aralığı</button>' +
+        '<button data-t="" class="' + (preset === '' ? 'on' : '') + '">Tümü</button>' +
+        '<button data-t="today" class="' + (preset === 'today' ? 'on' : '') + '">Bugün</button>' +
+        '<button data-t="yesterday" class="' + (preset === 'yesterday' ? 'on' : '') + '">Dün</button>' +
+        '<button data-t="range" class="' + (preset === 'range' ? 'on' : '') + '">Tarih aralığı</button>' +
       '</div></div>' +
-      '<div id="rf-dates" style="display:' + ((f.preset || 'today') === 'range' ? 'block' : 'none') + '">' +
+      '<div id="rf-dates" style="display:' + (preset === 'range' ? 'block' : 'none') + '">' +
         '<div class="fld"><label>Başlangıç</label><input id="rf-from" type="date" value="' + iso(start) + '"></div>' +
         '<div class="fld"><label>Bitiş</label><input id="rf-to" type="date" value="' + iso(end) + '"></div>' +
       '</div>' +
@@ -849,7 +854,7 @@
       '</div></div>' +
       '<button class="p" id="rf-apply" style="width:100%">Filtrele</button>' +
       '<button class="d" id="rf-clear" style="width:100%;margin-top:6px">Filtreyi temizle</button>');
-    var pick = { preset: f.preset || 'today', status: f.status || '', pay: f.pay || '' };
+    var pick = { preset: preset, status: f.status || '', pay: f.pay || '' };
     Array.prototype.forEach.call(sh.querySelectorAll('[data-t],[data-st],[data-pay]'), function (b) {
       b.onclick = function () {
         if (b.hasAttribute('data-t')) pick.preset = b.getAttribute('data-t');
@@ -859,9 +864,11 @@
         Array.prototype.forEach.call(group.children, function (x) { x.classList.remove('on'); });
         b.classList.add('on');
         if (b.hasAttribute('data-t')) {
-          var d0 = pick.preset === 'yesterday' ? day(-1) : day(0);
-          sh.querySelector('#rf-from').value = iso(d0);
-          sh.querySelector('#rf-to').value = iso(d0);
+          if (pick.preset === 'today' || pick.preset === 'yesterday') {
+            var d0 = pick.preset === 'yesterday' ? day(-1) : day(0);
+            sh.querySelector('#rf-from').value = iso(d0);
+            sh.querySelector('#rf-to').value = iso(d0);
+          }
           sh.querySelector('#rf-dates').style.display = pick.preset === 'range' ? 'block' : 'none';
         }
       };
@@ -871,8 +878,8 @@
     };
     sh.querySelector('#rf-apply').onclick = function () {
       var fromS = sh.querySelector('#rf-from').value, toS = sh.querySelector('#rf-to').value;
-      var from = fromS ? Math.floor(new Date(fromS + 'T00:00:00').getTime() / 1000) : null;
-      var to = toS ? Math.floor(new Date(toS + 'T23:59:59').getTime() / 1000) : null;
+      var from = pick.preset === '' ? null : (fromS ? Math.floor(new Date(fromS + 'T00:00:00').getTime() / 1000) : null);
+      var to = pick.preset === '' ? null : (toS ? Math.floor(new Date(toS + 'T23:59:59').getTime() / 1000) : null);
       if (from && to && from > to) { UI.toast('Bitiş tarihi başlangıçtan önce olamaz', 'error'); return; }
       S.restAdv = { from: from, to: to, status: pick.status, pay: pick.pay, preset: pick.preset };
       UI.closeSheet(); loadRest();
