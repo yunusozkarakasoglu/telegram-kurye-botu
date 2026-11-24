@@ -415,13 +415,17 @@
           return '<div class="tier-row"><span>' + esc(labels[i + 1] || ((i + 1) + ' km')) + ' km</span>' +
             '<input type="number" data-t="' + (i + 1) + '" value="' + v + '"></div>';
         }).join('') +
+        '<div class="fld" style="max-width:280px;margin-top:14px"><label>10+ km sonrası km başı ek ücret (TL)</label>' +
+        '<input id="textra" type="number" min="0" value="' + (d.extra_per_km != null ? d.extra_per_km : 100) + '"></div>' +
+        '<p class="sub" style="max-width:420px">Not: 10 km üzerindeki her tam/km dilimi için bu tutar taban ücrete eklenir. ' +
+        'Örnek: 12,1 km → 640 TL + 3 × ek ücret.</p>' +
         '<button class="p" id="tsave" style="margin-top:12px">Kaydet</button>');
       $('tsave').onclick = function () {
         var values = [Number($('t0').value) || 0];
         Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-t]'), function (inp) {
           values[Number(inp.getAttribute('data-t'))] = Number(inp.value) || 0;
         });
-        API.yonetim('tarifeKaydet', { tariff: values })
+        API.yonetim('tarifeKaydet', { tariff: values, extra_per_km: Number($('textra').value) || 0 })
           .then(function () { UI.toast('Tarife kaydedildi', 'success'); })
           .catch(function (e) { UI.toast(e.message || 'Kaydedilemedi', 'error'); });
       };

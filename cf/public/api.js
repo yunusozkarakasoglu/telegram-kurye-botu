@@ -10,13 +10,23 @@
   /* ---------------- ortak ücret hesabı (Worker'daki feeFor ile aynı) ---------------- */
   var TARIFF_BOUNDS = [3, 4, 5, 6, 7, 8, 9, 10];
   var DEFAULT_TARIFF = [120, 150, 190, 240, 300, 370, 450, 540, 640];
-  function feeFor(tariff, distance) {
+  function feeFor(tariff, distance, extra) {
     var band = 0;
     while (band < TARIFF_BOUNDS.length && distance > TARIFF_BOUNDS[band]) band++;
-    return tariff[band] != null ? tariff[band] : tariff[tariff.length - 1];
+    var base = tariff[band] != null ? tariff[band] : tariff[tariff.length - 1];
+    var lastBound = TARIFF_BOUNDS[TARIFF_BOUNDS.length - 1] || 10;
+    if (distance > lastBound && extra > 0) {
+      base = base + Math.ceil(distance - lastBound) * extra;
+    }
+    return base;
   }
-  function feePreview(tariff, distance) {
-    return feeFor(tariff, distance) + ' TL';
+  function feePreview(tariff, distance, extra) {
+    var ex = extra;
+    if (ex == null) {
+      var st = (window.S && S.session && S.session.settings) || {};
+      ex = st.extra_per_km;
+    }
+    return feeFor(tariff, distance, ex) + ' TL';
   }
 
   /* =======================  MİMİK DEPO  ======================= */

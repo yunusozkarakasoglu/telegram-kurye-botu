@@ -109,6 +109,11 @@ export async function adminRoutes(
     const stmts = values.map((v: any, i: number) =>
       bot.db.d1.prepare("UPDATE tariff SET amount=? WHERE position=?").bind(Number(v) || 0, i));
     await bot.db.batch(stmts);
+    if (body.extra_per_km != null) {
+      const extra = Number(body.extra_per_km);
+      if (!Number.isFinite(extra) || extra < 0 || extra > 100000) return fail("10+ km ek ücreti geçersiz.", 422, "invalid");
+      await bot.db.run("INSERT OR REPLACE INTO settings(key,value) VALUES ('extra_per_km',?)", extra);
+    }
     return json({ ok: true, settings: await settings(bot) });
   }
 

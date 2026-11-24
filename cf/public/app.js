@@ -1180,7 +1180,9 @@
         body = '<div class="card" style="padding:12px"><b>Mesafe ücretleri (sabit)</b>' + tariff.map(function (v, i) {
           return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--ln);font-size:13px">' +
             '<span>' + esc(labels[i] || (i === 0 ? '0–3' : i + '. aralık')) + ' km</span><b>' + money(v) + '</b></div>';
-        }).join('') + '</div>';
+        }).join('') +
+        '<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px"><span>10+ km · km başı ek</span><b>' + money(st.extra_per_km != null ? st.extra_per_km : 100) + '</b></div>' +
+        '<p class="note" style="margin-top:8px">10 km üzerindeki her km için bu tutar eklenir. Örnek: 12,1 km → 640 TL + 3 × ek ücret.</p></div>';
       } else if (S.sistemTab === 'log') {
         var logs = (API.logs ? API.logs() : []).slice(-60);
         body = '<div class="card" style="padding:12px;font-size:12px">' +

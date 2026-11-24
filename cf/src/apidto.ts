@@ -82,6 +82,7 @@ export async function settings(bot: Bot) {
     reasons: [...CANCEL_REASONS],
     max_packages: MAX_PACKAGES,
     priority_seconds: PRIORITY_SECONDS,
+    extra_per_km: await bot.extraPerKm(),
     open_time: await hour("open_time", "07:00"),
     close_time: await hour("close_time", "22:00"),
   };

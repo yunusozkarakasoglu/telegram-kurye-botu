@@ -54,6 +54,11 @@ export class Bot {
     const rows = await this.db.all<{ name: string }>("SELECT name FROM regions ORDER BY position");
     return rows.map((r) => r.name);
   }
+  async extraPerKm() {
+    const row = await this.db.first<{ value: number }>("SELECT value FROM settings WHERE key='extra_per_km'");
+    const v = Number(row?.value);
+    return Number.isFinite(v) && v > 0 ? v : 100;
+  }
   async tariff() {
     const rows = await this.db.all<{ amount: number }>("SELECT amount FROM tariff ORDER BY position");
     return rows.map((r) => r.amount);

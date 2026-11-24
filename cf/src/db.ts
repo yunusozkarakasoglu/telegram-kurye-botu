@@ -19,6 +19,7 @@ export class Db {
   }
   async ensureSeeds(regions: string[]) {
     await this.run("INSERT OR IGNORE INTO settings VALUES ('active_limit',3)");
+    await this.run("INSERT OR IGNORE INTO settings(key,value) VALUES ('extra_per_km',100)");
     for (let i = 0; i < DEFAULT_TARIFF.length; i++) {
       await this.run("INSERT OR IGNORE INTO tariff VALUES (?,?)", i, DEFAULT_TARIFF[i]);
     }

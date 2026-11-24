@@ -14,10 +14,16 @@ export function parseKm(value: string): number | null {
   return Number.isFinite(d) && d > 0 ? d : null;
 }
 
-function feeFor(tariff: number[], distance: number) {
+function feeFor(tariff: number[], distance: number, extraPerKm = 0) {
   let band = 0;
   while (band < TARIFF_BOUNDS.length && distance > TARIFF_BOUNDS[band]) band++;
-  return tariff[band] ?? tariff[tariff.length - 1] ?? 0;
+  const base = tariff[band] ?? tariff[tariff.length - 1] ?? 0;
+  const lastBound = TARIFF_BOUNDS[TARIFF_BOUNDS.length - 1] ?? 10;
+  if (distance > lastBound && extraPerKm > 0) {
+    const extraKm = Math.ceil(distance - lastBound);
+    return base + extraKm * extraPerKm;
+  }
+  return base;
 }
 
 export async function startKm(bot: Bot, user: Account, packageId: number): Promise<any> {
@@ -40,7 +46,7 @@ export async function recordDistance(bot: Bot, courier: number, value: string): 
   if (!m) { await bot.send(courier, "Geçerli bir kilometre girin. Örnek: 4,5"); return "Geçersiz mesafe."; }
   const distance = Number(m[1].replace(",", "."));
   const tariff = await bot.tariff();
-  const fee = feeFor(tariff, distance);
+  const fee = feeFor(tariff, distance, await bot.extraPerKm());
   const changed = await bot.db.run(`UPDATE packages SET picked_up_at=?,distance_km=?,courier_fee=?
     WHERE id=? AND courier=? AND picked_up_at IS NULL AND delivered_at IS NULL AND cancelled_at IS NULL`,
     bot.now(), String(distance), fee, pending.package, courier);
@@ -270,7 +276,7 @@ export async function handlePendingText(bot: Bot, chat: number, user: Account, t
     if (!m) { await bot.send(chat, "Geçerli bir kilometre girin. Örnek: 4,5"); return true; }
     const distance = Number(m[1].replace(",", "."));
     const tariff = await bot.tariff();
-    const fee = feeFor(tariff, distance);
+    const fee = feeFor(tariff, distance, await bot.extraPerKm());
     const pkg = (await bot.packages("p.id=?", [km.package]))[0];
     await bot.db.run("UPDATE packages SET distance_km=?,courier_fee=? WHERE id=? AND courier=? AND delivered_at IS NULL", String(distance), fee, km.package, chat);
     await bot.db.run("DELETE FROM km_edit WHERE courier=?", chat);
