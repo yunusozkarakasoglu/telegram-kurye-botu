@@ -180,6 +180,9 @@
       panel(kseg);
       var kh = document.createElement('div'); kh.id = 'invite-host'; $('adm-body').appendChild(kh);
       invitePane(kh, 'kurye');
+      Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-kt]'), function (bb) {
+        bb.onclick = function () { S.kuryeTab = bb.getAttribute('data-kt'); render(); };
+      });
       return;
     }
     API.yonetim('kuryeler').then(function (d) {
@@ -228,6 +231,9 @@
       panel(rseg);
       var rh = document.createElement('div'); rh.id = 'invite-host'; $('adm-body').appendChild(rh);
       invitePane(rh, 'restoran');
+      Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-rt2]'), function (bb) {
+        bb.onclick = function () { S.restTab = bb.getAttribute('data-rt2'); render(); };
+      });
       return;
     }
     API.yonetim('restoranlar').then(function (d) {
