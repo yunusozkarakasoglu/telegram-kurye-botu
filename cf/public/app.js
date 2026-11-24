@@ -693,9 +693,7 @@
         '<button class="p addbtn" id="addbtn">＋ Paket Ekle</button>' +
       '</div>' +
       '<div class="reqlist">' + (rows || '<p class="note" style="margin:4px 0">Listeniz boş. Bölge ve ödeme seçip “Paket Ekle”ye basın.</p>') + '</div>' +
-      '<p class="hint" style="margin:6px 0 10px">✎ satırı düzenler, ✕ listeden çıkarır. En fazla 10 paket.</p>' +
-      '<button class="p sendfull" id="req-send"' + (S.reqItems.length ? '' : ' disabled') + '>Talebi Havuza At' +
-        (S.reqItems.length ? ' (' + S.reqItems.length + ')' : '') + '</button>';
+      '<p class="hint" style="margin:6px 0 10px">✎ satırı düzenler, ✕ listeden çıkarır. En fazla 10 paket.</p>';
 
     main.querySelector('#ar').onchange = function (e) { S.reqDraft.region = e.target.value; };
     main.querySelector('#ap').onchange = function (e) { S.reqDraft.payment = e.target.value; };
@@ -711,7 +709,8 @@
     Array.prototype.forEach.call(main.querySelectorAll('[data-del]'), function (b) {
       b.onclick = function () { S.reqItems.splice(Number(b.getAttribute('data-del')), 1); render(); };
     });
-    $('cta').innerHTML = '';
+    $('cta').innerHTML = '<button class="p" id="req-send"' + (S.reqItems.length ? '' : ' disabled') + '>Talebi Havuza At' +
+      (S.reqItems.length ? ' (' + S.reqItems.length + ')' : '') + '</button>';
     var cs = $('req-send');
     if (cs) cs.onclick = function () {
       if (!S.reqItems.length) { UI.toast('Önce paket ekleyin', 'error'); return; }
