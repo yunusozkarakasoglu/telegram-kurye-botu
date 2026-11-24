@@ -384,10 +384,11 @@
     var rseg = '<div class="seg two">' +
       '<button data-hmode="list" class="' + (!S.histPay ? 'on' : '') + '">Paketler</button>' +
       '<button data-hmode="pay" class="' + (S.histPay ? 'on' : '') + '">Ödeme</button></div>' +
-      '<div class="seg three" style="margin-top:6px">' + [['today', 'Bugün'], ['yesterday', 'Dün'], ['all', 'Tümü']].map(function (r) {
-      return '<button data-r="' + r[0] + '" class="' + (!S.histDate && S.histRange === r[0] ? 'on' : '') + '">' + r[1] + '</button>';
-    }).join('') + '</div>' +
-      '<div class="filters" style="margin-top:8px"><input type="date" id="hdate" value="' + esc(S.histDate) + '"></div>';
+      '<div class="seg four" style="margin-top:6px">' +
+      [['all', 'Tümü'], ['today', 'Bugün'], ['yesterday', 'Dün']].map(function (r) {
+        return '<button data-r="' + r[0] + '" class="' + (!S.histDate && S.histRange === r[0] ? 'on' : '') + '">' + r[1] + '</button>';
+      }).join('') +
+      '<label class="cal' + (S.histDate ? ' on' : '') + '" title="Tarih seç">📅<input type="date" id="hdate" value="' + esc(S.histDate) + '"></label></div>';
     if (S.histPay) {
       items = items.filter(function (p) { return p.delivered_at && !p.cancelled_at && p.payment_received !== true; });
     }
