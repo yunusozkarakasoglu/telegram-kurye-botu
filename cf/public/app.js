@@ -51,6 +51,18 @@
     location.replace(location.pathname + '?' + q.toString() + location.hash);
   }
 
+  function updateWho() {
+    var el = $('who');
+    if (!el) return;
+    var u = S.session && S.session.user;
+    if (!u || S.role === 'restoran') { el.hidden = true; return; }
+    el.hidden = false;
+    var st = u.busy ? 'busy' : (u.online ? 'online' : 'offline');
+    el.className = 'who ' + st;
+    $('wname').textContent = u.name || '';
+    $('wst').textContent = st === 'busy' ? ('Meşgul' + (u.busy_reason ? ' · ' + u.busy_reason : '')) : st === 'online' ? 'Online' : 'Offline';
+  }
+
   function setHeader(title, sub) { $('ttl').textContent = title; $('sub').textContent = sub || ''; }
 
   function nav(items, counts) {
@@ -1111,6 +1123,7 @@
   }
 
   function render() {
+    updateWho();
     var role = curRole();
     if (role === 'restoran') {
       if (S.tab === 'talep') renderTalep();

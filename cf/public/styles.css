@@ -330,3 +330,12 @@ header{display:flex;align-items:center;gap:8px}
 .statusrow button.on.busy{background:#e6a817;color:#1b1b1b;border-color:#e6a817}
 .statusrow button.on.offline{background:var(--er);color:#fff;border-color:var(--er)}
 .busybox{border:1px solid #e6a817;border-radius:10px;padding:10px;margin-top:8px}
+
+#who{display:flex;align-items:center;gap:6px;font-size:12px;min-width:0;margin-left:2px}
+#who i{width:8px;height:8px;border-radius:50%;background:#9aa0a6;flex:none}
+#who.online i{background:#1fa855;box-shadow:0 0 0 3px rgba(31,168,85,.16)}
+#who.busy i{background:#e6a817;box-shadow:0 0 0 3px rgba(230,168,23,.18)}
+#who.offline i{background:#9aa0a6}
+#wname{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38vw}
+#wst{color:var(--t2);white-space:nowrap;font-size:11px}
+#who:not(.online):not(.busy) #wst{opacity:.75}
