@@ -61,7 +61,7 @@
   /* ---------------- ekranlar ---------------- */
   function viewOzet() {
     head('Canlı Saha', 'Sistem durumu');
-    if (!S.ozetFilter) S.ozetFilter = { durum: 'all', grup: '' };
+    if (!S.ozetFilter) S.ozetFilter = { durum: 'all', grup: '', pay: '' };
     if (S.ozetOpen === undefined) S.ozetOpen = true;
 
     function yukle(refresh) {
@@ -73,6 +73,8 @@
           if (f.durum === 'late') return p.late;
           if (f.durum === 'cancelled') return !!p.cancelled_at;
           if (f.durum === 'transfer') return /Aktarım/i.test(p.status || '');
+          if (f.pay === 'var' && p.payment_received !== true) return false;
+          if (f.pay === 'yok' && p.payment_received !== false) return false;
           return true;
         });
 
@@ -105,16 +107,23 @@
 
         var durumlar = [['all', 'Tümü'], ['late', 'Gecikenler'], ['cancelled', 'İptaller'], ['transfer', 'Aktarılanlar']];
         var gruplar = [['region', 'Bölgeye'], ['restaurant', 'Restorana']];
+        var odemeler = [['', 'Tümü'], ['var', 'Ödeme alındı'], ['yok', 'Ödeme alınmadı']];
+        var aktifFiltre = (f.durum !== 'all' ? 1 : 0) + (f.grup ? 1 : 0) + (f.pay ? 1 : 0);
         var filtre = S.ozetOpen
           ? '<div class="fpanel">' +
-              '<div class="flabel">Durum</div><div class="chips">' + durumlar.map(function (x) {
+              '<div class="frow"><span class="flabel">Durum:</span><div class="chips">' + durumlar.map(function (x) {
                 return '<button class="chip' + (f.durum === x[0] ? ' on' : '') + '" data-durum="' + x[0] + '">' + x[1] + '</button>';
-              }).join('') + '</div>' +
-              '<div class="flabel">Grupla</div><div class="chips">' + gruplar.map(function (x) {
+              }).join('') + '</div></div>' +
+              '<div class="frow"><span class="flabel">Grupla:</span><div class="chips">' + gruplar.map(function (x) {
                 return '<button class="chip' + (f.grup === x[0] ? ' on' : '') + '" data-grup="' + x[0] + '">' + x[1] + '</button>';
-              }).join('') + '</div>' +
+              }).join('') + '</div></div>' +
+              '<div class="frow"><span class="flabel">Ödeme:</span><div class="chips">' + odemeler.map(function (x) {
+                return '<button class="chip' + (f.pay === x[0] ? ' on' : '') + '" data-pay="' + x[0] + '">' + x[1] + '</button>';
+              }).join('') + '</div></div>' +
             '</div>'
           : '';
+        var fbtn = '<button class="fbtn' + (S.ozetOpen ? ' on' : '') + (aktifFiltre ? ' has' : '') + '" id="oz-filter" title="Filtre">' +
+          (aktifFiltre ? 'Filtreler (' + aktifFiltre + ')' : '⏷') + '</button>';
 
         panel(
           '<div class="ph-row"><div><span id="oz-ref" class="ph-ref" title="Yenile">↻</span></div></div>' +
@@ -124,8 +133,7 @@
             kpiKart(kpi.packages, 'Toplam paket (bugün)') +
             kpiKart(kpi.cancelled, 'İptal') +
           '</div>' +
-          '<div class="sh-title"><h3>SİPARİŞLER <span>(bugün)</span></h3>' +
-            '<button class="fbtn' + (S.ozetOpen ? ' on' : '') + '" id="oz-filter" title="Filtre">⏷</button></div>' +
+          '<div class="sh-title"><h3>SİPARİŞLER <span>(bugün)</span></h3>' + fbtn + '</div>' +
           filtre +
           '<div class="slist">' + govde + '</div>'
         );
@@ -144,6 +152,13 @@
           b.onclick = function () {
             var v = b.getAttribute('data-grup');
             S.ozetFilter.grup = S.ozetFilter.grup === v ? '' : v;
+            viewOzet();
+          };
+        });
+        Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-pay]'), function (b) {
+          b.onclick = function () {
+            var v = b.getAttribute('data-pay');
+            S.ozetFilter.pay = S.ozetFilter.pay === v ? '' : v;
             viewOzet();
           };
         });

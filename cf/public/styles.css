@@ -158,7 +158,7 @@ body.sheet-open #toast{bottom:auto;top:calc(14px + var(--sat));z-index:12}
 .tbl .num{text-align:right;font-variant-numeric:tabular-nums}
 .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 .filters input,.filters select{font:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--ln);border-radius:8px;background:var(--card);color:var(--tx)}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px}
 .kpi{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:12px}
 .kpi .v{font-size:22px;font-weight:700;letter-spacing:-.4px}
 .kpi .l{color:var(--t2);font-size:12px}
@@ -211,7 +211,10 @@ header{position:relative}
   body.nav-open .adm-nav{transform:none}
   body.nav-open .scrim{display:block}
   .adm-panel{padding:10px;overflow-x:auto}
-  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+  .kpis .kpi{padding:8px 4px}
+  .kpis .kpi b{font-size:17px}
+  .kpis .kpi small{font-size:10px;line-height:1.15}
   .tbl{font-size:12px}
   .tbl th,.tbl td{padding:6px 4px}
   .filters{flex-wrap:wrap}
@@ -440,6 +443,8 @@ textarea{width:100%;font:inherit;font-size:15px;padding:10px 12px;border:1px sol
 .pcheck.off{background:rgba(229,72,77,.16);color:#c0353a}
 
 .kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:8px}
+/* yönetici Canlı Saha: 4 kutu tek satır */
+#adm-body .kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px}
 .kpi{background:var(--card);border:1px solid var(--ln);border-radius:10px;padding:10px 8px;text-align:center}
 .kpi b{display:block;font-size:17px;line-height:1.2}
 .kpi small{display:block;color:var(--t2);font-size:10px;margin-top:2px}
@@ -467,13 +472,16 @@ textarea{width:100%;font:inherit;font-size:15px;padding:10px 12px;border:1px sol
 .sh-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 8px}
 .sh-title h3{margin:0;font-size:15px;letter-spacing:.2px;text-transform:uppercase}
 .sh-title h3 span{font-weight:400;text-transform:none;color:var(--t2);font-size:13px}
-.fbtn{width:44px;height:40px;border-radius:10px;border:1px solid var(--ac);background:var(--ac);color:var(--on);font-size:16px;cursor:pointer}
+.fbtn{min-width:44px;height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--ac);background:var(--ac);color:var(--on);font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer}
+.fbtn.has{background:var(--ac);color:var(--on)}
 .fbtn.on{background:var(--ac)}
 .fpanel{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:12px;margin-bottom:10px}
-.fpanel .flabel{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--t2);margin:2px 0 6px}
-.fpanel .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.fpanel .chips:last-child{margin-bottom:0}
-.chip{border:1px solid var(--ln);background:transparent;color:var(--tx);border-radius:99px;padding:6px 14px;font-size:13px;cursor:pointer}
+.fpanel .frow{display:flex;align-items:center;gap:8px;margin-bottom:8px;min-width:0}
+.fpanel .frow:last-child{margin-bottom:0}
+.fpanel .flabel{flex:0 0 auto;font-size:12px;color:var(--t2);white-space:nowrap}
+.fpanel .chips{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;padding-bottom:2px;min-width:0}
+
+.chip{border:1px solid var(--ln);background:transparent;color:var(--tx);border-radius:99px;padding:5px 12px;font-size:12px;white-space:nowrap;cursor:pointer}
 .chip.on{background:var(--ac);border-color:var(--ac);color:var(--on);font-weight:600}
 .slist{display:flex;flex-direction:column;gap:8px}
 .srow{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:12px 14px;cursor:pointer}
