@@ -1,6 +1,8 @@
 import { Bot } from "./core";
 import type { Account } from "./types";
 import { json, fail, pkgDto, settings, statesFor } from "./apidto";
+import { makePinHash, validPin } from "./pin";
+import { validFullName, validPhone } from "./util";
 import * as accept from "./accept";
 import * as apiCourier from "./apicourier";
 
@@ -320,14 +322,53 @@ export async function adminRoutes(
     return json({ ok: true });
   }
 
-  if (path === "/yonetim/davet" && method === "POST") {
+
+  // ---------- kullanıcı oluşturma (yalnız yönetici) ----------
+  if (path === "/yonetim/kullanici" && method === "POST") {
     const body = await readBody(request);
-    const role = body.role === "restoran" ? "restoran" : "kurye";
-    const code = crypto.randomUUID().replace(/-/g, "");
-    await bot.db.run("INSERT OR REPLACE INTO invites(code,role,name,expires,contact_name,phone) VALUES (?,?,?,?,?,?)",
-      code, role, body.name || "", bot.now() + 7 * 86400, body.contact_name || null, body.phone || null);
+    const role = body.role === "restoran" ? "restoran" : body.role === "kurye" ? "kurye" : "";
+    if (!role) return fail("Rol seçilmedi (kurye/restoran).", 422, "invalid");
+    const name = String(body.name || "").trim();
+    if (role === "kurye" && !validFullName(name)) return fail("Ad ve soyadı birlikte yazın. Örnek: Ahmet Yılmaz", 422, "invalid");
+    if (role === "restoran" && (name.length < 2 || name.length > 80)) return fail("Restoran adı geçersiz.", 422, "invalid");
+    const phone = String(body.phone || "").trim().replace(/[ ()\-]/g, "");
+    if (!validPhone(phone)) return fail("Telefon numarası geçersiz.", 422, "invalid");
+    const pin = String(body.pin || "1234");
+    if (!validPin(pin)) return fail("PIN 4 haneli olmalı.", 422, "invalid");
+    const contact = String(body.contact_name || "").trim();
+    if (role === "restoran" && (contact.length < 2 || contact.length > 80)) return fail("Yetkili adı geçersiz.", 422, "invalid");
+
+    const son10 = phone.replace(/\D/g, "").slice(-10);
+    const hepsi = await bot.db.all<Account>("SELECT id, phone FROM accounts WHERE deleted=0");
+    const cakisan = hepsi.find((a) => String(a.phone || "").replace(/\D/g, "").slice(-10) === son10);
+    if (cakisan) return fail("Bu telefonla kayıtlı bir hesap var.", 409, "conflict");
+
+    const floor = await bot.db.first<{ value: number }>("SELECT value FROM settings WHERE key='accounts_id_floor'");
+    const max = await bot.db.first<{ n: number }>("SELECT coalesce(max(id),0) AS n FROM accounts WHERE id < 1000000");
+    const id = Math.max(max?.n ?? 0, floor?.value ?? 2000) + 1;
+    await bot.db.run("INSERT INTO settings(key,value) VALUES ('accounts_id_floor',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", id);
+
+    const hash = await makePinHash(pin);
+    const lat = body.latitude == null || body.latitude === "" ? null : Number(body.latitude);
+    const lng = body.longitude == null || body.longitude === "" ? null : Number(body.longitude);
+    if ((lat != null && !Number.isFinite(lat)) || (lng != null && !Number.isFinite(lng))) {
+      return fail("Konum koordinatları geçersiz.", 422, "invalid");
+    }
+    await bot.db.run(`INSERT INTO accounts(id,role,name,phone,contact_name,latitude,longitude,
+        pin_hash,pin_plain,pin_must_change,active,deleted)
+      VALUES (?,?,?,?,?,?,?,?,?,1,1,0)`,
+      id, role, name, phone, contact ? contact : null, lat, lng, hash, pin);
+
     const username = bot.env.BOT_USERNAME || "";
-    return json({ ok: true, token: code, url: `https://t.me/${username}?startapp=${code}` });
+    return json({
+      ok: true, id, role, name, phone,
+      pin, pin_must_change: true,
+      login_url: `https://t.me/${username}?startapp=login`,
+    });
+  }
+
+  if (path === "/yonetim/davet" && method === "POST") {
+    return fail("Davet akışı kaldırıldı. Kullanıcıyı /api/yonetim/kullanici ile oluşturun.", 410, "gone");
   }
 
   if (path === "/yonetim/iptaller" && method === "GET") {

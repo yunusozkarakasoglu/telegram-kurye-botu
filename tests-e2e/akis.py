@@ -37,6 +37,7 @@ from dataclasses import dataclass
 
 ADMIN, REST, K1, K2 = 910001, 910002, 910003, 910004
 REST2, NOPIN = 910006, 910005
+YENI_K, YENI_R = 920001, 920002
 PIN = "1234"
 PHONES = {
     ADMIN: "05000000001",
@@ -45,6 +46,8 @@ PHONES = {
     K2: "05000000004",
     NOPIN: "05000000005",
     REST2: "05000000006",
+    YENI_K: "05009990010",
+    YENI_R: "05009990011",
 }
 CF_DIR = "cf"
 DEV = ("localdev", "")  # (X-Dev-Auth, X-Dev-Tg) — kurulum isteklerinde
@@ -166,6 +169,7 @@ DELETE FROM notifications WHERE id IN (SELECT notif FROM notif_targets WHERE acc
 DELETE FROM notif_targets WHERE account IN ({K1},{K2});
 DELETE FROM invites WHERE phone IN ('{PHONES[REST]}','{PHONES[K1]}','{PHONES[K2]}');
 DELETE FROM accounts WHERE id IN ({ADMIN},{REST},{K1},{K2},{NOPIN},{REST2});
+DELETE FROM accounts WHERE phone IN ('{PHONES[YENI_K]}','{PHONES[YENI_R]}');
 """)
 
 
@@ -387,6 +391,54 @@ def senaryo_kurye_kurye(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
     T.ok("paket havuzda görünüyor", havuzda_var(api, k2, pk2["id"]))
 
 
+def senaryo_admin_kullanici_ekleme(api: Api, o: dict[str, Oturum]) -> None:
+    T.bolum("ADMIN → KULLANICI EKLEME (davet yerine)")
+    admin = o["admin"]
+
+    k = api.cagir("POST", "/api/yonetim/kullanici",
+                  {"role": "kurye", "name": "Yeni Kurye", "phone": PHONES[YENI_K], "pin": "1234"},
+                  token=admin.token)
+    T.ok("admin kurye oluşturdu", bool(k.get("ok")) and k.get("id", 0) > 0, f"id={k.get('id')}")
+    T.esit("varsayılan PIN", "1234", k.get("pin"))
+    T.ok("giriş linki üretildi", str(k.get("login_url", "")).startswith("https://t.me/"), k.get("login_url"))
+
+    r = api.cagir("POST", "/api/yonetim/kullanici",
+                  {"role": "restoran", "name": "Yeni Restoran", "contact_name": "Yetkili Kişi",
+                   "phone": PHONES[YENI_R], "pin": "1234", "latitude": 40.99, "longitude": 29.03},
+                  token=admin.token)
+    T.ok("admin restoran oluşturdu (konumlu)", bool(r.get("ok")), f"id={r.get('id')}")
+
+    tekrar = api.cagir("POST", "/api/yonetim/kullanici",
+                       {"role": "kurye", "name": "Kopya Kurye", "phone": PHONES[YENI_K], "pin": "1234"},
+                       token=admin.token, bekle_hata=True)
+    T.esit("mükerrer telefon reddedildi", 409, tekrar.get("_status"))
+
+    tek_kelime = api.cagir("POST", "/api/yonetim/kullanici",
+                           {"role": "kurye", "name": "Ahmet", "phone": "05009990012", "pin": "1234"},
+                           token=admin.token, bekle_hata=True)
+    T.esit("tek kelime ad reddedildi", 422, tek_kelime.get("_status"))
+
+    yetkisiz = api.cagir("POST", "/api/yonetim/kullanici",
+                         {"role": "kurye", "name": "Baska Kurye", "phone": "05009990013"},
+                         token=o["k1"].token, bekle_hata=True)
+    T.esit("yönetici olmayan kullanıcı ekleyemiyor", 403, yetkisiz.get("_status"))
+
+    # yeni kullanıcı: 1234 ile giriş → PIN değiştirme zorunlu → sonra normal
+    giris = api.cagir("POST", "/api/giris", {"phone": PHONES[YENI_K], "pin": "1234"})
+    T.ok("yeni kullanıcı 1234 ile girdi", giris.get("pin_must_change") is True)
+    blok = api.cagir("GET", "/api/havuz", token=giris["token"], bekle_hata=True)
+    T.esit("PIN değişmeden API kapalı", 403, blok.get("_status"))
+    api.cagir("POST", "/api/pin/degistir", {"old_pin": "1234", "new_pin": "2468"}, giris["token"])
+    sonra = api.cagir("GET", "/api/havuz", token=giris["token"])
+    T.ok("PIN değişince kullanılabilir", "packages" in sonra)
+    eski = api.cagir("POST", "/api/giris", {"phone": PHONES[YENI_K], "pin": "1234"}, bekle_hata=True)
+    T.esit("eski PIN artık geçersiz", 401, eski.get("_status"))
+
+    # davet akışı kapalı
+    davet = api.cagir("POST", "/api/yonetim/davet", {"role": "kurye"}, token=admin.token, bekle_hata=True)
+    T.esit("davet ucu kapalı (410)", 410, davet.get("_status"))
+
+
 def senaryo_durum_yetki(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
     T.bolum("DURUM · YETKİ · KİMLİK")
     rest, k1, k2 = o["rest"], o["k1"], o["k2"]
@@ -446,6 +498,7 @@ def main() -> int:
     senaryo_restoran_admin(api, oturumlar)
     senaryo_admin_kurye(api, oturumlar, baglam)
     senaryo_kurye_kurye(api, oturumlar, baglam)
+    senaryo_admin_kullanici_ekleme(api, oturumlar)
     senaryo_durum_yetki(api, oturumlar, baglam)
     return T.ozet()
 

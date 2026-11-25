@@ -416,6 +416,7 @@
     aktarTumu: function (payload) { return req('POST', '/api/aktarim/tumu', payload || {}); },
     yonetim: function (what, arg) {
       if (what === 'davet') return req('POST', '/api/yonetim/davet', arg || { role: 'kurye' });
+      if (what === 'kullanici') return req('POST', '/api/yonetim/kullanici', arg || {});
       if (what === 'hesap') return req('POST', '/api/yonetim/hesap', arg || {});
       if (what === 'hesapGuncelle') return req('POST', '/api/yonetim/hesap-guncelle', arg || {});
       if (what === 'limit') return req('PUT', '/api/yonetim/limit', arg || {});

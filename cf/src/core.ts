@@ -24,8 +24,22 @@ export class Bot {
   now() { return now(); }
   nowF() { return nowF(); }
 
+  /** accounts.id → gerçek Telegram sohbeti (tg_chat_id). Eşleşmemiş hesaba gönderim atlanır. */
+  private async chatId(accountOrChat: number): Promise<number | null> {
+    try {
+      const row = await this.db.first<{ tg: number | null }>(
+        "SELECT tg_chat_id AS tg FROM accounts WHERE id=?", accountOrChat);
+      if (!row) return accountOrChat;          // ham sohbet kimliği
+      return row.tg ?? null;                    // hesap var ama Telegram bağlı değil
+    } catch {
+      return accountOrChat;
+    }
+  }
+
   async send(chat: number, text: string, markup?: unknown, parseMode?: "HTML") {
-    const payload: Record<string, unknown> = { chat_id: chat, text };
+    const hedef = await this.chatId(chat);
+    if (hedef == null) return null;
+    const payload: Record<string, unknown> = { chat_id: hedef, text };
     if (markup) payload.reply_markup = markup;
     if (parseMode) payload.parse_mode = parseMode;
     try {

@@ -1452,51 +1452,6 @@
   }
 
   /* ---------------- başlat ---------------- */
-  function renderRegister(s) {
-    var inv = s.invite || {};
-    var isRest = inv.role === 'restoran';
-    setHeader('Kayıt', isRest ? 'Restoran kaydı' : 'Kurye kaydı');
-    $('hdr-right').innerHTML = '';
-    $('nv').innerHTML = '';
-    $('mn').innerHTML = '<div class="card" style="padding:12px">' +
-      '<p class="note">Davet bağlantısıyla kayıt. Bilgilerinizi girin.</p>' +
-      '<div class="fld"><label>' + (isRest ? 'Restoran adı' : 'Ad Soyad') + '</label><input id="rg-name" value="' + esc(inv.name || (s.user && s.user.name) || '') + '"></div>' +
-      (isRest ? '<div class="fld"><label>Yetkili adı</label><input id="rg-contact" value="' + esc(inv.contact_name || '') + '"></div>' : '') +
-      (inv.code ? '' : '<div class="fld"><label>Davet kodu</label><input id="rg-code" placeholder="Davet kodunu yapıştırın"></div>') +
-      '<div class="fld"><label>Telefon</label><input id="rg-phone" inputmode="tel" value="' + esc(inv.phone || '') + '" placeholder="0546 208 99 00"></div>' +
-      '<div class="err" id="rg-err"></div>' +
-      '<button class="p" id="rg-save" style="width:100%">Kayıt Ol</button></div>';
-    $('rg-save').onclick = function () {
-      var body = { code: inv.code || ($('rg-code') ? $('rg-code').value.trim() : ''), name: $('rg-name').value.trim(), phone: $('rg-phone').value.trim() };
-      if (isRest) body.contact_name = $('rg-contact').value.trim();
-      API.kayit(body).then(function () {
-        UI.toast('Kayıt tamamlandı', 'success');
-        hardReload();
-      }).catch(function (e) { $('rg-err').textContent = e.message || 'Kayıt başarısız'; });
-    };
-  }
-
-  function renderIncomplete(s) {
-    var u = s.user || {};
-    var isRest = s.role === 'restoran';
-    setHeader('Bilgilerinizi tamamlayın', isRest ? 'Restoran bilgileri' : 'Kurye bilgileri');
-    $('hdr-right').innerHTML = '';
-    $('nv').innerHTML = '';
-    $('mn').innerHTML = '<div class="card" style="padding:12px">' +
-      '<p class="note">Devam etmek için ad soyad ve telefon zorunludur.</p>' +
-      '<div class="fld"><label>' + (isRest ? 'Restoran adı' : 'Ad Soyad') + '</label><input id="ci-name" value="' + esc(u.name && /^[A-Za-zÇĞİÖŞÜçğıöşü]+\s+[A-Za-zÇĞİÖŞÜçğıöşü]+/.test(u.name) ? u.name : '') + '"></div>' +
-      (isRest ? '<div class="fld"><label>Yetkili adı</label><input id="ci-contact" value="' + esc(u.contact_name || '') + '"></div>' : '') +
-      '<div class="fld"><label>Telefon</label><input id="ci-phone" inputmode="tel" value="' + esc(u.phone || '') + '" placeholder="0546 208 99 00"></div>' +
-      '<div class="err" id="ci-err"></div>' +
-      '<button class="p" id="ci-save" style="width:100%">Kaydet ve Devam</button></div>';
-    $('ci-save').onclick = function () {
-      var body = { name: $('ci-name').value.trim(), phone: $('ci-phone').value.trim() };
-      if (isRest) body.contact_name = $('ci-contact').value.trim();
-      API.profil(body).then(function () { hardReload(); })
-        .catch(function (e) { $('ci-err').textContent = e.message || 'Kaydedilemedi'; });
-    };
-  }
-
   function startSession(s) {
   S.session = s;
   S.role = s.role || 'courier';
@@ -1567,6 +1522,38 @@
     });
   }
 
+  function renderPinChange() {
+    setHeader('PIN Belirle', 'İlk giriş');
+    $('hdr-right').innerHTML = '';
+    $('nv').innerHTML = '';
+    $('mn').innerHTML = '<div class="card" style="padding:14px">' +
+      '<p class="note">Güvenlik için yöneticinizin verdiği PIN\'i değiştirin.</p>' +
+      '<div class="fld"><label>Mevcut PIN</label><div class="pinwrap"><input id="pc-old" inputmode="numeric" maxlength="4" type="password" value="1234"><button type="button" class="eye" data-eye="pc-old">👁</button></div></div>' +
+      '<div class="fld"><label>Yeni PIN</label><div class="pinwrap"><input id="pc-new" inputmode="numeric" maxlength="4" type="password" placeholder="••••"><button type="button" class="eye" data-eye="pc-new">👁</button></div></div>' +
+      '<div class="fld"><label>Yeni PIN (tekrar)</label><div class="pinwrap"><input id="pc-new2" inputmode="numeric" maxlength="4" type="password" placeholder="••••"><button type="button" class="eye" data-eye="pc-new2">👁</button></div></div>' +
+      '<div class="err" id="pc-err"></div>' +
+      '<button class="p" id="pc-save" style="width:100%">Kaydet ve Devam Et</button></div>';
+    $('pc-save').onclick = function () {
+      var o = $('pc-old').value.trim(), n = $('pc-new').value.trim(), n2 = $('pc-new2').value.trim(), e = $('pc-err');
+      e.textContent = '';
+      if (!/^\d{4}$/.test(n)) { e.textContent = 'Yeni PIN 4 haneli olmalı'; return; }
+      if (n !== n2) { e.textContent = 'PIN\'ler uyuşmuyor'; return; }
+      if (n === o) { e.textContent = 'Yeni PIN eskisinden farklı olmalı'; return; }
+      API.pinDegistir(o, n).then(function () {
+        UI.toast('PIN güncellendi', 'success');
+        location.reload();
+      }).catch(function (err) { e.textContent = err.message || 'Güncellenemedi'; });
+    };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-eye]'), function (b) {
+      b.onclick = function () {
+        var inp = document.getElementById(b.getAttribute('data-eye'));
+        if (!inp) return;
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+        b.textContent = inp.type === 'password' ? '👁' : '🙈';
+      };
+    });
+  }
+
   function renderLogin() {
     setHeader('Giriş', 'Telefon ve PIN');
     $('hdr-right').innerHTML = '';
@@ -1576,7 +1563,7 @@
       '<div class="fld"><label>4 haneli PIN</label><div class="pinwrap"><input id="lgpin" inputmode="numeric" maxlength="4" type="password" autocomplete="current-password" placeholder="••••"><button type="button" class="eye" data-eye="lgpin">👁</button></div></div>' +
       '<div class="err" id="lgerr"></div>' +
       '<button class="p" id="lgok" style="width:100%">Giriş Yap</button>' +
-      '<p class="note" style="margin-top:10px">Hesabınızın rolüne göre kurye, restoran veya yönetici paneli açılır.</p>' +
+      '<p class="note" style="margin-top:10px">Hesabınız yoksa yöneticinizden talep edin. İlk girişte PIN değiştirmeniz istenir.</p>' +
       '<div class="testwarn">TEST GİRİŞİ · tüm PIN’ler 1234 · kaldırılacak</div>' +
       '<div id="lglistbox"><p class="note">Kullanıcılar yükleniyor…</p></div></div>';
     $('lgok').onclick = function () {
@@ -1590,6 +1577,7 @@
         localStorage.setItem('loginTokenUser', String(r.id));
         localStorage.removeItem('pinToken');
         localStorage.removeItem('pinTokenUser');
+        if (r.pin_must_change) { renderPinChange(); return; }
         if (r.role === 'yonetici') { location.replace('/admin'); return; }
         location.reload();
       }).catch(function (e) { $('lgok').disabled = false; err.textContent = e.message || 'Giriş yapılamadı'; });
@@ -1659,8 +1647,8 @@
     API.init().then(function (s) {
       if (API.mode === 'real' && !localStorage.getItem('loginToken')) { renderLogin(); return; }
       if (s && s.role === 'yonetici') { location.replace('/admin' + location.hash); return; }
-      if (s && s.need_register) { renderRegister(s); return; }
-      if (s && s.incomplete) { renderIncomplete(s); return; }
+      if (s && s.need_login) { renderLogin(); return; }
+
       if (API.mode === 'real' && !localStorage.getItem('loginToken') && s && s.role !== 'yonetici') { pinGate(s); return; }
       S.session = s;
       S.role = s.role || 'courier';
@@ -1684,6 +1672,7 @@
         if (!document.hidden) refresh(false);
       });
     }).catch(function (e) {
+      if (e && e.code === 'pin_change_required') { renderPinChange(); return; }
       $('hdr-right').innerHTML = '';
       $('nv').innerHTML = '';
       $('mn').innerHTML = '<div class="empty"><b>Giriş yapılamadı</b>' + esc(e.message || '') +

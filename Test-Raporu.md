@@ -197,3 +197,12 @@ python3 tools/verify_package.py
 - Telegram: `getWebhookInfo` → `pending: 0`, son hata yok.
 - Kurye > Açık Paketler satırı yerel doğrulandı:
   `Belirtilmedi · Lezzet Döner` / `#910004-1 · Belirtilmedi · 4,5 km` / `190 TL`.
+
+### Son doğrulama (2026-11-25, kullanıcı açma + e2e)
+
+- `tests-e2e/akis.py` → **62/62 PASS** (4 kullanıcı, 6 blok, atama/kullanıcı ekleme dahil).
+- Yeni akış: admin `POST /api/yonetim/kullanici` → id 9100xx, PIN 1234, `pin_must_change=1`;
+  giriş → `403 pin_change_required` → `PIN değiştir` → normal; eski PIN 401.
+- Mükerrer telefon 409 · tek kelime ad 422 · yönetici olmayan 403 · davet ucu 410.
+- Restoran kaydı konumla (40.99 / 29.03) oluştu; harita alanları D1'de doğrulandı.
+- `ruff` ✅ · Python 382 test ✅ · `tsc --noEmit` ✅ · deploy `f5e4f70e`.

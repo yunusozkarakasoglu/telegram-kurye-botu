@@ -183,11 +183,11 @@
   function viewKuryeler() {
     head('Kuryeler', 'Aktif/pasif yönetimi');
     var kseg = '<div class="seg two"><button data-kt="list" class="' + (S.kuryeTab === 'list' ? 'on' : '') + '">Kuryeler</button>' +
-      '<button data-kt="davet" class="' + (S.kuryeTab === 'davet' ? 'on' : '') + '">Kurye Daveti</button></div>';
+      '<button data-kt="davet" class="' + (S.kuryeTab === 'davet' ? 'on' : '') + '">＋ Kurye Ekle</button></div>';
     if (S.kuryeTab === 'davet') {
       panel(kseg);
       var kh = document.createElement('div'); kh.id = 'invite-host'; $('adm-body').appendChild(kh);
-      invitePane(kh, 'kurye');
+      kullaniciEklePane(kh, 'kurye');
       Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-kt]'), function (bb) {
         bb.onclick = function () { S.kuryeTab = bb.getAttribute('data-kt'); render(); };
       });
@@ -234,11 +234,11 @@
   function viewRestoranlar() {
     head('Restoranlar', 'Hesap yönetimi');
     var rseg = '<div class="seg two"><button data-rt2="list" class="' + (S.restTab === 'list' ? 'on' : '') + '">Restoranlar</button>' +
-      '<button data-rt2="davet" class="' + (S.restTab === 'davet' ? 'on' : '') + '">Restoran Daveti</button></div>';
+      '<button data-rt2="davet" class="' + (S.restTab === 'davet' ? 'on' : '') + '">＋ Restoran Ekle</button></div>';
     if (S.restTab === 'davet') {
       panel(rseg);
       var rh = document.createElement('div'); rh.id = 'invite-host'; $('adm-body').appendChild(rh);
-      invitePane(rh, 'restoran');
+      kullaniciEklePane(rh, 'restoran');
       Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-rt2]'), function (bb) {
         bb.onclick = function () { S.restTab = bb.getAttribute('data-rt2'); render(); };
       });
@@ -665,42 +665,70 @@
     };
   }
 
-  function invitePane(host, role) {
+  function kullaniciEklePane(host, role) {
     var isRest = role === 'restoran';
-    host.innerHTML = '<div class="fld"><label>' + (isRest ? 'Restoran adı' : 'Ad Soyad') + '</label>' +
-      '<input id="iv-name" placeholder="' + (isRest ? 'Lezzet Döner' : 'Ahmet Yılmaz') + '"></div>' +
-      (isRest ? '<div class="fld"><label>Yetkili adı</label><input id="iv-contact" placeholder="Ali Usta"></div>' : '') +
-      '<div class="fld"><label>Telefon</label><input id="iv-phone" inputmode="tel" placeholder="0546 208 99 00"></div>' +
-      '<button class="p" id="iv-create">' + (isRest ? 'Restoran Daveti Oluştur' : 'Kurye Daveti Oluştur') + '</button>' +
-      '<div id="iv-out" style="margin-top:14px"></div>' +
-      '<p class="note">Ad ve telefon girilirse davet linkine tıklayan doğrudan kaydolur; boş bırakılırsa kendi girer.</p>';
-    host.querySelector('#iv-create').onclick = function () {
-      API.yonetim('davet', { role: role, name: host.querySelector('#iv-name').value.trim(),
-        phone: host.querySelector('#iv-phone').value.trim(),
-        contact_name: isRest ? host.querySelector('#iv-contact').value.trim() : '' }).then(function (d) {
-        var link = d.url || ('https://t.me/YunusKuryePilot_4862_bot?startapp=' + (d.token || ''));
-        host.querySelector('#iv-out').innerHTML = '<div class="fld"><label>Davet bağlantısı</label><input id="iv-link" readonly value="' + esc(link) + '"></div>' +
-          '<div class="fld"><label>Davet kodu</label><input id="iv-code" readonly value="' + esc(d.token || '') + '"></div>' +
-          '<div class="acts" style="gap:8px;flex-wrap:nowrap"><button class="p" id="iv-share" style="flex:1">Bağlantıyı Paylaş</button>' +
-          '<button class="p" id="iv-copy" style="flex:1">Kopyala</button></div>';
-        host.querySelector('#iv-share').onclick = function () {
-          var text = 'Kurye Paket Bot daveti: ' + link;
-          if (navigator.share) { navigator.share({ title: 'Kurye Paket daveti', text: text, url: link }).catch(function () {}); return; }
-          var u = 'https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent('Kurye Paket daveti');
-          if (window.TG && TG.openLink) TG.openLink(u); else window.open(u, '_blank');
-        };
-        host.querySelector('#iv-copy').onclick = function () {
-          var msg = 'Kurye Paket Bot sistemine kayıt olmak için verilen linkteki bağlantıdan ulaşabilirsiniz.\n' +
-            'Bağlantı Linki : ' + link + '\n\n' +
-            'Sistem sizden ilk kayıt için ad soyad ve telefon bilgileri isteyecektir.';
-          if (navigator.clipboard) navigator.clipboard.writeText(msg).then(function () { UI.toast('Kopyalandı', 'success'); }).catch(function () { UI.toast('Kopyalanamadı', 'error'); });
-          else UI.toast('Kopyalanamadı', 'error');
-        };
-      }).catch(function (e) { UI.toast(e.message || 'Oluşturulamadı', 'error'); });
+    host.innerHTML =
+      '<div class="fld"><label>' + (isRest ? 'Restoran adı' : 'Ad Soyad') + '</label>' +
+        '<input id="ku-name" placeholder="' + (isRest ? 'Lezzet Döner' : 'Ahmet Yılmaz') + '"></div>' +
+      (isRest ? '<div class="fld"><label>Yetkili adı soyadı</label><input id="ku-contact" placeholder="Ali Usta"></div>' : '') +
+      '<div class="fld"><label>Telefon</label><input id="ku-phone" inputmode="tel" placeholder="0546 208 99 00"></div>' +
+      '<div class="fld"><label>PIN (varsayılan 1234)</label><input id="ku-pin" inputmode="numeric" maxlength="4" value="1234"></div>' +
+      (isRest ? '<div class="acts" style="gap:8px;margin-bottom:8px">' +
+        '<div class="fld" style="flex:1;margin:0"><label>Enlem</label><input id="ku-lat" inputmode="decimal" placeholder="40.9901"></div>' +
+        '<div class="fld" style="flex:1;margin:0"><label>Boylam</label><input id="ku-lng" inputmode="decimal" placeholder="29.0270"></div>' +
+      '</div>' +
+      '<p class="note" style="margin:-4px 0 8px">Konum girilirse haritada aç / yol tarifi çalışır.</p>' : '') +
+      '<button class="p" id="ku-save">' + (isRest ? 'Restoranı Kaydet' : 'Kuryeyi Kaydet') + '</button>' +
+      '<div id="ku-out" style="margin-top:14px"></div>' +
+      '<p class="note">Hesap yönetici tarafından açılır. Kişiye giriş bağlantısını gönderin; ilk girişte PIN değiştirmesi istenir.</p>';
+
+    host.querySelector('#ku-save').onclick = function () {
+      var body = {
+        role: role,
+        name: host.querySelector('#ku-name').value.trim(),
+        phone: host.querySelector('#ku-phone').value.trim(),
+        pin: host.querySelector('#ku-pin').value.trim() || '1234',
+        contact_name: isRest ? host.querySelector('#ku-contact').value.trim() : '',
+      };
+      if (isRest) {
+        body.latitude = host.querySelector('#ku-lat').value.trim();
+        body.longitude = host.querySelector('#ku-lng').value.trim();
+      }
+      var btn = host.querySelector('#ku-save');
+      btn.disabled = true;
+      API.yonetim('kullanici', body).then(function (d) {
+        var link = d.login_url || '';
+        var mesaj = (isRest ? 'Restoran' : 'Kurye') + ' giriş bilgileri\n' +
+          'Ad: ' + d.name + '\nTelefon: ' + d.phone + '\nPIN: ' + d.pin + '\n\n' +
+          'Uygulama: ' + link + '\n\nİlk girişte PIN değiştirmeniz istenir.';
+        host.querySelector('#ku-out').innerHTML =
+          '<div class="card" style="padding:12px"><b>' + esc(d.name) + '</b>' +
+          '<div style="font-size:12px;color:var(--t2);margin:4px 0 8px">ID: ' + d.id + ' · ' + esc(d.phone) + ' · PIN ' + esc(d.pin) + '</div>' +
+          '<div class="fld"><label>Giriş bağlantısı</label><input id="ku-link" readonly value="' + esc(link) + '"></div>' +
+          '<div class="acts" style="gap:8px;flex-wrap:nowrap">' +
+            '<button class="p" id="ku-copy" style="flex:1">Bağlantıyı Kopyala</button>' +
+            '<button class="p" id="ku-msg" style="flex:1">Bilgileri Kopyala</button></div></div>';
+        host.querySelector('#ku-copy').onclick = function () { kopyala(link); };
+        host.querySelector('#ku-msg').onclick = function () { kopyala(mesaj); };
+        host.querySelector('#ku-name').value = '';
+        host.querySelector('#ku-phone').value = '';
+        host.querySelector('#ku-pin').value = '1234';
+        UI.toast((isRest ? 'Restoran' : 'Kurye') + ' eklendi', 'success');
+      }).catch(function (e) {
+        UI.toast(e.message || 'Kaydedilemedi', 'error');
+      }).then(function () { btn.disabled = false; });
     };
   }
 
-  /* ---------------- çalıştır ---------------- */
+  function kopyala(text) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(function () { UI.toast('Kopyalandı', 'success'); })
+        .catch(function () { UI.toast('Kopyalanamadı', 'error'); });
+    } else {
+      UI.toast('Kopyalanamadı', 'error');
+    }
+  }
+
   function render() {
     renderTabs();
     nav();

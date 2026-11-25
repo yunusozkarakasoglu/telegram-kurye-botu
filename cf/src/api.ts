@@ -1,6 +1,6 @@
 import { Bot } from "./core";
 import type { Account, Env, PackageRow } from "./types";
-import { authenticate, HttpError, identity } from "./auth";
+import { authenticate, HttpError, identity, verifyInitData } from "./auth";
 import { adminRoutes } from "./apiadmin";
 import { json, fail, pkgDto, settings, statesFor } from "./apidto";
 export { json, fail } from "./apidto";
@@ -63,9 +63,21 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       await env.DB.prepare("UPDATE accounts SET pin_fail=?, pin_lock=? WHERE id=?").bind(fails, lock, match.id).run();
       return fail(fails >= 3 ? "3 hatalı deneme. 5 dakika kilitlendi." : `Hatalı PIN. Kalan deneme: ${3 - fails}`, 401, "wrong_pin");
     }
-    await env.DB.prepare("UPDATE accounts SET pin_fail=0, pin_lock=0, pin_ok_until=? WHERE id=?").bind(now + 24 * 3600, match.id).run();
+    // Telegram sohbetini bu hesaba bağla (Mini App içinden giriş yapıldıysa)
+    let tg: number | null = null;
+    const initData = request.headers.get("x-telegram-init-data") || "";
+    if (initData) {
+      try { tg = (await verifyInitData(initData, env.BOT_TOKEN)).id; } catch { tg = null; }
+    }
+    await env.DB.prepare(`UPDATE accounts SET pin_fail=0, pin_lock=0, pin_ok_until=?,
+        tg_chat_id=coalesce(?, tg_chat_id) WHERE id=?`)
+      .bind(now + 24 * 3600, tg, match.id).run();
     const t = await loginToken(env, match.id);
-    return json({ ok: true, token: t.token, exp: t.exp, role: match.role, name: match.name, id: match.id, phone: match.phone });
+    return json({
+      ok: true, token: t.token, exp: t.exp, role: match.role, name: match.name,
+      id: match.id, phone: match.phone, pin_must_change: !!match.pin_must_change,
+      tg_linked: !!(tg || match.tg_chat_id),
+    });
   }
   let user: Account;
   let ident: { id: number; name: string; startParam: string };
@@ -82,81 +94,27 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       return fail(e.message || "Yetkilendirme hatası", e instanceof HttpError ? e.status : 401, "unauthorized");
     }
   }
-  let existing = await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(ident.id).first<Account>();
-    const path0 = url.pathname.replace(/^\/api/, "") || "/";
-  const urlStart = url.searchParams.get("tgWebAppStartParam") || url.searchParams.get("start_param") || "";
-  const inviteCode = ident.startParam || urlStart;
+  const existing = await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(ident.id).first<Account>();
+  const path0 = url.pathname.replace(/^\/api/, "") || "/";
+  // Hesaplar yalnız yönetici tarafından açılır; tanınmayan Telegram kimliği giriş ekranına düşer.
   if (!existing) {
-    const code0 = inviteCode;
-    const invite0 = code0 ? await env.DB.prepare("SELECT * FROM invites WHERE code=? AND expires>?").bind(code0, Math.floor(Date.now() / 1000)).first<any>() : null;
-    if (invite0 && invite0.name && invite0.phone) {
-      await env.DB.prepare("INSERT INTO accounts(id,role,name,phone,contact_name) VALUES (?,?,?,?,?)")
-        .bind(ident.id, invite0.role === "restoran" ? "restoran" : "kurye", invite0.name, invite0.phone, invite0.contact_name || null).run();
-      await env.DB.prepare("DELETE FROM invites WHERE code=?").bind(code0).run();
-      existing = await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(ident.id).first<Account>();
-    }
-    if (!existing && path0 === "/oturum") {
-      return json({ need_register: true, invite: invite0 ? { code: invite0.code, role: invite0.role, name: invite0.name || "", phone: invite0.phone || "", contact_name: invite0.contact_name || "" } : null, user: { id: ident.id, name: ident.name } });
-    }
-    if (!existing && path0 === "/kayit" && request.method === "POST") {
-      const body = await readBody(request);
-      const code = String(body.code || ident.startParam || "");
-      const invite = code ? await env.DB.prepare("SELECT * FROM invites WHERE code=? AND expires>?").bind(code, Math.floor(Date.now() / 1000)).first<any>() : null;
-      if (!invite) return fail("Davet geçersiz veya süresi dolmuş.", 403, "forbidden");
-      const role = invite.role === "restoran" ? "restoran" : "kurye";
-      const name = String(body.name || "").trim();
-      const phone = String(body.phone || "").trim().replace(/[ ()\-]/g, "");
-      if (role === "kurye" && !validFullName(name)) return fail("Ad ve soyadı birlikte yazın. Örnek: Ahmet Yılmaz", 422, "invalid");
-      if (role === "restoran" && (name.length < 2 || name.length > 80)) return fail("Restoran adı geçersiz.", 422, "invalid");
-      if (!validPhone(phone)) return fail("Telefon numarası geçersiz.", 422, "invalid");
-      const contact = String(body.contact_name || "").trim();
-      await env.DB.prepare("INSERT INTO accounts(id,role,name,phone,contact_name) VALUES (?,?,?,?,?)")
-        .bind(ident.id, role, name, phone, contact || null).run();
-      await env.DB.prepare("DELETE FROM invites WHERE code=?").bind(code).run();
-      return json({ ok: true, role });
-    }
-    if (!existing) return fail("Bu Telegram hesabı tanımlı değil. Davet bağlantısını kullanın.", 403, "forbidden");
+    if (path0 === "/oturum") return json({ need_login: true, user: { id: ident.id, name: ident.name } });
+    return fail("Bu Telegram hesabı tanımlı değil. Telefon ve PIN ile giriş yapın.", 403, "need_login");
   }
   user = existing!;
   const originalRole = user.role;
   const actAsCourier = originalRole === "yonetici" && request.headers.get("x-act-as") === "kurye";
   if (actAsCourier) user = { ...user, role: "kurye" };
   if (user.deleted || !user.active) {
-    const code0 = inviteCode;
-    const invite0 = code0 ? await env.DB.prepare("SELECT * FROM invites WHERE code=? AND expires>?").bind(code0, Math.floor(Date.now() / 1000)).first<any>() : null;
-    if (invite0 && invite0.name && invite0.phone) {
-      await env.DB.prepare("UPDATE accounts SET deleted=0,active=1,online=0,locked=0,role=?,name=?,phone=?,contact_name=? WHERE id=?")
-        .bind(invite0.role === "restoran" ? "restoran" : "kurye", invite0.name, invite0.phone, invite0.contact_name || null, user.id).run();
-      await env.DB.prepare("DELETE FROM invites WHERE code=?").bind(invite0.code).run();
-      user = (await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(user.id).first<Account>())!;
-    } else if (path0 === "/kayit" && request.method === "POST") {
-      const body = await readBody(request);
-      const code = String(body.code || code0);
-      const invite = await env.DB.prepare("SELECT * FROM invites WHERE code=? AND expires>?").bind(code, Math.floor(Date.now() / 1000)).first<any>();
-      if (!invite) return fail("Davet geçersiz veya süresi dolmuş.", 403, "forbidden");
-      const role = invite.role === "restoran" ? "restoran" : "kurye";
-      const name = String(body.name || invite.name || "").trim();
-      const phone = String(body.phone || invite.phone || "").trim().replace(/[ ()\-]/g, "");
-      if (role === "kurye" && !validFullName(name)) return fail("Ad ve soyadı birlikte yazın. Örnek: Ahmet Yılmaz", 422, "invalid");
-      if (role === "restoran" && (name.length < 2 || name.length > 80)) return fail("Restoran adı geçersiz.", 422, "invalid");
-      if (!validPhone(phone)) return fail("Telefon numarası geçersiz.", 422, "invalid");
-      const contact = String(body.contact_name || invite.contact_name || "").trim();
-      await env.DB.prepare("UPDATE accounts SET role=?,name=?,phone=?,contact_name=?,deleted=0,active=1,online=0,locked=0 WHERE id=?")
-        .bind(role, name, phone, contact || null, user.id).run();
-      await env.DB.prepare("DELETE FROM invites WHERE code=?").bind(code).run();
-      return json({ ok: true, role });
-    } else if (path0 === "/oturum") {
-      return json({ need_register: true, invite: invite0 ? { code: invite0.code, role: invite0.role, name: invite0.name || "", phone: invite0.phone || "", contact_name: invite0.contact_name || "" } : null, user: { id: user.id, name: "" } });
-    } else {
-      return fail("Hesabınız pasif veya silinmiş. Yöneticiden yeni davet isteyin.", 403, "account_inactive");
-    }
+    return fail("Hesabınız pasif veya silinmiş. Yöneticinizle iletişime geçin.", 403, "account_inactive");
   }
+  await bot.db.ensureColumns();
 
   const path = url.pathname.replace(/^\/api/, "") || "/";
   const method = request.method.toUpperCase();
 
   // PIN kurulumu/doğrulaması (kurye ve restoran için zorunlu ikinci adım)
-  if (loginId === null && path !== "/oturum" && (path.startsWith("/pin/") || originalRole !== "yonetici" || actAsCourier)) {
+  if (path !== "/oturum" && (path.startsWith("/pin/") || originalRole !== "yonetici" || actAsCourier)) {
     for (const sql of pinSql()) { try { await env.DB.prepare(sql).run(); } catch {} }
     const fresh = (await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(user.id).first<Account>()) || user;
     user = actAsCourier ? { ...fresh, role: "kurye" } : fresh;
@@ -201,13 +159,16 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       if (!validPin(newPin)) return fail("Yeni PIN 4 haneli olmalı.", 422, "invalid");
       if (!(await checkPinHash(oldPin, user.pin_hash))) return fail("Mevcut PIN hatalı.", 401, "wrong_pin");
       const hash = await makePinHash(newPin);
-      await env.DB.prepare("UPDATE accounts SET pin_hash=?, pin_plain=?, pin_fail=0, pin_lock=0, pin_ok_until=? WHERE id=?")
+      await env.DB.prepare("UPDATE accounts SET pin_hash=?, pin_plain=?, pin_must_change=0, pin_fail=0, pin_lock=0, pin_ok_until=? WHERE id=?")
         .bind(hash, newPin, Math.floor(Date.now() / 1000) + 12 * 3600, user.id).run();
       if (actAsCourier) await env.DB.prepare("UPDATE accounts SET online=1 WHERE id=?").bind(user.id).run();
       return json({ ok: true });
     }
     if (path.startsWith("/pin/")) return fail("Bulunamadı", 404, "not_found");
-    if (!(originalRole === "yonetici" && !actAsCourier)) {
+    if (user.pin_must_change && !path.startsWith("/pin/")) {
+      return fail("İlk girişte PIN'inizi değiştirmeniz gerekiyor.", 403, "pin_change_required");
+    }
+    if (loginId === null && !(originalRole === "yonetici" && !actAsCourier)) {
       if (!user.pin_hash) return fail("PIN oluşturmanız gerekiyor.", 403, "pin_setup");
       if (!(await validPinToken(env, user.id, request.headers.get("x-pin-token") || ""))) {
         return fail("PIN doğrulaması gerekli.", 401, "pin_required");
@@ -236,6 +197,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
           id: user.id, name: user.name, phone: user.phone || null,
           contact_name: user.contact_name || null, online: !!user.online, locked: !!user.locked,
           busy: !!user.busy, busy_reason: user.busy_reason || null, pin: user.pin_plain || null,
+          pin_must_change: !!user.pin_must_change, tg_linked: !!user.tg_chat_id,
         },
         settings: await settings(bot),
       });

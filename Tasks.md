@@ -29,6 +29,9 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] Kullanıcı açma yöneticiye taşındı: davet/kayıt akışı kaldırıldı; **＋ Kurye Ekle / ＋ Restoran Ekle** formları (ad, telefon, PIN 1234, restoran için yetkili + enlem/boylam), giriş linki kopyala, yapay ID + `tg_chat_id`, ilk girişte zorunlu PIN değişimi (`f5e4f70e`, v73).
+- [x] Atama onayı API'si `/api/atama/{id}/kabul|reddet` — Mini App'te "Kabul Et" gerçekten atıyor (testte bulundu).
+- [x] E2E testi: `tests-e2e/akis.py` — 4 test kullanıcısı + 62 doğrulama (kullanıcı ekleme bloğu dahil).
 - [x] `28c9837` (tenant fazı) geri alındı → `8c55b6c`; `cf/` = `676f01d` ile birebir. SaaS işi `Kurye-Flow-Mobil`'e taşındı.
 - [x] Kurye > Açık Paketler satır düzeni: bölge+restoran üstte kalın, talep no·ödeme·km altta (`eecbb85`, v71).
 - [x] PIN girişi (24 saat token, yenilemede sorulmaz, hesaba bağlı), profil PIN düzenleme (göz ikonu), yönetici kurye modu PIN.
