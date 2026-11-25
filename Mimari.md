@@ -4,6 +4,13 @@
 > (`8c55b6c`). Tek bölgeli yapı geçerli; SaaS mimarisi `~/Masaüstü/Kurye-Flow-Mobil`
 > projesinde yaşıyor (`AGENTS.md`, `Mimari.md`, `PLAN.md`).
 
+## Yönetici paneli (2026-11-25)
+
+- Menü: 2 sütun; en altta Profil (tam satır) + Ayarlar|Çıkış (yan yana).
+- Ayarlar = sekmeler (paket limiti, ücret tarifesi, sistem/çalışma saatleri).
+- Canlı Saha = 4 KPI + bugünün sipariş listesi (`/api/yonetim/siparisler`) + açılır filtre (Durum/Ödeme/Grupla) + satır detayı ve kurye atama.
+- Profil = yönetici ad/telefon (`PATCH /api/profil` yöneticiye açık) + PIN değiştirme.
+
 ## Hedef ve sınır
 
 Telegram Python botu yerel/sunucu çalışması için güncellenir. Cloudflare webhook/D1 uyarlaması bu aşamada yapılmaz. Eski ZIP salt okunur referanstır; yeni sürüm `bot.py` + `kurye/` kaynaklarından, ayrı sürümlü ZIP'e paketlenir. Harici Python bağımlılığı yoktur.

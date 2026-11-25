@@ -206,3 +206,10 @@ python3 tools/verify_package.py
 - Mükerrer telefon 409 · tek kelime ad 422 · yönetici olmayan 403 · davet ucu 410.
 - Restoran kaydı konumla (40.99 / 29.03) oluştu; harita alanları D1'de doğrulandı.
 - `ruff` ✅ · Python 382 test ✅ · `tsc --noEmit` ✅ · deploy `f5e4f70e`.
+
+### Son doğrulama (2026-11-25, yönetici paneli + Canlı Saha)
+
+- Canlı Saha: 4 KPI tek satır (`179.75px × 4`), 7 sipariş satırı, `Filtreler` düğmesi, filtrede `✕` temizle.
+- Filtreler: Gecikenler → 4 satır; Ödeme alındı → 1; Ödeme alınmadı → 1; ✕ → 7 satır.
+- Satır detayı açıldı, kurye atama alanı geldi. Ayarlar sekmeleri (3) çalıştı; Profil ad/telefon kaydı doğrulandı.
+- `tsc --noEmit` ✅ · e2e **64/64** · deploy `210e9bfb` (v84).

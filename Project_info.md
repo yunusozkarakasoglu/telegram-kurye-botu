@@ -14,7 +14,7 @@
 | Alan | Değer |
 |---|---|
 | Durum | **Legacy / frozen** — yeni özellik eklenmez |
-| Aktif sürüm | Cloudflare `ca8de7eb…` · asset `v71` |
+| Aktif sürüm | Cloudflare `210e9bfb…` · asset `v84` |
 | Yayın | `https://kurye.packonexpress.com/` (yönetici `/admin`) |
 | Yeni proje | `~/Masaüstü/Kurye-Flow-Mobil` — **PackOn Express** (çok bölgeli SaaS + Android) |
 | Geri alma | tenant fazı `28c9837` → `8c55b6c` ile çıkarıldı; `cf/` = `676f01d` |

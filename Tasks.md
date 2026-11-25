@@ -2,6 +2,12 @@
 
 ## Açık
 
+### Yarın (2026-11-26): performans + kota
+- [ ] **GET isteklerinde optimizasyon**: Mini App 5 sn'lik yoklama (3 istek) → 10-15 sn + tek toplu uç (`/api/durum` benzeri); ekran kapalıyken durdur.
+- [ ] Rapor/Canlı Saha sorgularına tarih zorunluluğu + indeks kontrolü.
+- [ ] Cloudflare/D1 kullanım ölçümü (istek, satır okuma) ve kota görünümü.
+- [ ] Birkaç arayüz düzenlemesi (kullanıcı istekleri).
+
 > **Yön:** Bu proje legacy. Yeni geliştirme `~/Masaüstü/Kurye-Flow-Mobil` (PackOn Express) altında sürüyor.
 - [ ] **GEÇİCİ TEST GİRİŞİ canlıda açık**: `GET /api/giris/kullanicilar` tüm hesapların PIN'ini **1234** yapar ve listeyi döner. Kaldırılmalı (Faz 4/5).
 - [ ] `pin_plain` (düz metin PIN) canlıda duruyor; yalnız maske/göz gösterimi için. Kaldırılmalı.
@@ -29,6 +35,8 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] Yönetici paneli yeniden düzenlendi: 2 sütun menü, **Ayarlar** sekme sayfası, **Profil** (ad/telefon/PIN), Canlı Saha (4 KPI + bugünün siparişleri + Filtreler/✕ Temizle + Durum/Ödeme/Grupla), iç sekmeler kaldırıldı (`210e9bfb`, v84).
+- [x] Canlı Saha sipariş satırı detayı + boştaki kuryeye atama; `/api/yonetim/siparisler` ucu.
 - [x] Ad alanı denetimi kaldırıldı: yönetici kurye/restoran eklerken ad serbest metin (2–80 karakter). Tek kelime, 3+ isim kabul; boş/aşırı uzun reddedilir. E2E **64/64** (`d2a08efd`).
 - [x] Kullanıcı açma yöneticiye taşındı: davet/kayıt akışı kaldırıldı; **＋ Kurye Ekle / ＋ Restoran Ekle** formları (ad, telefon, PIN 1234, restoran için yetkili + enlem/boylam), giriş linki kopyala, yapay ID + `tg_chat_id`, ilk girişte zorunlu PIN değişimi (`f5e4f70e`, v73).
 - [x] Atama onayı API'si `/api/atama/{id}/kabul|reddet` — Mini App'te "Kabul Et" gerçekten atıyor (testte bulundu).
