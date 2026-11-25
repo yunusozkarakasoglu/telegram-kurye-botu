@@ -451,3 +451,8 @@ textarea{width:100%;font:inherit;font-size:15px;padding:10px 12px;border:1px sol
 .notebox{margin-top:10px;padding:9px 11px;border:1px solid var(--ln);border-radius:10px;background:var(--el2,rgba(127,127,127,.06))}
 .notebox small{display:block;font-size:11px;color:var(--t2);margin-bottom:3px}
 .notebox div{font-size:13px;min-height:18px;white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* yönetici menüsü alt bölümü: Ayarlar | Çıkış yan yana */
+.adm-nav .nav-foot{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;border-top:1px solid var(--ln);padding-top:8px}
+.adm-nav .nav-foot button{width:100%}
+.adm-nav .nav-wide{min-height:44px}

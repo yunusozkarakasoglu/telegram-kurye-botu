@@ -9,14 +9,14 @@
   var S = { tab: 'anasayfa', homeTab: 'ozet', kuryeTab: 'list', restTab: 'list', data: {}, session: null, ozetGroup: '' };
 
   var TABS = [
-    ['ozet', 'Özet'], ['havuz', 'Havuz'], ['sontalepler', 'Son Talepler'],
-    ['ayarlar', 'Ayarlar'], ['bolgeler', 'Bölgeler'],
-    ['restoranlar', 'Restoranlar'], ['kuryeler', 'Kuryeler'], ['iptaller', 'İptal Siparişler'],
-    ['kuryedurum', 'Kurye Durumu'], ['rapor', 'Raporlar'], ['odemeler', 'Ödemeler'], ['mesaj', 'Mesaj']
+    ['ozet', 'Canlı Saha'], ['havuz', 'Havuz'], ['sontalepler', 'Son Talepler'], ['iptaller', 'İptal Siparişler'],
+    ['bolgeler', 'Bölgeler'], ['restoranlar', 'Restoranlar'], ['kuryeler', 'Kuryeler'],
+    ['kuryedurum', 'Kurye Durumu'], ['rapor', 'Raporlar'], ['odemeler', 'Ödemeler'], ['mesaj', 'Mesaj'],
+    ['profil', 'Profil'], ['ayarlar', 'Ayarlar']
   ];
 
   function head(t, s) { $('adm-title').textContent = t; $('adm-sub').textContent = s || ''; }
-  var MAIN = ['ozet', 'havuz', 'sontalepler'];
+  var MAIN = ['ozet', 'havuz', 'sontalepler', 'iptaller'];
   function renderTabs() {
     if (S.tab !== 'anasayfa') { $('adm-tabs').innerHTML = ''; return; }
     $('adm-tabs').innerHTML = MAIN.map(function (key) {
@@ -28,14 +28,19 @@
     });
   }
   function nav() {
-    var items = TABS.filter(function (t) { return MAIN.indexOf(t[0]) < 0; });
+    var KENAR = ['profil', 'ayarlar'];
+    var items = TABS.filter(function (t) { return MAIN.indexOf(t[0]) < 0 && KENAR.indexOf(t[0]) < 0; });
     $('adm-nav').innerHTML =
       '<button class="' + (S.tab === 'anasayfa' ? 'on' : '') + '" data-t="anasayfa">Anasayfa</button>' +
       items.map(function (t) {
         return '<button class="' + (S.tab === t[0] ? 'on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</button>';
-      }).join('') + '<button id="adm-logout" style="margin-top:6px;border-top:1px solid var(--ln)">⏻ Çıkış</button>';
-    Array.prototype.forEach.call($('adm-nav').children, function (b) {
-      if (!b.getAttribute || !b.getAttribute('data-t')) return;
+      }).join('') +
+      '<button class="nav-wide' + (S.tab === 'profil' ? ' on' : '') + '" data-t="profil" style="grid-column:1/-1">👤 Profil</button>' +
+      '<div class="nav-foot">' +
+        '<button class="' + (S.tab === 'ayarlar' ? 'on' : '') + '" data-t="ayarlar">⚙ Ayarlar</button>' +
+        '<button id="adm-logout">⏻ Çıkış</button>' +
+      '</div>';
+    Array.prototype.forEach.call($('adm-nav').querySelectorAll('[data-t]'), function (b) {
       b.onclick = function () { S.tab = b.getAttribute('data-t'); render(); };
     });
     var lo = document.getElementById('adm-logout');
@@ -56,7 +61,7 @@
 
   /* ---------------- ekranlar ---------------- */
   function viewOzet() {
-    head('Özet', 'Sistem durumu');
+    head('Canlı Saha', 'Sistem durumu');
     function load(refresh) {
     API.yonetim('ozet').then(function (d) {
       var waiting = d.waiting || [];
@@ -408,6 +413,57 @@
     });
   }
 
+  function viewProfil() {
+    head('Profil', 'Yönetici bilgileri ve PIN');
+    var u = (S.session && S.session.user) || {};
+    var kilit = UI.esc(u.pin || '');
+    panel('<div class="card" style="padding:14px;max-width:420px">' +
+      '<div class="fld"><label>Adı Soyadı</label><input id="pf-name" value="' + esc(u.name || '') + '"></div>' +
+      '<div class="fld"><label>Telefon</label><input id="pf-phone" inputmode="tel" value="' + esc(u.phone || '') + '" placeholder="0546 208 99 00"></div>' +
+      '<div class="err" id="pf-err"></div>' +
+      '<button class="p" id="pf-save">Bilgileri Kaydet</button>' +
+    '</div>' +
+    '<div class="card" style="padding:14px;max-width:420px;margin-top:12px">' +
+      '<b style="display:block;margin-bottom:8px">PIN değiştir</b>' +
+      '<div class="fld"><label>Mevcut PIN</label><div class="pinwrap"><input id="pf-old" type="password" inputmode="numeric" maxlength="4" value="' + kilit + '">' +
+        '<button type="button" class="eye" data-eye="pf-old">👁</button></div></div>' +
+      '<div class="fld"><label>Yeni PIN</label><div class="pinwrap"><input id="pf-new" type="password" inputmode="numeric" maxlength="4" placeholder="••••">' +
+        '<button type="button" class="eye" data-eye="pf-new">👁</button></div></div>' +
+      '<div class="fld"><label>Yeni PIN (tekrar)</label><div class="pinwrap"><input id="pf-new2" type="password" inputmode="numeric" maxlength="4" placeholder="••••">' +
+        '<button type="button" class="eye" data-eye="pf-new2">👁</button></div></div>' +
+      '<div class="err" id="pf-pinerr"></div>' +
+      '<button class="p" id="pf-pinsave">PIN\'i Güncelle</button>' +
+    '</div>');
+
+    $('pf-save').onclick = function () {
+      var err = $('pf-err'); err.textContent = '';
+      API.profil({ name: $('pf-name').value.trim(), phone: $('pf-phone').value.trim() }).then(function (r) {
+        S.session.user = r.user;
+        UI.toast('Bilgiler kaydedildi', 'success');
+        viewProfil();
+      }).catch(function (e) { err.textContent = e.message || 'Kaydedilemedi'; });
+    };
+    $('pf-pinsave').onclick = function () {
+      var err = $('pf-pinerr'); err.textContent = '';
+      var o = $('pf-old').value.trim(), n = $('pf-new').value.trim(), n2 = $('pf-new2').value.trim();
+      if (!/^\d{4}$/.test(n)) { err.textContent = 'Yeni PIN 4 haneli olmalı'; return; }
+      if (n !== n2) { err.textContent = 'Yeni PIN\'ler uyuşmuyor'; return; }
+      if (n === o) { err.textContent = 'Yeni PIN eskisinden farklı olmalı'; return; }
+      API.pinDegistir(o, n).then(function () {
+        UI.toast('PIN güncellendi', 'success');
+        viewProfil();
+      }).catch(function (e) { err.textContent = e.message || 'Güncellenemedi'; });
+    };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-eye]'), function (b) {
+      b.onclick = function () {
+        var inp = document.getElementById(b.getAttribute('data-eye'));
+        if (!inp) return;
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+        b.textContent = inp.type === 'password' ? '👁' : '🙈';
+      };
+    });
+  }
+
   var AYARLAR = [['limit', 'Kurye Paket Limiti'], ['tarife', 'Ücret Tarifesi'], ['sistem', 'Sistem']];
 
   function viewAyarlar() {
@@ -755,7 +811,7 @@
     if (S.tab === 'anasayfa' && renderTabs) { /* tabs already rendered */ }
     ({
       ozet: viewOzet, havuz: viewHavuz, kuryeler: viewKuryeler, restoranlar: viewRestoranlar,
-      bolgeler: viewBolgeler, rapor: viewRapor, iptaller: viewIptaller, ayarlar: viewAyarlar,
+      bolgeler: viewBolgeler, rapor: viewRapor, iptaller: viewIptaller, ayarlar: viewAyarlar, profil: viewProfil,
       sontalepler: viewSonTalepler, kuryedurum: viewKuryeDurum, mesaj: viewMesaj, odemeler: viewOdemeler
     })[view]();
   }

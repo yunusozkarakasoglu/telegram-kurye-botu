@@ -454,6 +454,8 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         await bot.db.run("UPDATE accounts SET name=?, phone=? WHERE id=?", name, phone, user.id);
       } else if (user.role === "restoran") {
         await bot.db.run("UPDATE accounts SET name=?, contact_name=?, phone=? WHERE id=?", name, contact || null, phone, user.id);
+      } else if (user.role === "yonetici") {
+        await bot.db.run("UPDATE accounts SET name=?, phone=? WHERE id=?", name, phone, user.id);
       } else {
         return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
       }
