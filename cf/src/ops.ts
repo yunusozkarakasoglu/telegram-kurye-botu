@@ -133,7 +133,7 @@ export async function warnRepeated(bot: Bot, packageId: number) {
   if (!row || row.n < 3) return;
   const key = `reject_warn_${packageId}`;
   if (await bot.db.first("SELECT 1 FROM settings WHERE key=?", key)) return;
-  const admin = await bot.db.first<Account>("SELECT * FROM accounts WHERE tenant_id=? AND role='yonetici' LIMIT 1", bot.tenantId);
+  const admin = await bot.db.first<Account>("SELECT * FROM accounts WHERE role='yonetici' LIMIT 1");
   const pkg = await bot.packages("p.id=?", [packageId]);
   if (!admin || !pkg.length) return;
   await bot.db.run("INSERT INTO settings VALUES (?,?)", key, bot.now());
@@ -214,7 +214,7 @@ export async function confirmCancel(bot: Bot, user: Account): Promise<any> {
   }
   const who = user.role === "restoran" ? "Restoran" : user.role === "kurye" ? "Kurye" : "Yönetici";
   const summary = `🔴 İPTAL — Talep #${pkg.batch}-${pkg.number}\nİptal eden : ${who} · ${user.name}\nNeden : ${flow.reason}\nKurye ücreti : ${fee != null ? `${fee} TL` : "ücret yok"}`;
-  const admin = await bot.db.first<Account>("SELECT * FROM accounts WHERE tenant_id=? AND role='yonetici' LIMIT 1", bot.tenantId);
+  const admin = await bot.db.first<Account>("SELECT * FROM accounts WHERE role='yonetici' LIMIT 1");
   if (admin) await bot.send(admin.id, summary);
   await bot.send(pkg.owner, summary);
   if (pkg.courier) {

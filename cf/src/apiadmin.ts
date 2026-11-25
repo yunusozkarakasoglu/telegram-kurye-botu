@@ -25,16 +25,16 @@ export async function adminRoutes(
 
   if (path === "/yonetim/ozet" && method === "GET") {
     const pool = await bot.db.first<{ n: number }>(
-      "SELECT count(*) AS n FROM packages WHERE tenant_id=? AND courier IS NULL AND delivered_at IS NULL AND cancelled_at IS NULL", bot.tenantId);
+      "SELECT count(*) AS n FROM packages WHERE courier IS NULL AND delivered_at IS NULL AND cancelled_at IS NULL");
     const active = await bot.db.first<{ n: number }>(
-      "SELECT count(*) AS n FROM packages WHERE tenant_id=? AND courier IS NOT NULL AND delivered_at IS NULL AND cancelled_at IS NULL", bot.tenantId);
-    const delivered = await bot.db.first<{ n: number }>("SELECT count(*) AS n FROM packages WHERE tenant_id=? AND delivered_at IS NOT NULL", bot.tenantId);
+      "SELECT count(*) AS n FROM packages WHERE courier IS NOT NULL AND delivered_at IS NULL AND cancelled_at IS NULL");
+    const delivered = await bot.db.first<{ n: number }>("SELECT count(*) AS n FROM packages WHERE delivered_at IS NOT NULL");
     const fee = await bot.db.first<{ total: number | null }>(
-      "SELECT sum(courier_fee) AS total FROM packages WHERE tenant_id=? AND delivered_at IS NOT NULL", bot.tenantId);
+      "SELECT sum(courier_fee) AS total FROM packages WHERE delivered_at IS NOT NULL");
     const oldest = await bot.db.first<{ at: number | null }>(
-      "SELECT min(b.created_at) AS at FROM packages p JOIN batches b ON b.id=p.batch WHERE p.tenant_id=? AND p.courier IS NULL AND p.cancelled_at IS NULL", bot.tenantId);
-    const activeRest = await bot.db.first<{ n: number }>("SELECT count(*) AS n FROM accounts WHERE tenant_id=? AND role='restoran' AND active=1 AND deleted=0", bot.tenantId);
-    const activeCour = await bot.db.first<{ n: number }>("SELECT count(*) AS n FROM accounts WHERE tenant_id=? AND role='kurye' AND active=1 AND deleted=0", bot.tenantId);
+      "SELECT min(b.created_at) AS at FROM packages p JOIN batches b ON b.id=p.batch WHERE p.courier IS NULL AND p.cancelled_at IS NULL");
+    const activeRest = await bot.db.first<{ n: number }>("SELECT count(*) AS n FROM accounts WHERE role='restoran' AND active=1 AND deleted=0");
+    const activeCour = await bot.db.first<{ n: number }>("SELECT count(*) AS n FROM accounts WHERE role='kurye' AND active=1 AND deleted=0");
     const nowSec0 = bot.now();
     const dayStart = Math.floor((nowSec0 + 3 * 3600) / 86400) * 86400 - 3 * 3600;
     const todayPkgs = await bot.db.first<{ n: number }>(
@@ -66,11 +66,9 @@ export async function adminRoutes(
   }
 
   if (path === "/yonetim/kuryeler" && method === "GET") {
-    const rows = await bot.db.all<Account>(
-      "SELECT * FROM accounts WHERE tenant_id=? AND role IN ('kurye','yonetici') AND deleted=0 ORDER BY role DESC, name", bot.tenantId);
+    const rows = await bot.db.all<Account>("SELECT * FROM accounts WHERE role IN ('kurye','yonetici') AND deleted=0 ORDER BY role DESC, name");
     const counts = await bot.db.all<{ courier: number; n: number }>(
-      "SELECT courier, count(*) AS n FROM packages WHERE tenant_id=? AND courier IS NOT NULL AND delivered_at IS NULL AND cancelled_at IS NULL GROUP BY courier",
-      bot.tenantId);
+      "SELECT courier, count(*) AS n FROM packages WHERE courier IS NOT NULL AND delivered_at IS NULL AND cancelled_at IS NULL GROUP BY courier");
     return json({
       couriers: rows.map((c) => ({
         id: c.id, name: c.name, phone: c.phone || null, online: !!c.online, locked: !!c.locked, is_admin: c.role === "yonetici",
@@ -82,7 +80,7 @@ export async function adminRoutes(
   }
 
   if (path === "/yonetim/restoranlar" && method === "GET") {
-    const rows = await bot.db.all<Account>("SELECT * FROM accounts WHERE tenant_id=? AND role='restoran' AND deleted=0 ORDER BY name", bot.tenantId);
+    const rows = await bot.db.all<Account>("SELECT * FROM accounts WHERE role='restoran' AND deleted=0 ORDER BY name");
     return json({
       restaurants: rows.map((r) => ({
         id: r.id, name: r.name, phone: r.phone || null, contact_name: r.contact_name || null,
@@ -95,7 +93,7 @@ export async function adminRoutes(
     const pkgs = await bot.packages("p.courier IS NULL AND p.delivered_at IS NULL AND p.cancelled_at IS NULL");
     const states = await statesFor(bot, pkgs);
     const couriers = await bot.db.all<Account>(
-      "SELECT * FROM accounts WHERE tenant_id=? AND role='kurye' AND online=1 AND locked=0 AND active=1 AND deleted=0 ORDER BY name", bot.tenantId);
+      "SELECT * FROM accounts WHERE role='kurye' AND online=1 AND locked=0 AND active=1 AND deleted=0 ORDER BY name");
     return json({
       packages: pkgs.map((p, i) => pkgDto(p, states[i])),
       couriers: couriers.map((c) => ({ id: c.id, name: c.name })),
@@ -109,14 +107,12 @@ export async function adminRoutes(
     const values = Array.isArray(body.tariff) ? body.tariff : [];
     if (values.length !== 9) return fail("Tarife 9 değer içermeli (taban + 8 kademe farkı).", 422, "invalid");
     const stmts = values.map((v: any, i: number) =>
-      bot.db.d1.prepare("INSERT OR REPLACE INTO tenant_tariff(tenant,position,amount) VALUES (?,?,?)").bind(bot.tenantId, i, Number(v) || 0));
-    stmts.push(...values.map((v: any, i: number) =>
-      bot.db.d1.prepare("UPDATE tariff SET amount=? WHERE position=?").bind(Number(v) || 0, i)));
+      bot.db.d1.prepare("UPDATE tariff SET amount=? WHERE position=?").bind(Number(v) || 0, i));
     await bot.db.batch(stmts);
     if (body.extra_per_km != null) {
       const extra = Number(body.extra_per_km);
       if (!Number.isFinite(extra) || extra < 0 || extra > 100000) return fail("10+ km ek ücreti geçersiz.", 422, "invalid");
-      await bot.setSetting("extra_per_km", extra);
+      await bot.db.run("INSERT OR REPLACE INTO settings(key,value) VALUES ('extra_per_km',?)", extra);
     }
     return json({ ok: true, settings: await settings(bot) });
   }
@@ -153,8 +149,8 @@ export async function adminRoutes(
     const open = String(body.open_time || "");
     const close = String(body.close_time || "");
     if (!ok(open) || !ok(close)) return fail("Saat biçimi SS:DD olmalı (ör. 07:00).", 422, "invalid");
-    await bot.setSetting("open_time", open);
-    await bot.setSetting("close_time", close);
+    await bot.db.run("INSERT OR REPLACE INTO settings(key,value) VALUES ('open_time',?)", open);
+    await bot.db.run("INSERT OR REPLACE INTO settings(key,value) VALUES ('close_time',?)", close);
     return json({ ok: true, open_time: open, close_time: close });
   }
 
@@ -162,7 +158,7 @@ export async function adminRoutes(
     const body = await readBody(request);
     const limit = Number(body.limit);
     if (!Number.isInteger(limit) || limit < 1 || limit > 99) return fail("Limit 1–99 arasında olmalı.", 422, "invalid");
-    await bot.setSetting("active_limit", limit);
+    await bot.db.run("INSERT OR REPLACE INTO settings(key,value) VALUES ('active_limit',?)", limit);
     return json({ ok: true, limit });
   }
 
@@ -283,15 +279,15 @@ export async function adminRoutes(
     const name = String(body.name ?? "").trim();
     if (name.length < 2 || name.length > 40) return fail("Bölge adı 2–40 karakter olmalı.", 422, "invalid");
     if (action === "add") {
-      const exists = await bot.db.first("SELECT 1 FROM tenant_regions WHERE tenant=? AND name=?", bot.tenantId, name);
+      const exists = await bot.db.first("SELECT 1 FROM regions WHERE name=?", name);
       if (exists) return fail("Bu bölge zaten var.", 409, "conflict");
-      const pos = await bot.db.first<{ n: number }>("SELECT coalesce(max(position),-1) AS n FROM tenant_regions WHERE tenant=?", bot.tenantId);
-      await bot.db.run("INSERT INTO tenant_regions(tenant,position,name) VALUES (?,?,?)", bot.tenantId, (pos?.n ?? -1) + 1, name);
+      const pos = await bot.db.first<{ n: number }>("SELECT coalesce(max(position),0) AS n FROM regions");
+      await bot.db.run("INSERT INTO regions(name,position) VALUES (?,?)", name, (pos?.n ?? 0) + 1);
     } else if (action === "del") {
       const used = await bot.db.first<{ n: number }>(
         "SELECT count(*) AS n FROM packages WHERE region=? AND courier IS NULL AND cancelled_at IS NULL AND delivered_at IS NULL", name);
       if ((used?.n ?? 0) > 0) return fail("Bu bölgede havuzda paket var; önce onları kapatın.", 409, "conflict");
-      await bot.db.run("DELETE FROM tenant_regions WHERE tenant=? AND name=?", bot.tenantId, name);
+      await bot.db.run("DELETE FROM regions WHERE name=?", name);
     } else return fail("Geçersiz işlem.", 422, "invalid");
     return json({ ok: true, regions: await bot.regionList() });
   }
@@ -328,8 +324,8 @@ export async function adminRoutes(
     const body = await readBody(request);
     const role = body.role === "restoran" ? "restoran" : "kurye";
     const code = crypto.randomUUID().replace(/-/g, "");
-    await bot.db.run("INSERT OR REPLACE INTO invites(code,tenant_id,role,name,expires,contact_name,phone) VALUES (?,?,?,?,?,?,?)",
-      code, bot.tenantId, role, body.name || "", bot.now() + 7 * 86400, body.contact_name || null, body.phone || null);
+    await bot.db.run("INSERT OR REPLACE INTO invites(code,role,name,expires,contact_name,phone) VALUES (?,?,?,?,?,?)",
+      code, role, body.name || "", bot.now() + 7 * 86400, body.contact_name || null, body.phone || null);
     const username = bot.env.BOT_USERNAME || "";
     return json({ ok: true, token: code, url: `https://t.me/${username}?startapp=${code}` });
   }
@@ -351,7 +347,7 @@ export async function adminRoutes(
       start = Math.floor((n + 3 * 3600) / 86400) * 86400 - 3 * 3600;
     }
     end = start + 86400;
-    const activeRest = await bot.db.first<{ n: number }>("SELECT count(*) AS n FROM accounts WHERE tenant_id=? AND role='restoran' AND active=1 AND deleted=0", bot.tenantId);
+    const activeRest = await bot.db.first<{ n: number }>("SELECT count(*) AS n FROM accounts WHERE role='restoran' AND active=1 AND deleted=0");
     const working = await bot.db.first<{ n: number }>(
       "SELECT count(DISTINCT courier) AS n FROM packages WHERE courier IS NOT NULL AND accepted_at>=? AND accepted_at<?", start, end);
     const pkgs = await bot.db.first<{ n: number }>(

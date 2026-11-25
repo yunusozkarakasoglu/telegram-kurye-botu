@@ -34,7 +34,6 @@ export default {
     let update: any;
     try { update = await request.json(); } catch { return new Response("bad request", { status: 400 }); }
     const bot = new Bot(env);
-    await db.migrate();
     await db.ensureSeeds((env.REGIONS || "Kadıköy,Üsküdar,Ataşehir").split(",").map((s) => s.trim()).filter(Boolean));
     try {
       await bot.process(update);
@@ -47,9 +46,7 @@ export default {
   async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
     const bot = new Bot(env);
     ctx.waitUntil((async () => {
-      const db0 = new Db(env.DB);
-      await db0.migrate();
-      await db0.ensureSeeds((env.REGIONS || "Kadıköy,Üsküdar,Ataşehir").split(",").map((s) => s.trim()).filter(Boolean));
+      await new Db(env.DB).ensureSeeds((env.REGIONS || "Kadıköy,Üsküdar,Ataşehir").split(",").map((s) => s.trim()).filter(Boolean));
       const { tick } = await import("./autooffer");
       await tick(bot);
     })());

@@ -83,9 +83,9 @@ export async function cancel(bot: Bot, user: Account, packageId: number, reason:
 }
 
 export function eligibleTargets(bot: Bot, courier: number) {
-  return bot.db.all<Account>(`SELECT * FROM accounts a WHERE a.tenant_id=? AND a.role='kurye' AND a.online=1 AND a.active=1
+  return bot.db.all<Account>(`SELECT * FROM accounts a WHERE a.role='kurye' AND a.online=1 AND a.active=1
     AND a.deleted=0 AND a.id<>? AND NOT EXISTS (SELECT 1 FROM packages p WHERE p.courier=a.id
-    AND p.delivered_at IS NULL AND p.cancelled_at IS NULL) ORDER BY a.name LIMIT 20`, bot.tenantId, courier);
+    AND p.delivered_at IS NULL AND p.cancelled_at IS NULL) ORDER BY a.name LIMIT 20`, courier);
 }
 
 export async function offersFor(bot: Bot, courier: number) {
@@ -177,7 +177,7 @@ export async function transferToPool(bot: Bot, user: Account, packageId: number)
   const result = await accept.transferToPool(bot, user, packageId);
   const fresh = await packageById(bot, packageId);
   if (!fresh?.courier) {
-    const admin = await bot.db.first<Account>("SELECT * FROM accounts WHERE tenant_id=? AND role='yonetici' LIMIT 1", bot.tenantId);
+    const admin = await bot.db.first<Account>("SELECT * FROM accounts WHERE role='yonetici' LIMIT 1");
     if (admin && fresh) await bot.send(admin.id, `${user.name} kuryesi kendisine atanan #${fresh.batch}-${fresh.number} · ${fresh.restaurant} paketini reddetti; paket havuza döndü.`);
   }
   return { ok: !fresh?.courier, message: typeof result === "string" ? result : "" };

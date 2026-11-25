@@ -67,7 +67,10 @@ export async function statesFor(bot: Bot, pkgs: PackageRow[]): Promise<string[]>
 /** Yönetici tarafından yönetilen ayarlar (tarife, limit, bölgeler, gerekçeler). */
 export async function settings(bot: Bot) {
   const tariff = await bot.tariff();
-  const hour = async (key: string, fallback: string) => (await bot.settingText(key, fallback)) || fallback;
+  const hour = async (key: string, fallback: string) => {
+    const row = await bot.db.first<{ value: string }>("SELECT value FROM settings WHERE key=?", key);
+    return row?.value || fallback;
+  };
   return {
     base_tl: tariff[0] ?? 0,
     tariff,
