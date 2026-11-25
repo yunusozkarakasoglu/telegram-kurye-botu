@@ -16,20 +16,19 @@
   ];
 
   function head(t, s) { $('adm-title').textContent = t; $('adm-sub').textContent = s || ''; }
-  var MAIN = ['ozet', 'havuz', 'sontalepler', 'iptaller'];
+  // Anasayfa tek görünüm: Canlı Saha. İç sekmeler kaldırıldı.
   function renderTabs() {
-    if (S.tab !== 'anasayfa') { $('adm-tabs').innerHTML = ''; return; }
-    $('adm-tabs').innerHTML = MAIN.map(function (key) {
-      var t = TABS.filter(function (x) { return x[0] === key; })[0];
-      return '<button class="' + (S.homeTab === key ? 'on' : '') + '" data-mt="' + key + '">' + t[1] + '</button>';
-    }).join('');
-    Array.prototype.forEach.call($('adm-tabs').children, function (b) {
-      b.onclick = function () { S.homeTab = b.getAttribute('data-mt'); render(); };
-    });
+    var el = $('adm-tabs');
+    if (!el) return;
+    el.innerHTML = '';
+    el.hidden = true;
   }
+
   function nav() {
     var KENAR = ['profil', 'ayarlar'];
-    var items = TABS.filter(function (t) { return MAIN.indexOf(t[0]) < 0 && KENAR.indexOf(t[0]) < 0; });
+    // Canlı Saha tek sayfa: iç sekmeler (havuz/son talepler/iptaller) kaldırıldı.
+    var GIZLI = ['ozet', 'havuz', 'sontalepler', 'iptaller'];
+    var items = TABS.filter(function (t) { return KENAR.indexOf(t[0]) < 0 && GIZLI.indexOf(t[0]) < 0; });
     $('adm-nav').innerHTML =
       '<button class="' + (S.tab === 'anasayfa' ? 'on' : '') + '" data-t="anasayfa">Anasayfa</button>' +
       items.map(function (t) {
@@ -807,8 +806,7 @@
   function render() {
     renderTabs();
     nav();
-    var view = S.tab === 'anasayfa' ? S.homeTab : S.tab;
-    if (S.tab === 'anasayfa' && renderTabs) { /* tabs already rendered */ }
+    var view = S.tab === 'anasayfa' ? 'ozet' : S.tab;
     ({
       ozet: viewOzet, havuz: viewHavuz, kuryeler: viewKuryeler, restoranlar: viewRestoranlar,
       bolgeler: viewBolgeler, rapor: viewRapor, iptaller: viewIptaller, ayarlar: viewAyarlar, profil: viewProfil,
