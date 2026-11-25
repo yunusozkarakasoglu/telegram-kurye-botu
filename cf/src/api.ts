@@ -89,8 +89,8 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     const code0 = inviteCode;
     const invite0 = code0 ? await env.DB.prepare("SELECT * FROM invites WHERE code=? AND expires>?").bind(code0, Math.floor(Date.now() / 1000)).first<any>() : null;
     if (invite0 && invite0.name && invite0.phone) {
-      await env.DB.prepare("INSERT INTO accounts(id,role,name,phone,contact_name) VALUES (?,?,?,?,?)")
-        .bind(ident.id, invite0.role === "restoran" ? "restoran" : "kurye", invite0.name, invite0.phone, invite0.contact_name || null).run();
+      await env.DB.prepare("INSERT INTO accounts(id,tenant_id,role,name,phone,contact_name) VALUES (?,?,?,?,?,?)")
+        .bind(ident.id, invite0.tenant_id || 1, invite0.role === "restoran" ? "restoran" : "kurye", invite0.name, invite0.phone, invite0.contact_name || null).run();
       await env.DB.prepare("DELETE FROM invites WHERE code=?").bind(code0).run();
       existing = await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(ident.id).first<Account>();
     }
@@ -109,14 +109,15 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       if (role === "restoran" && (name.length < 2 || name.length > 80)) return fail("Restoran adı geçersiz.", 422, "invalid");
       if (!validPhone(phone)) return fail("Telefon numarası geçersiz.", 422, "invalid");
       const contact = String(body.contact_name || "").trim();
-      await env.DB.prepare("INSERT INTO accounts(id,role,name,phone,contact_name) VALUES (?,?,?,?,?)")
-        .bind(ident.id, role, name, phone, contact || null).run();
+      await env.DB.prepare("INSERT INTO accounts(id,tenant_id,role,name,phone,contact_name) VALUES (?,?,?,?,?,?)")
+        .bind(ident.id, invite.tenant_id || 1, role, name, phone, contact || null).run();
       await env.DB.prepare("DELETE FROM invites WHERE code=?").bind(code).run();
       return json({ ok: true, role });
     }
     if (!existing) return fail("Bu Telegram hesabı tanımlı değil. Davet bağlantısını kullanın.", 403, "forbidden");
   }
   user = existing!;
+  bot.setTenant(user.tenant_id || 1);
   const originalRole = user.role;
   const actAsCourier = originalRole === "yonetici" && request.headers.get("x-act-as") === "kurye";
   if (actAsCourier) user = { ...user, role: "kurye" };
@@ -364,8 +365,8 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     }
 
     if (path === "/sistem" && method === "GET") {
-      const restaurants = await bot.db.all<Account>("SELECT * FROM accounts WHERE role='restoran' AND deleted=0 AND active=1 ORDER BY name");
-      const couriers = await bot.db.all<Account>("SELECT * FROM accounts WHERE role='kurye' AND deleted=0 AND active=1 ORDER BY name");
+      const restaurants = await bot.db.all<Account>("SELECT * FROM accounts WHERE tenant_id=? AND role='restoran' AND deleted=0 AND active=1 ORDER BY name", bot.tenantId);
+      const couriers = await bot.db.all<Account>("SELECT * FROM accounts WHERE tenant_id=? AND role='kurye' AND deleted=0 AND active=1 ORDER BY name", bot.tenantId);
       return json({
         settings: await settings(bot),
         restaurants: restaurants.map((r) => ({

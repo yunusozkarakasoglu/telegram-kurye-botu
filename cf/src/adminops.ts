@@ -215,6 +215,7 @@ export async function regionAction(bot: Bot, user: Account, action: string, args
     const names = await bot.regionList();
     const name = names[Number(args[0])];
     if (!name) return "Bölge bulunamadı.";
+    await bot.db.run("DELETE FROM tenant_regions WHERE tenant=? AND name=?", bot.tenantId, name);
     await bot.db.run("DELETE FROM regions WHERE name=?", name);
     await showRegions(bot, user);
     return `'${name}' silindi.`;
@@ -247,6 +248,7 @@ export async function handleAdminText(bot: Bot, chat: number, user: Account, tex
     if (!name) { await bot.send(chat, "Bölge adı 1–50 karakter olmalı."); return true; }
     if (names.some((n) => n.toLowerCase() === name.toLowerCase())) { await bot.send(chat, `'${name}' zaten listede.`); return true; }
     if (names.length >= 50) { await bot.send(chat, "En fazla 50 bölge eklenebilir."); return true; }
+    await bot.db.run("INSERT INTO tenant_regions(tenant,position,name) VALUES (?,?,?)", bot.tenantId, names.length, name);
     await bot.db.run("INSERT INTO regions VALUES (?,?)", names.length, name);
     await bot.db.run("DELETE FROM region_edit WHERE admin=?", chat);
     await showRegions(bot, user);
@@ -276,9 +278,9 @@ export async function courierStatus(bot: Bot, user: Account, page: number): Prom
   const summary = await bot.db.first<any>(`SELECT count(*) AS total, count(*) FILTER (WHERE online=1) AS online,
     count(*) FILTER (WHERE online=1 AND locked=0 AND active=1) AS available,
     count(*) FILTER (WHERE EXISTS (SELECT 1 FROM packages WHERE courier=accounts.id AND delivered_at IS NULL AND cancelled_at IS NULL)) AS working
-    FROM accounts WHERE role='kurye' AND deleted=0`);
+    FROM accounts WHERE tenant_id=? AND role='kurye' AND deleted=0`, bot.tenantId);
   const rows = await bot.db.all<any>(`SELECT a.*, (SELECT count(*) FROM packages p WHERE p.courier=a.id AND p.delivered_at IS NULL AND p.cancelled_at IS NULL) AS active
-    FROM accounts a WHERE a.role='kurye' AND a.deleted=0 ORDER BY a.active DESC, a.online DESC, a.locked, a.name, a.id LIMIT 13 OFFSET ?`, page * 12);
+    FROM accounts a WHERE a.tenant_id=? AND a.role='kurye' AND a.deleted=0 ORDER BY a.active DESC, a.online DESC, a.locked, a.name, a.id LIMIT 13 OFFSET ?`, bot.tenantId, page * 12);
   const lines = ["Kurye Durumu", `Toplam ${summary.total} · Çevrimiçi ${summary.online} · Çevrimdışı ${summary.total - summary.online}`,
     `Yeni işe müsait ${summary.available} · Aktif paketi olan ${summary.working}`, ""];
   rows.slice(0, 12).forEach((row) => {
@@ -320,7 +322,7 @@ export async function createInvite(bot: Bot, chat: number, args: string): Promis
     return bot.send(chat, "Kullanım\n/davet kurye\n/davet restoran\n\nİsim yazmazsanız davetli kişi bağlantıyı açınca kendi adını, telefonunu (restoranda ayrıca konumunu) girer.\nİsterseniz /davet kurye Ahmet Yılmaz gibi isim de verebilirsiniz.");
   }
   const code = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "").slice(0, 8);
-  await bot.db.run("INSERT INTO invites(code,role,name,expires,admin) VALUES (?,?,?,?,?)", code, role, name, bot.now() + 86400, chat);
+  await bot.db.run("INSERT INTO invites(code,tenant_id,role,name,expires,admin) VALUES (?,?,?,?,?,?)", code, bot.tenantId, role, name, bot.now() + 86400, chat);
   const username = bot.env.BOT_USERNAME || (await bot.tg.call<any>("getMe")).username;
   const label = name || (role === "kurye" ? "Kurye" : "Restoran");
   const lines = [`${label} için davet`, `https://t.me/${username}?start=${code}`];

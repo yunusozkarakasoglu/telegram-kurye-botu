@@ -124,7 +124,7 @@ export async function claimOfferStep(bot: Bot, user: Account, action: string, to
     await bot.db.run("DELETE FROM claim_offers WHERE token=?", token);
     await bot.db.run("DELETE FROM reservations WHERE package=?", offer.package);
     await bot.db.run("UPDATE packages SET incoming=0,incoming_from=NULL,incoming_at=NULL WHERE id=?", offer.package);
-    const admin = await bot.db.first<Account>("SELECT * FROM accounts WHERE role='yonetici' LIMIT 1");
+    const admin = await bot.db.first<Account>("SELECT * FROM accounts WHERE tenant_id=? AND role='yonetici' LIMIT 1", bot.tenantId);
     const pkg = await bot.packages("p.id=?", [offer.package]);
     if (admin && pkg.length) await bot.send(admin.id, `⚠️ Kurye aktarılan paketi reddetti: Talep #${pkg[0].batch}-${pkg[0].number} havuza döndü.`);
     return "Aktarım reddedildi; paket havuzda kaldı.";
@@ -206,7 +206,7 @@ export async function transferStep(bot: Bot, user: Account, action: string, toke
     return "Paketler havuza aktarıldı.";
   }
   if (action === "trcour") {
-    const couriers = await bot.db.all<Account>(`SELECT * FROM accounts a WHERE a.role='kurye' AND a.online=1 AND a.active=1
+    const couriers = await bot.db.all<Account>(`SELECT * FROM accounts a WHERE a.tenant_id=? AND a.role='kurye' AND a.online=1 AND a.active=1
       AND a.deleted=0 AND a.id<>? AND NOT EXISTS (SELECT 1 FROM packages p WHERE p.courier=a.id
       AND p.delivered_at IS NULL AND p.cancelled_at IS NULL) ORDER BY a.name LIMIT 10`, user.id);
     if (!couriers.length) {
@@ -228,7 +228,7 @@ export async function transferOfferStep(bot: Bot, user: Account, action: string,
     await bot.db.run("DELETE FROM transfer_offers WHERE token=?", token);
     await bot.db.run("UPDATE packages SET courier=NULL,accepted_at=NULL,picked_up_at=NULL,distance_km=NULL,courier_fee=NULL,incoming=0,incoming_from=NULL,incoming_at=NULL WHERE id=?", offer.package);
     await bot.send(offer.from_courier, "Aktarım teklifi kabul edilmedi; paket havuza alındı.");
-    const admin = await bot.db.first<Account>("SELECT * FROM accounts WHERE role='yonetici' LIMIT 1");
+    const admin = await bot.db.first<Account>("SELECT * FROM accounts WHERE tenant_id=? AND role='yonetici' LIMIT 1", bot.tenantId);
     if (admin && pkgInfo.length) {
       const p0 = pkgInfo[0];
       await bot.send(admin.id, `${user.name} kuryesi, ${p0.restaurant} restoranından aktarılan #${p0.batch}-${p0.number} paketini ${fmtTime(bot.now())} reddetti.`);

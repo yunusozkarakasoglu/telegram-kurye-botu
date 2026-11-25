@@ -1,7 +1,7 @@
 import { Db } from "./db";
 import { Telegram } from "./telegram";
 import type { Account, Env, PackageRow, TelegramUpdate } from "./types";
-import { MENUS, PRIORITY_SECONDS, MAX_PACKAGES, DEFAULT_ACTIVE_LIMIT, TARIFF_BOUNDS, MEDIA_NOTICE_SECONDS } from "./constants";
+import { MENUS, PRIORITY_SECONDS, MAX_PACKAGES, DEFAULT_ACTIVE_LIMIT, DEFAULT_TENANT, TARIFF_BOUNDS, MEDIA_NOTICE_SECONDS } from "./constants";
 import { now, nowF, dialNumber, escapeHtml } from "./util";
 import * as forms from "./forms";
 import * as pool from "./pool";
@@ -14,6 +14,9 @@ export class Bot {
   db: Db;
   tg: Telegram;
   env: Env;
+  /** Aktif bölge (tenant). Varsayılan: mevcut pilot verisi. */
+  tenantId: number = DEFAULT_TENANT;
+  setTenant(id: number) { this.tenantId = Number.isInteger(id) && id > 0 ? id : DEFAULT_TENANT; return this; }
   /** Mini App API'sinde bildirim hatası isteği bozmamalıdır (veri yazımı esas alınır). */
   ignoreNotifyErrors = false;
   constructor(env: Env) {
@@ -51,17 +54,40 @@ export class Bot {
     return this.db.first<Account>("SELECT * FROM accounts WHERE id=?", id);
   }
   async regionList() {
-    const rows = await this.db.all<{ name: string }>("SELECT name FROM regions ORDER BY position");
-    return rows.map((r) => r.name);
+    const rows = await this.db.all<{ name: string }>(
+      "SELECT name FROM tenant_regions WHERE tenant=? ORDER BY position", this.tenantId);
+    if (rows.length) return rows.map((r) => r.name);
+    const legacy = await this.db.all<{ name: string }>("SELECT name FROM regions ORDER BY position");
+    return legacy.map((r) => r.name);
+  }
+  /** Bölge bazlı ayar okuma (tenant_settings → settings yedeği). */
+  async setting(key: string, fallback: number | null = null): Promise<number | null> {
+    const row = await this.db.first<{ value: number }>("SELECT value FROM tenant_settings WHERE tenant=? AND key=?", this.tenantId, key);
+    if (row) return Number(row.value);
+    const legacy = await this.db.first<{ value: number }>("SELECT value FROM settings WHERE key=?", key);
+    if (legacy) return Number(legacy.value);
+    return fallback;
+  }
+  /** Metin değerli ayarlar (ör. 07:00). */
+  async settingText(key: string, fallback: string | null = null): Promise<string | null> {
+    const row = await this.db.first<{ value: string }>("SELECT value FROM tenant_settings WHERE tenant=? AND key=?", this.tenantId, key);
+    if (row) return String(row.value);
+    const legacy = await this.db.first<{ value: string }>("SELECT value FROM settings WHERE key=?", key);
+    return legacy ? String(legacy.value) : fallback;
+  }
+  async setSetting(key: string, value: number | string) {
+    await this.db.run("INSERT OR REPLACE INTO tenant_settings(tenant,key,value) VALUES (?,?,?)", this.tenantId, key, value);
   }
   async extraPerKm() {
-    const row = await this.db.first<{ value: number }>("SELECT value FROM settings WHERE key='extra_per_km'");
-    const v = Number(row?.value);
-    return Number.isFinite(v) && v > 0 ? v : 100;
+    const v = await this.setting("extra_per_km", 100);
+    return Number.isFinite(v) && (v as number) > 0 ? (v as number) : 100;
   }
   async tariff() {
-    const rows = await this.db.all<{ amount: number }>("SELECT amount FROM tariff ORDER BY position");
-    return rows.map((r) => r.amount);
+    const rows = await this.db.all<{ amount: number }>(
+      "SELECT amount FROM tenant_tariff WHERE tenant=? ORDER BY position", this.tenantId);
+    if (rows.length) return rows.map((r) => r.amount);
+    const legacy = await this.db.all<{ amount: number }>("SELECT amount FROM tariff ORDER BY position");
+    return legacy.map((r) => r.amount);
   }
   async activeLimit() {
     const row = await this.db.first<{ value: number }>("SELECT value FROM settings WHERE key='active_limit'");
@@ -83,11 +109,12 @@ export class Bot {
     return row?.n ?? 0;
   }
   async packages(where: string, params: unknown[] = [], suffix = ""): Promise<PackageRow[]> {
+    const scoped = `p.tenant_id=${this.tenantId} AND (${where})`;
     return this.db.all<PackageRow>(`SELECT p.*, b.owner, b.created_at, r.name AS restaurant, c.name AS courier_name,
         r.latitude AS restaurant_lat, r.longitude AS restaurant_lng, r.contact_name AS restaurant_contact,
         r.phone AS restaurant_phone, c.phone AS courier_phone, x.name AS cancelled_by_name, x.role AS cancelled_by_role
       FROM packages p JOIN batches b ON b.id=p.batch JOIN accounts r ON r.id=b.owner
-      LEFT JOIN accounts c ON c.id=p.courier LEFT JOIN accounts x ON x.id=p.cancelled_by WHERE ${where} ORDER BY p.id DESC ${suffix}`, ...params);
+      LEFT JOIN accounts c ON c.id=p.courier LEFT JOIN accounts x ON x.id=p.cancelled_by WHERE ${scoped} ORDER BY p.id DESC ${suffix}`, ...params);
   }
   async activePackages(courier: number) {
     return this.packages("p.courier=? AND p.delivered_at IS NULL AND p.cancelled_at IS NULL", [courier]);
@@ -276,9 +303,9 @@ export class Bot {
   }
 
   async activeCouriersForAssign() {
-    return this.db.all<Account>(`SELECT * FROM accounts a WHERE a.role='kurye' AND a.online=1 AND a.locked=0
+    return this.db.all<Account>(`SELECT * FROM accounts a WHERE a.tenant_id=? AND a.role='kurye' AND a.online=1 AND a.locked=0
       AND a.active=1 AND a.deleted=0 AND NOT EXISTS (SELECT 1 FROM packages p WHERE p.courier=a.id
-      AND p.delivered_at IS NULL AND p.cancelled_at IS NULL) ORDER BY a.name, a.id LIMIT 10`);
+      AND p.delivered_at IS NULL AND p.cancelled_at IS NULL) ORDER BY a.name, a.id LIMIT 10`, this.tenantId);
   }
 
   async lockCourier(courier: number, limit: number) {

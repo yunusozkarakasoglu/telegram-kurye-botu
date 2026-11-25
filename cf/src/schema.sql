@@ -1,13 +1,32 @@
 PRAGMA foreign_keys = ON;
 
+CREATE TABLE IF NOT EXISTS tenants (
+  id INTEGER PRIMARY KEY, name TEXT NOT NULL, il TEXT NOT NULL DEFAULT '', ilce TEXT NOT NULL DEFAULT '',
+  mahalle TEXT NOT NULL DEFAULT '', key TEXT UNIQUE, owner INTEGER,
+  status TEXT NOT NULL DEFAULT 'PENDING', created_at INTEGER, approved_at INTEGER,
+  approved_by INTEGER, reject_reason TEXT, phone TEXT, email TEXT
+);
+CREATE TABLE IF NOT EXISTS tenant_settings (
+  tenant INTEGER NOT NULL, key TEXT NOT NULL, value INTEGER NOT NULL, PRIMARY KEY(tenant, key)
+);
+CREATE TABLE IF NOT EXISTS tenant_tariff (
+  tenant INTEGER NOT NULL, position INTEGER NOT NULL, amount INTEGER NOT NULL, PRIMARY KEY(tenant, position)
+);
+CREATE TABLE IF NOT EXISTS tenant_regions (
+  tenant INTEGER NOT NULL, position INTEGER NOT NULL, name TEXT NOT NULL, PRIMARY KEY(tenant, position)
+);
+CREATE TABLE IF NOT EXISTS tenant_members (
+  tenant INTEGER NOT NULL, account INTEGER NOT NULL, role TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'ACTIVE', created_at INTEGER, PRIMARY KEY(tenant, account)
+);
 CREATE TABLE IF NOT EXISTS accounts (
-  id INTEGER PRIMARY KEY, role TEXT NOT NULL, name TEXT NOT NULL,
+  id INTEGER PRIMARY KEY, tenant_id INTEGER NOT NULL DEFAULT 1, role TEXT NOT NULL, name TEXT NOT NULL,
   locked INTEGER NOT NULL DEFAULT 0, online INTEGER NOT NULL DEFAULT 0,
   latitude REAL, longitude REAL, contact_name TEXT, phone TEXT,
   active INTEGER NOT NULL DEFAULT 1, deleted INTEGER NOT NULL DEFAULT 0, busy INTEGER NOT NULL DEFAULT 0, busy_reason TEXT, pin_hash TEXT, pin_plain TEXT, pin_fail INTEGER NOT NULL DEFAULT 0, pin_lock REAL NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS invites (
-  code TEXT PRIMARY KEY, role TEXT NOT NULL, name TEXT NOT NULL, expires INTEGER NOT NULL,
+  code TEXT PRIMARY KEY, tenant_id INTEGER NOT NULL DEFAULT 1, role TEXT NOT NULL, name TEXT NOT NULL, expires INTEGER NOT NULL,
   latitude REAL, longitude REAL, admin INTEGER, contact_name TEXT, phone TEXT
 );
 CREATE TABLE IF NOT EXISTS drafts (
@@ -15,9 +34,9 @@ CREATE TABLE IF NOT EXISTS drafts (
   quantity INTEGER NOT NULL DEFAULT 0, regions TEXT NOT NULL DEFAULT '[]',
   payments TEXT NOT NULL DEFAULT '[]', message INTEGER
 );
-CREATE TABLE IF NOT EXISTS batches (id INTEGER PRIMARY KEY, owner INTEGER NOT NULL REFERENCES accounts, created_at INTEGER, priority_used INTEGER NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS batches (id INTEGER PRIMARY KEY, tenant_id INTEGER NOT NULL DEFAULT 1, owner INTEGER NOT NULL REFERENCES accounts, created_at INTEGER, priority_used INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS packages (
-  id INTEGER PRIMARY KEY, batch INTEGER NOT NULL REFERENCES batches, number INTEGER NOT NULL,
+  id INTEGER PRIMARY KEY, tenant_id INTEGER NOT NULL DEFAULT 1, batch INTEGER NOT NULL REFERENCES batches, number INTEGER NOT NULL,
   region TEXT NOT NULL, courier INTEGER REFERENCES accounts, payment TEXT, note TEXT,
   accepted_at INTEGER, picked_up_at INTEGER, delivered_at INTEGER,
   distance_km TEXT, courier_fee INTEGER, incoming INTEGER NOT NULL DEFAULT 0, payment_received INTEGER,
@@ -56,6 +75,10 @@ CREATE TABLE IF NOT EXISTS cancel_flow (account INTEGER PRIMARY KEY, package INT
 CREATE TABLE IF NOT EXISTS pool_view (courier INTEGER PRIMARY KEY, region TEXT, expires REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS pool_select (courier INTEGER NOT NULL, package INTEGER NOT NULL, PRIMARY KEY(courier, package));
 
+CREATE INDEX IF NOT EXISTS accounts_by_tenant ON accounts(tenant_id, role, deleted);
+CREATE INDEX IF NOT EXISTS packages_by_tenant ON packages(tenant_id, courier, delivered_at);
+CREATE INDEX IF NOT EXISTS batches_by_tenant ON batches(tenant_id, created_at);
+CREATE INDEX IF NOT EXISTS tenants_by_status ON tenants(status, created_at);
 CREATE INDEX IF NOT EXISTS packages_by_courier ON packages(courier, delivered_at);
 CREATE INDEX IF NOT EXISTS packages_by_batch ON packages(batch, courier, id);
 CREATE INDEX IF NOT EXISTS batches_by_owner ON batches(owner, created_at);

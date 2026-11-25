@@ -4,6 +4,8 @@ export const UNSPECIFIED = "Belirtilmedi";
 export const DEFAULT_ACTIVE_LIMIT = 3;
 export const DEFAULT_TARIFF = [120, 150, 190, 240, 300, 370, 450, 540, 640];
 export const TARIFF_BOUNDS = [3, 4, 5, 6, 7, 8, 9, 10];
+/** Piloт/mevcut verilerin bağlı olduğu varsayılan bölge (tenant). */
+export const DEFAULT_TENANT = 1;
 export const TARIFF_INTERVALS = ["0–3", ">3–4", ">4–5", ">5–6", ">6–7", ">7–8", ">8–9", ">9–10", ">10"];
 export const PERIODS: Record<number, string> = { 1: "Bugün", 7: "Son 7 Gün", 30: "Son 30 Gün" };
 export const REPORT_PERIODS: Record<number, string> = { ...PERIODS, 0: "Tüm Zamanlar" };
