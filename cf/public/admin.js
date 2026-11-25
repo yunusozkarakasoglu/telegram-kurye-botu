@@ -61,60 +61,151 @@
   /* ---------------- ekranlar ---------------- */
   function viewOzet() {
     head('Canlı Saha', 'Sistem durumu');
-    function load(refresh) {
-    API.yonetim('ozet').then(function (d) {
-      var waiting = d.waiting || [];
-      function wrow(w) {
-        return '<button class="brow wrow" data-w="' + w.id + '"><span><b>' + esc(w.label) + '</b> · ' + esc(w.restaurant) +
-          (w.region ? ' · ' + esc(w.region) : '') + (w.courier ? ' · Kuryede' : ' · Havuzda') + '</span>' +
-          '<b class="late">' + w.minutes + ' dk</b></button>';
-      }
-      var list;
-      if (!waiting.length) {
-        list = '<div class="empty">10 dakikayı geçen paket yok.</div>';
-      } else if (!S.ozetGroup) {
-        list = waiting.map(wrow).join('');
-      } else {
-        var key = S.ozetGroup === 'region' ? 'region' : 'restaurant';
-        var groups = {};
-        waiting.forEach(function (w) { var k = w[key] || 'Belirtilmedi'; (groups[k] = groups[k] || []).push(w); });
-        list = Object.keys(groups).sort().map(function (k) {
-          var arr = groups[k].slice().sort(function (a, b) { return b.minutes - a.minutes; });
-          return '<div class="ghead" style="margin-top:6px"><span class="gname">' + esc(k) + '</span>' +
-            '<span class="gcount">' + arr.length + ' paket</span></div>' + arr.map(wrow).join('');
-        }).join('');
-      }
-      var groupBtns = '<div class="filters" style="margin-bottom:8px">' +
-        '<button class="sm ' + (S.ozetGroup === 'region' ? 'p' : '') + '" data-og="region">Bölgeye göre</button>' +
-        '<button class="sm ' + (S.ozetGroup === 'restaurant' ? 'p' : '') + '" data-og="restaurant">Restorana göre</button>' +
-        '</div>';
-      panel('<div class="filters" style="margin-bottom:8px"><button class="p" id="oz-ref" style="padding:10px 18px;font-size:15px">↻ Yenile</button></div>' +
-        '<div class="kpis k3">' +
-        kpi('Aktif restoran', d.active_restaurants) +
-        kpi('Aktif kurye', d.active_couriers) +
-        kpi('Toplam paket (bugün)', d.today_packages) +
-        '</div>' +
-        '<h3 style="font-size:15px;margin:16px 0 6px">Geciken Siparişler - ' + waiting.length + ' Adet</h3>' +
-        groupBtns +
-        '<div class="card" style="padding:6px 10px">' + list + '</div>' +
-        '<p class="note">Bölgeler: ' + esc((d.regions || []).join(', ')) + '</p>');
-      if (refresh) UI.toast('Güncellendi', 'success');
-      $('oz-ref').onclick = function () { this.disabled = true; this.textContent = 'Yükleniyor…'; load(true); };
-      Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-w]'), function (b) {
-        b.onclick = function () { waitingSheet(Number(b.getAttribute('data-w')), waiting); };
-      });
-      Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-og]'), function (b) {
-        b.onclick = function () {
-          var g = b.getAttribute('data-og');
-          S.ozetGroup = S.ozetGroup === g ? '' : g;
-          viewOzet();
-        };
-      });
-    });
+    if (!S.ozetFilter) S.ozetFilter = { durum: 'all', grup: '' };
+    if (S.ozetOpen === undefined) S.ozetOpen = true;
+
+    function yukle(refresh) {
+      API.yonetim('siparisler').then(function (d) {
+        var f = S.ozetFilter;
+        var all = d.items || [];
+        var kpi = d.kpi || {};
+        var list = all.filter(function (p) {
+          if (f.durum === 'late') return p.late;
+          if (f.durum === 'cancelled') return !!p.cancelled_at;
+          if (f.durum === 'transfer') return /Aktarım/i.test(p.status || '');
+          return true;
+        });
+
+        function satir(p) {
+          var cls = p.cancelled_at ? 'cancelled' : p.delivered_at ? 'delivered'
+            : /Yolda/i.test(p.status) ? 'onway' : /Kabul/i.test(p.status) ? 'accepted' : 'waiting';
+          var dk = p.minutes == null ? '—' : p.minutes + ' dk';
+          return '<div class="srow ' + cls + '">' +
+            '<div class="srow-l"><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) +
+              (p.region ? ' · ' + esc(p.region) : '') + '</b>' +
+              '<small>' + esc(p.courier_name ? 'Kurye: ' + p.courier_name : 'Kurye bekliyor') +
+              (p.payment ? ' · ' + esc(p.payment) : '') + '</small></div>' +
+            '<div class="srow-r"><span class="stg">' + esc(p.status || '—') + '</span>' +
+              '<em class="' + (p.late ? 'late' : '') + '">' + dk + '</em></div>' +
+          '</div>';
+        }
+
+        var govde;
+        if (!list.length) govde = '<div class="empty">Bu filtrede sipariş yok.</div>';
+        else if (!f.grup) govde = list.map(satir).join('');
+        else {
+          var key = f.grup === 'region' ? 'region' : 'restaurant';
+          var groups = {};
+          list.forEach(function (p) { var k = p[key] || 'Belirtilmedi'; (groups[k] = groups[k] || []).push(p); });
+          govde = Object.keys(groups).sort().map(function (k) {
+            return '<div class="ghead"><span class="gname">' + esc(k) + '</span>' +
+              '<span class="gcount">' + groups[k].length + ' paket</span></div>' + groups[k].map(satir).join('');
+          }).join('');
+        }
+
+        var durumlar = [['all', 'Tümü'], ['late', 'Gecikenler'], ['cancelled', 'İptaller'], ['transfer', 'Aktarılanlar']];
+        var gruplar = [['region', 'Bölgeye'], ['restaurant', 'Restorana']];
+        var filtre = S.ozetOpen
+          ? '<div class="fpanel">' +
+              '<div class="flabel">Durum</div><div class="chips">' + durumlar.map(function (x) {
+                return '<button class="chip' + (f.durum === x[0] ? ' on' : '') + '" data-durum="' + x[0] + '">' + x[1] + '</button>';
+              }).join('') + '</div>' +
+              '<div class="flabel">Grupla</div><div class="chips">' + gruplar.map(function (x) {
+                return '<button class="chip' + (f.grup === x[0] ? ' on' : '') + '" data-grup="' + x[0] + '">' + x[1] + '</button>';
+              }).join('') + '</div>' +
+            '</div>'
+          : '';
+
+        panel(
+          '<div class="ph-row"><div><span id="oz-ref" class="ph-ref" title="Yenile">↻</span></div></div>' +
+          '<div class="kpis">' +
+            kpiKart(kpi.restaurants, 'Aktif restoran') +
+            kpiKart(kpi.couriers, 'Aktif kurye') +
+            kpiKart(kpi.packages, 'Toplam paket (bugün)') +
+            kpiKart(kpi.cancelled, 'İptal') +
+          '</div>' +
+          '<div class="sh-title"><h3>SİPARİŞLER <span>(bugün)</span></h3>' +
+            '<button class="fbtn' + (S.ozetOpen ? ' on' : '') + '" id="oz-filter" title="Filtre">⏷</button></div>' +
+          filtre +
+          '<div class="slist">' + govde + '</div>'
+        );
+
+        if (refresh) UI.toast('Güncellendi', 'success');
+        $('oz-ref').onclick = function () { viewOzet(); };
+        $('oz-filter').onclick = function () { S.ozetOpen = !S.ozetOpen; viewOzet(); };
+        Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-durum]'), function (b) {
+          b.onclick = function () {
+            var v = b.getAttribute('data-durum');
+            S.ozetFilter.durum = S.ozetFilter.durum === v ? 'all' : v;
+            viewOzet();
+          };
+        });
+        Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-grup]'), function (b) {
+          b.onclick = function () {
+            var v = b.getAttribute('data-grup');
+            S.ozetFilter.grup = S.ozetFilter.grup === v ? '' : v;
+            viewOzet();
+          };
+        });
+        Array.prototype.forEach.call($('adm-body').querySelectorAll('.srow'), function (row, i) {
+          row.onclick = function () {
+            var p = list[i];
+            if (p) { S.pkgSheet = p; siparisSheet(p); }
+          };
+        });
+      }).catch(showError);
     }
-    load(false);
+
+    function kpiKart(deger, etiket) {
+      return '<div class="kpi"><b>' + (deger == null ? '—' : deger) + '</b><small>' + etiket + '</small></div>';
+    }
+
+    yukle(false);
   }
+
   function kpi(l, v) { return '<div class="kpi"><div class="v">' + esc(v) + '</div><div class="l">' + esc(l) + '</div></div>'; }
+
+  function siparisSheet(p) {
+    var ts = function (v) { return v ? new Date(v * 1000).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; };
+    var kapali = !!p.delivered_at || !!p.cancelled_at;
+    var sh = UI.openSheet('<h2>#' + p.batch + '-' + p.number + '</h2>' +
+      '<div class="sheet-st"><span class="tag ' + (UI.STATUS[p.status] || '') + '">' + esc(p.status || '—') + '</span>' +
+        '<span class="note" style="margin-left:8px">' + (p.minutes == null ? '—' : p.minutes + ' dk') + '</span></div>' +
+      '<dl class="pk-fields" style="margin:10px 0">' +
+        '<dt>Restoran</dt><dd>' + esc(p.restaurant) + '</dd>' +
+        '<dt>Bölge</dt><dd>' + esc(p.region || '—') + '</dd>' +
+        '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
+        '<dt>Oluşturma</dt><dd>' + ts(p.created_at) + '</dd>' +
+        '<dt>Kabul</dt><dd>' + ts(p.accepted_at) + '</dd>' +
+        '<dt>Teslim</dt><dd>' + ts(p.delivered_at) + '</dd>' +
+        '<dt>Mesafe</dt><dd>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</dd>' +
+        '<dt>Tutar</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +
+        '<dt>Ödeme</dt><dd>' + (p.payment_received === true ? 'Alındı' : p.payment_received === false ? 'Alınmadı' : '—') + '</dd>' +
+      '</dl>' +
+      (p.note ? '<div class="notebox"><small>Not</small><div>' + esc(p.note) + '</div></div>' : '') +
+      (kapali ? '' : '<div id="sp-ata"></div>') +
+      '<button class="d" id="sp-close" style="width:100%;margin-top:8px">Kapat</button>');
+    sh.querySelector('#sp-close').onclick = function () { UI.closeSheet(); };
+    if (kapali) return;
+    API.yonetim('kuryeler').then(function (d) {
+      var free = (d.couriers || []).filter(function (c) { return c.online && c.active && !c.locked && (c.active_packages || 0) === 0; });
+      if (!free.length) {
+        sh.querySelector('#sp-ata').innerHTML = '<p class="note">Boşta kurye yok.</p>';
+        return;
+      }
+      sh.querySelector('#sp-ata').innerHTML =
+        '<div class="fld"><label>Boştaki kurye</label><select id="sp-sel">' +
+          '<option value="">Kurye seçin…</option>' + free.map(function (c) { return '<option value="' + c.id + '">' + esc(c.name) + '</option>'; }).join('') +
+        '</select></div><button class="p" id="sp-ata-btn" style="width:100%">Kuryeye Ata</button>';
+      sh.querySelector('#sp-ata-btn').onclick = function () {
+        var cid = sh.querySelector('#sp-sel').value;
+        if (!cid) { UI.toast('Kurye seçin', 'error'); return; }
+        API.yonetim('kuryeAta', { pkgId: p.id, courierId: Number(cid) }).then(function () {
+          UI.closeSheet(); UI.toast('Kurye atandı', 'success'); viewOzet();
+        }).catch(function (e) { UI.toast(e.message || 'Atanamadı', 'error'); });
+      };
+    }).catch(function () {});
+  }
 
   function waitingSheet(id, waiting) {
     var w = waiting.filter(function (x) { return x.id === id; })[0];

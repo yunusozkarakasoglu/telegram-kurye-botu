@@ -425,6 +425,7 @@
       if (what === 'bolge') return req('POST', '/api/yonetim/bolge', arg || {});
       if (what === 'bolgeSirala') return req('POST', '/api/yonetim/bolge-sirala', arg || {});
       if (what === 'sontalepler') return req('GET', '/api/yonetim/sontalepler');
+      if (what === 'siparisler') return req('GET', '/api/yonetim/siparisler' + (arg && arg.date ? '?date=' + encodeURIComponent(arg.date) : ''));
       if (what === 'rapor') return req('GET', '/api/yonetim/rapor' + (arg && arg.date ? '?date=' + encodeURIComponent(arg.date) : ''));
       if (what === 'mesaj') return req('POST', '/api/yonetim/mesaj', arg || {});
       if (what === 'mesajlar') return req('GET', '/api/yonetim/mesajlar');

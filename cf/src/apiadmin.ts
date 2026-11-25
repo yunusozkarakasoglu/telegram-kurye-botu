@@ -378,6 +378,40 @@ export async function adminRoutes(
     return json({ items: items.map((p, i) => pkgDto(p, states[i])) });
   }
 
+
+  // Canlı Saha: bugünün tüm siparişleri (tek çağrı) + sayaçlar
+  if (path === "/yonetim/siparisler" && method === "GET") {
+    const dateParam = url.searchParams.get("date") || "";
+    let start: number;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) start = Math.floor(Date.parse(dateParam + "T00:00:00+03:00") / 1000);
+    else {
+      const n = bot.now();
+      start = Math.floor((n + 3 * 3600) / 86400) * 86400 - 3 * 3600;
+    }
+    const end = start + 86400;
+    const rows = await bot.packages("b.created_at>=? AND b.created_at<?", [start, end]);
+    const states = await statesFor(bot, rows);
+    const aktifRest = await bot.db.first<{ n: number }>(
+      "SELECT count(*) AS n FROM accounts WHERE role='restoran' AND active=1 AND deleted=0");
+    const aktifKurye = await bot.db.first<{ n: number }>(
+      "SELECT count(*) AS n FROM accounts WHERE role='kurye' AND active=1 AND deleted=0 AND online=1");
+    const items = rows.map((p, i) => ({
+      ...pkgDto(p, states[i]),
+      minutes: p.created_at ? Math.max(0, Math.floor((bot.now() - p.created_at) / 60)) : null,
+      late: !p.delivered_at && !p.cancelled_at && !!p.created_at && bot.now() - p.created_at >= 600,
+    }));
+    return json({
+      date: new Date(start * 1000 + 3 * 3600 * 1000).toISOString().slice(0, 10),
+      kpi: {
+        restaurants: aktifRest?.n ?? 0,
+        couriers: aktifKurye?.n ?? 0,
+        packages: items.length,
+        cancelled: items.filter((p) => !!p.cancelled_at).length,
+      },
+      items,
+    });
+  }
+
   if (path === "/yonetim/rapor" && method === "GET") {
     const dateParam = url.searchParams.get("date") || "";
     let start: number;
