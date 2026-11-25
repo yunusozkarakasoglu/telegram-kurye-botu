@@ -1303,13 +1303,20 @@
       return API.bildirimOkundu(maxId).then(function () { S.notifs.unread = Math.max(0, (S.notifs.unread || 0) - items.length); }).catch(function () {});
     }
     sh.querySelector('#as-ok').onclick = function () {
-      markRead().then(function () { UI.closeSheet(); UI.toast('Paketler kabul edildi', 'success'); refresh(true); });
+      sh.querySelector('#as-ok').disabled = true;
+      var refs = items.map(function (n) { return n.ref; }).filter(Boolean);
+      Promise.all(refs.map(function (id) { return API.atamaKarar(id, true).catch(function () {}); }))
+        .then(function () {
+          return markRead();
+        }).then(function () {
+          UI.closeSheet(); UI.toast('Paketler kabul edildi', 'success'); refresh(true);
+        });
     };
     sh.querySelector('#as-rej').onclick = function () {
       sh.querySelector('#as-rej').disabled = true;
       var refs = items.map(function (n) { return n.ref; }).filter(Boolean);
       Promise.all(refs.map(function (id) {
-        return API.aktar(id, { hedef: 'havuz' }).catch(function () {});
+        return API.atamaKarar(id, false).catch(function () {});
       })).then(function () {
         return markRead();
       }).then(function () {

@@ -389,6 +389,7 @@
     kmGir: function (id, km) { return req('POST', '/api/paket/' + id + '/km', { km: km }); },
     teslim: function (id, paid) { return req('POST', '/api/paket/' + id + '/teslim', paid == null ? {} : { paid: !!paid }); },
     iptal: function (id, reason) { return req('POST', '/api/paket/' + id + '/iptal', { reason: reason }); },
+    atamaKarar: function (id, kabul) { return req('POST', '/api/atama/' + id + (kabul ? '/kabul' : '/reddet')); },
     aktar: function (id, payload) { return req('POST', '/api/paket/' + id + '/aktar', payload || {}); },
     paketlerim: function () { return req('GET', '/api/paketlerim'); },
     gecmis: function () { return req('GET', '/api/gecmis'); },
@@ -474,7 +475,7 @@
       });
     }
   };
-  ['oturum', 'havuz', 'kabul', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
+  ['oturum', 'havuz', 'kabul', 'atamaKarar', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
     'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'girisKullanicilar', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);

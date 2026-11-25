@@ -6,6 +6,7 @@ import { json, fail, pkgDto, settings, statesFor } from "./apidto";
 export { json, fail } from "./apidto";
 import * as apiCourier from "./apicourier";
 import * as forms from "./forms";
+import * as acceptFlow from "./accept";
 import { dialNumber, validFullName, validPhone } from "./util";
 import { checkPinHash, loginToken, makePinHash, pinToken, pinSql, validLoginToken, validPin, validPinToken } from "./pin";
 import { CANCEL_REASONS, PAYMENTS, MAX_PACKAGES, UNSPECIFIED } from "./constants";
@@ -267,6 +268,14 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       if (!ids.length) return fail("Paket seçilmedi.", 422, "invalid");
       const result = await apiCourier.acceptPackages(bot, user, ids);
       return json(result);
+    }
+
+    // Atama onayı (yönetici/aktarım kaynaklı claim teklifi): kurye uygulamadan kabul/red eder.
+    const atama = path.match(/^\/atama\/(\d+)\/(kabul|reddet)$/);
+    if (atama && method === "POST") {
+      if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const sonuc = await acceptFlow.claimOfferStep(bot, user, atama[2] === "kabul" ? "coa" : "cod", `co${atama[1]}`);
+      return json({ ok: true, message: sonuc });
     }
 
     let match = path.match(/^\/paket\/(\d+)\/(km|teslim|iptal|aktar)$/);
