@@ -10,9 +10,9 @@
 
   var TABS = [
     ['ozet', 'Özet'], ['havuz', 'Havuz'], ['sontalepler', 'Son Talepler'],
-    ['limit', 'Kurye Paket Limiti'], ['tarife', 'Ücret Tarifesi'], ['bolgeler', 'Bölgeler'],
+    ['ayarlar', 'Ayarlar'], ['bolgeler', 'Bölgeler'],
     ['restoranlar', 'Restoranlar'], ['kuryeler', 'Kuryeler'], ['iptaller', 'İptal Siparişler'],
-    ['kuryedurum', 'Kurye Durumu'], ['rapor', 'Raporlar'], ['odemeler', 'Ödemeler'], ['mesaj', 'Mesaj'], ['sistem', 'Sistem']
+    ['kuryedurum', 'Kurye Durumu'], ['rapor', 'Raporlar'], ['odemeler', 'Ödemeler'], ['mesaj', 'Mesaj']
   ];
 
   function head(t, s) { $('adm-title').textContent = t; $('adm-sub').textContent = s || ''; }
@@ -47,6 +47,12 @@
   }
 
   function panel(html) { var el = $('adm-body'); el.innerHTML = html; return el; }
+  /** Ayarlar sekmeleri: içerik #ay-body'ye yazılır, sekme çubuğu korunur. */
+  function panelAy(html) {
+    var el = document.getElementById('ay-body') || document.getElementById('adm-body');
+    el.innerHTML = html;
+    return el;
+  }
 
   /* ---------------- ekranlar ---------------- */
   function viewOzet() {
@@ -402,13 +408,28 @@
     });
   }
 
-  function viewTarife() {
-    head('Ücret Tarifesi', 'Km aralığı başına sabit ücret');
+  var AYARLAR = [['limit', 'Kurye Paket Limiti'], ['tarife', 'Ücret Tarifesi'], ['sistem', 'Sistem']];
+
+  function viewAyarlar() {
+    if (!S.ayarTab) S.ayarTab = 'limit';
+    head('Ayarlar', 'Paket limiti · Ücret tarifesi · Çalışma saatleri');
+    panel('<div class="seg three" id="ay-seg">' + AYARLAR.map(function (a) {
+      return '<button data-ay="' + a[0] + '" class="' + (S.ayarTab === a[0] ? 'on' : '') + '">' + a[1] + '</button>';
+    }).join('') + '</div><div id="ay-body"></div>');
+    Array.prototype.forEach.call($('ay-seg').children, function (b) {
+      b.onclick = function () { S.ayarTab = b.getAttribute('data-ay'); viewAyarlar(); };
+    });
+    if (S.ayarTab === 'tarife') drawTarife();
+    else if (S.ayarTab === 'sistem') drawSistem();
+    else drawLimit();
+  }
+
+  function drawTarife() {
     API.yonetim('tarife').then(function (d) {
       var tariff = d.tariff || [];
       var bounds = d.tariff_bounds || [];
       var labels = d.tariff_intervals || [];
-      panel('<div class="fld" style="max-width:280px"><label>0–3 km sabit ücret (TL)</label>' +
+      panelAy('<div class="fld" style="max-width:280px"><label>0–3 km sabit ücret (TL)</label>' +
         '<input id="t0" type="number" value="' + (tariff[0] || 0) + '"></div>' +
         '<h3 style="font-size:15px;margin:14px 0 8px">Sabit ücretler</h3>' +
         tariff.slice(1).map(function (v, i) {
@@ -432,10 +453,9 @@
     }).catch(showError);
   }
 
-  function viewLimit() {
-    head('Kurye Paket Limiti', 'Aynı anda taşınabilecek en fazla aktif paket');
+  function drawLimit() {
     API.yonetim('tarife').then(function (d) {
-      panel('<div class="fld" style="max-width:220px"><label>Limit (1–99)</label>' +
+      panelAy('<div class="fld" style="max-width:220px"><label>Limit (1–99)</label>' +
         '<input id="lim" type="number" min="1" max="99" value="' + (d.limit || 3) + '"></div>' +
         '<button class="p" id="lsave">Kaydet</button>');
       $('lsave').onclick = function () {
@@ -446,11 +466,10 @@
     }).catch(showError);
   }
 
-  function viewSistem() {
-    head('Sistem', 'Çalışma saatleri');
+  function drawSistem() {
     API.yonetim('tarife').then(function (d) {
       var s = d.settings || {};
-      panel('<div class="fld" style="max-width:240px"><label>Açılış saati</label>' +
+      panelAy('<div class="fld" style="max-width:240px"><label>Açılış saati</label>' +
         '<input id="open" type="time" value="' + esc(s.open_time || "07:00") + '"></div>' +
         '<div class="fld" style="max-width:240px"><label>Kapanış saati</label>' +
         '<input id="close" type="time" value="' + esc(s.close_time || "22:00") + '"></div>' +
@@ -736,8 +755,8 @@
     if (S.tab === 'anasayfa' && renderTabs) { /* tabs already rendered */ }
     ({
       ozet: viewOzet, havuz: viewHavuz, kuryeler: viewKuryeler, restoranlar: viewRestoranlar,
-      bolgeler: viewBolgeler, tarife: viewTarife, rapor: viewRapor, iptaller: viewIptaller,
-      limit: viewLimit, sontalepler: viewSonTalepler, kuryedurum: viewKuryeDurum, mesaj: viewMesaj, odemeler: viewOdemeler, sistem: viewSistem
+      bolgeler: viewBolgeler, rapor: viewRapor, iptaller: viewIptaller, ayarlar: viewAyarlar,
+      sontalepler: viewSonTalepler, kuryedurum: viewKuryeDurum, mesaj: viewMesaj, odemeler: viewOdemeler
     })[view]();
   }
 
