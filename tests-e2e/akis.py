@@ -169,7 +169,7 @@ DELETE FROM notifications WHERE id IN (SELECT notif FROM notif_targets WHERE acc
 DELETE FROM notif_targets WHERE account IN ({K1},{K2});
 DELETE FROM invites WHERE phone IN ('{PHONES[REST]}','{PHONES[K1]}','{PHONES[K2]}');
 DELETE FROM accounts WHERE id IN ({ADMIN},{REST},{K1},{K2},{NOPIN},{REST2});
-DELETE FROM accounts WHERE phone IN ('{PHONES[YENI_K]}','{PHONES[YENI_R]}');
+DELETE FROM accounts WHERE phone IN ('{PHONES[YENI_K]}','{PHONES[YENI_R]}','05009990012','05009990014','05009990015');
 """)
 
 
@@ -415,8 +415,18 @@ def senaryo_admin_kullanici_ekleme(api: Api, o: dict[str, Oturum]) -> None:
 
     tek_kelime = api.cagir("POST", "/api/yonetim/kullanici",
                            {"role": "kurye", "name": "Ahmet", "phone": "05009990012", "pin": "1234"},
-                           token=admin.token, bekle_hata=True)
-    T.esit("tek kelime ad reddedildi", 422, tek_kelime.get("_status"))
+                           token=admin.token)
+    T.ok("tek kelime ad kabul edildi", bool(tek_kelime.get("ok")), f"id={tek_kelime.get('id')}")
+
+    uc_isim = api.cagir("POST", "/api/yonetim/kullanici",
+                        {"role": "kurye", "name": "Mehmet Ali Osman", "phone": "05009990014", "pin": "1234"},
+                        token=admin.token)
+    T.ok("üç kelimeli ad kabul edildi", bool(uc_isim.get("ok")), f"id={uc_isim.get('id')}")
+
+    bos_ad = api.cagir("POST", "/api/yonetim/kullanici",
+                       {"role": "kurye", "name": " ", "phone": "05009990015", "pin": "1234"},
+                       token=admin.token, bekle_hata=True)
+    T.esit("boş ad reddedildi", 422, bos_ad.get("_status"))
 
     yetkisiz = api.cagir("POST", "/api/yonetim/kullanici",
                          {"role": "kurye", "name": "Baska Kurye", "phone": "05009990013"},

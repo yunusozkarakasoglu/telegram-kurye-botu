@@ -29,6 +29,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] Ad alanı denetimi kaldırıldı: yönetici kurye/restoran eklerken ad serbest metin (2–80 karakter). Tek kelime, 3+ isim kabul; boş/aşırı uzun reddedilir. E2E **64/64** (`d2a08efd`).
 - [x] Kullanıcı açma yöneticiye taşındı: davet/kayıt akışı kaldırıldı; **＋ Kurye Ekle / ＋ Restoran Ekle** formları (ad, telefon, PIN 1234, restoran için yetkili + enlem/boylam), giriş linki kopyala, yapay ID + `tg_chat_id`, ilk girişte zorunlu PIN değişimi (`f5e4f70e`, v73).
 - [x] Atama onayı API'si `/api/atama/{id}/kabul|reddet` — Mini App'te "Kabul Et" gerçekten atıyor (testte bulundu).
 - [x] E2E testi: `tests-e2e/akis.py` — 4 test kullanıcısı + 62 doğrulama (kullanıcı ekleme bloğu dahil).

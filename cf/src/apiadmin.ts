@@ -2,7 +2,7 @@ import { Bot } from "./core";
 import type { Account } from "./types";
 import { json, fail, pkgDto, settings, statesFor } from "./apidto";
 import { makePinHash, validPin } from "./pin";
-import { validFullName, validPhone } from "./util";
+import { validPhone } from "./util";
 import * as accept from "./accept";
 import * as apiCourier from "./apicourier";
 
@@ -329,8 +329,9 @@ export async function adminRoutes(
     const role = body.role === "restoran" ? "restoran" : body.role === "kurye" ? "kurye" : "";
     if (!role) return fail("Rol seçilmedi (kurye/restoran).", 422, "invalid");
     const name = String(body.name || "").trim();
-    if (role === "kurye" && !validFullName(name)) return fail("Ad ve soyadı birlikte yazın. Örnek: Ahmet Yılmaz", 422, "invalid");
-    if (role === "restoran" && (name.length < 2 || name.length > 80)) return fail("Restoran adı geçersiz.", 422, "invalid");
+    if (name.length < 2 || name.length > 80) {
+      return fail(role === "restoran" ? "Restoran adı geçersiz." : "Ad 2–80 karakter olmalı.", 422, "invalid");
+    }
     const phone = String(body.phone || "").trim().replace(/[ ()\-]/g, "");
     if (!validPhone(phone)) return fail("Telefon numarası geçersiz.", 422, "invalid");
     const pin = String(body.pin || "1234");

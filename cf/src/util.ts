@@ -36,11 +36,13 @@ export function dialNumber(phone: string | null | undefined): string {
   else return `+${digits}`;
   return `+90${national}`;
 }
+/**
+ * Ad alanı serbest metindir: 2-3-4 kelimeli adlar, unvanlar ve noktalama kabul edilir.
+ * Yalnız boş ve aşırı uzun değerler reddedilir (denetim yöneticide).
+ */
 export function validFullName(value: string): boolean {
-  const parts = value.trim().split(/\s+/).filter(Boolean);
-  if (parts.length < 2 || parts.length > 5) return false;
-  if (value.trim().length < 5 || value.trim().length > 80) return false;
-  return parts.every((part) => /^[A-Za-zÇĞİÖŞÜçğıöşü]{2,}$/.test(part));
+  const temiz = String(value || "").trim();
+  return temiz.length >= 2 && temiz.length <= 80;
 }
 
 export function validPhone(phone: string): boolean {
