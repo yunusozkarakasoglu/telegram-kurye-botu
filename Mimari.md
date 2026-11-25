@@ -1,4 +1,8 @@
-# Mimari ve uygulama planı
+# Mimari
+
+> **Not (2026-11-25):** Çok kiracılı (tenant) katman bu projeden geri alındı
+> (`8c55b6c`). Tek bölgeli yapı geçerli; SaaS mimarisi `~/Masaüstü/Kurye-Flow-Mobil`
+> projesinde yaşıyor (`AGENTS.md`, `Mimari.md`, `PLAN.md`).
 
 ## Hedef ve sınır
 

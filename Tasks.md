@@ -1,6 +1,11 @@
 # Görevler
 
 ## Açık
+
+> **Yön:** Bu proje legacy. Yeni geliştirme `~/Masaüstü/Kurye-Flow-Mobil` (PackOn Express) altında sürüyor.
+- [ ] **GEÇİCİ TEST GİRİŞİ canlıda açık**: `GET /api/giris/kullanicilar` tüm hesapların PIN'ini **1234** yapar ve listeyi döner. Kaldırılmalı (Faz 4/5).
+- [ ] `pin_plain` (düz metin PIN) canlıda duruyor; yalnız maske/göz gösterimi için. Kaldırılmalı.
+- [ ] D1'de kalan tenant artıkları (`tenant_id`, `tenants/tenant_*`, `pin_plain`) — zararsız; yeni projeye geçişte kullanılacak.
 - [x] Cloudflare yerel E2E simülasyonu (restoran→kabul→km→teslim→aktarım→iptal) — geçti.
 - [x] Mini App yayını (`e1e02837…`): statik arayüz + `/api/*`, menü düğmesi "Kurye", initData 1 saat.
 - [x] Mini App menü düğmesi geçici olarak kapatıldı (`commands`); botu tam düzenleme turu başladı.
@@ -24,6 +29,8 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] `28c9837` (tenant fazı) geri alındı → `8c55b6c`; `cf/` = `676f01d` ile birebir. SaaS işi `Kurye-Flow-Mobil`'e taşındı.
+- [x] Kurye > Açık Paketler satır düzeni: bölge+restoran üstte kalın, talep no·ödeme·km altta (`eecbb85`, v71).
 - [x] PIN girişi (24 saat token, yenilemede sorulmaz, hesaba bağlı), profil PIN düzenleme (göz ikonu), yönetici kurye modu PIN.
 - [x] Kurye durumu Online/Meşgul/Offline + sebep; meşgulde paket/bildirim kapalı.
 - [x] `kurye.packonexpress.com` custom domain (proxy Worker, DNS+route) — TLS sorunu çözüldü; menü URL'si taşındı.

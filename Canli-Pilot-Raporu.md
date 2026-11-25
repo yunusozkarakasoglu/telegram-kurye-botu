@@ -246,3 +246,12 @@ Kullanıcının **Bölgeler** ekranında tanımladığı listeden 4 bölge seçi
 - **Hâlâ eksik:** restoranın kendi Telegram hesabıyla **gerçek cihazda** akış (hesap başına ayrı numara veya davet linki kullanacak bir kişi gerekir); transfer/iptal/rapor ekranlarının Cloudflare'da canlı doğrulaması; gönderim kuyruğu/429.
 
 **Pilot tamamlanmadı.** Otomatik izole testlerin raporu ayrı: `Test-Raporu.md`. Buradaki kayıt yalnız gerçekten gözlenen canlı adımları belirtir.
+
+### 2026-11-25 — kapanış notu
+
+- Cloudflare canlı sürüm **`ca8de7eb…`**, asset **v71**; giriş **telefon + PIN** (24 saat token).
+- **SaaS/tenant çalışması bu projeden çıkarıldı** (tenant fazı geri alındı, `cf/` = `676f01d`).
+  Çok bölgeli sürüm `~/Masaüstü/Kurye-Flow-Mobil` (PackOn Express) altında sürüyor.
+- Bu proje **legacy**: yalnız acil düzeltme; yeni özellik PackOn Express'te.
+- Açık risk: `GET /api/giris/kullanicilar` geçici test ucu (tüm PIN'leri 1234 yapar) ve
+  `pin_plain` (düz metin PIN) canlıda duruyor → yeni projeye geçişte kaldırılacak.

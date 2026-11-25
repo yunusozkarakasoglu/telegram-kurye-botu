@@ -188,3 +188,12 @@ python3 tools/verify_package.py
 - Mevcut veriyle yükseltmeden önce botu durdurup ayar/SQLite yedeği alınmalı; önce ayrı kopyada pilot yapılmalı. Gönderilmemiş eski form taslakları sıfırlanır.
 - Yerel projede Git deposu/remote bulunmadığı için commit/push yapılmadı.
 - **Sıradaki aşama:** Ayrı Telegram test botu ve yönetici/restoran/kurye hesaplarıyla canlı pilot. Ardından ücretsiz Cloudflare webhook/D1 uyarlaması; mevcut Python dosyalarını Workers'a doğrudan yüklemek yeterli değildir.
+
+### Son doğrulama (2026-11-25, geri alma sonrası)
+
+- `git diff 676f01d HEAD -- cf/` → **boş** (tenant katmanı tamamen çıktı).
+- `ruff check .` ✅ · `python3 -m unittest discover -s tests` → **382 OK** · `tsc --noEmit` ✅.
+- Canlı: `/saglik` → `{"ok":true,"accounts":6}`; `6005170703 / 1234` → `/admin · Özet`.
+- Telegram: `getWebhookInfo` → `pending: 0`, son hata yok.
+- Kurye > Açık Paketler satırı yerel doğrulandı:
+  `Belirtilmedi · Lezzet Döner` / `#910004-1 · Belirtilmedi · 4,5 km` / `190 TL`.

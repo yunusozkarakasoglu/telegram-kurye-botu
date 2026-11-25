@@ -8,3 +8,13 @@
 - Kurulum: `Readme.md`, `Kurulum-Kilavuzu.md`. Mimari: `Mimari.md`. Doğrulama: `Test-Raporu.md`, `Canli-Pilot-Raporu.md`.
 - Sonraki hedef: Cloudflare (webhook + D1); henüz uygulanmadı.
 - Bot görünen adı: **Kurye Paket** · kullanıcı adı: `@YunusKuryePilot_4862_bot` (değiştirilemiyor).
+
+## Proje durumu (2026-11-25)
+
+| Alan | Değer |
+|---|---|
+| Durum | **Legacy / frozen** — yeni özellik eklenmez |
+| Aktif sürüm | Cloudflare `ca8de7eb…` · asset `v71` |
+| Yayın | `https://kurye.packonexpress.com/` (yönetici `/admin`) |
+| Yeni proje | `~/Masaüstü/Kurye-Flow-Mobil` — **PackOn Express** (çok bölgeli SaaS + Android) |
+| Geri alma | tenant fazı `28c9837` → `8c55b6c` ile çıkarıldı; `cf/` = `676f01d` |
