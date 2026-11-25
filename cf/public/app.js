@@ -360,10 +360,10 @@
           '<div style="font-size:13px;color:var(--t2)">Aktif ' + (mine.summary.active || 0) +
           ' · Km bekleyen ' + (mine.summary.waiting_km || 0) + '</div></div>' +
         '<div class="card" style="margin-top:10px">' + L.map(function (p) {
-          var state = p.picked_up_at ? 'Yolda' : 'Km bekliyor';
+          var kmTxt = p.distance_km == null ? 'Km bekliyor' : kmf(p.distance_km);
           return '<button class="prow" data-open="' + p.id + '">' +
-            '<span><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) + '</b>' +
-            '<small>' + esc(p.region || '') + ' · ' + esc(p.payment || '') + ' · ' + state + '</small></span>' +
+            '<span><b>' + esc(p.region || 'Bölge yok') + ' · ' + esc(p.restaurant) + '</b>' +
+            '<small>#' + p.batch + '-' + p.number + ' · ' + esc(p.payment || 'Ödeme yok') + ' · ' + kmTxt + '</small></span>' +
             '<em>' + (p.fee_tl == null ? '' : money(p.fee_tl)) + '</em></button>';
         }).join('') + '</div>';
     }
