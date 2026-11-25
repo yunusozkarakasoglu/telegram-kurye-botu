@@ -145,7 +145,7 @@ body.sheet-open #toast{bottom:auto;top:calc(14px + var(--sat));z-index:12}
 .adm-top h1{font-size:22px}
 .adm-top .sp{flex:1}
 .adm-grid{display:grid;grid-template-columns:250px 1fr;gap:18px;align-items:start}
-.adm-nav{background:var(--el);border:1px solid var(--ln);border-radius:12px;padding:8px;position:sticky;top:16px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.adm-nav{background:var(--el);border:1px solid var(--ln);border-radius:12px;padding:8px;position:sticky;top:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .adm-nav button{width:100%;justify-content:center;text-align:center;border:1px solid transparent;background:var(--el2);min-height:46px;border-radius:8px;padding:8px 6px;font-size:13px;line-height:1.2}
 .adm-nav button.on{background:var(--ac);color:var(--on);font-weight:600}
 .adm-panel{background:var(--el);border:1px solid var(--ln);border-radius:12px;padding:16px}
@@ -272,7 +272,7 @@ header{position:relative}
 .adm-tabs button{border:1px solid var(--ln);background:var(--el);border-radius:10px;padding:10px 6px;font-size:14px;cursor:pointer}
 .adm-tabs button.on{background:var(--ac);color:var(--on);border-color:var(--ac)}
 body.admin .adm-grid{grid-template-columns:1fr}
-body.admin .adm-nav{position:fixed;top:0;left:0;bottom:0;width:min(80vw,320px);z-index:50;border-radius:0 14px 14px 0;overflow:auto;transform:translateX(-105%);transition:transform .2s ease;display:grid;grid-template-columns:1fr;gap:6px;align-content:start;padding:16px 12px}
+body.admin .adm-nav{position:fixed;top:0;left:0;bottom:0;width:min(86vw,340px);z-index:50;border-radius:0 14px 14px 0;overflow:auto;transform:translateX(-105%);transition:transform .2s ease;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;align-content:start;padding:16px 12px}
 body.admin.nav-open .adm-nav{transform:none}
 body.admin .burger{display:flex}
 
