@@ -61,7 +61,8 @@
   function openSheet(html, opts) {
     opts = opts || {};
     var ovl = document.getElementById('ovl');
-    ovl.innerHTML = '<div class="ov" id="ov"><div class="sh" role="dialog" aria-modal="true">' + html + '</div></div>';
+    ovl.innerHTML = '<div class="ov' + (opts.full ? ' full' : '') + '" id="ov">' +
+      '<div class="sh' + (opts.full ? ' full' : '') + '" role="dialog" aria-modal="true">' + html + '</div></div>';
     document.body.classList.add('sheet-open');
     sheetState.open = true;
     sheetState.onClose = opts.onClose || null;

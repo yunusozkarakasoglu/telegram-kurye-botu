@@ -406,7 +406,7 @@
   function openPkg(id) {
     var p = findPkg(id);
     if (!p) return;
-    var sh = UI.openSheet(pkgCard(p, { own: true, closable: true }), { onClose: function () { render(); } });
+    var sh = UI.openSheet(pkgCard(p, { own: true, closable: true }), { full: true, onClose: function () { render(); } });
     var cx = sh.querySelector('[data-close]');
     if (cx) cx.onclick = function () { UI.closeSheet(); };
     bindPkgActions(sh, [p]);
@@ -528,7 +528,7 @@
       b.onclick = function () {
         var p = items.filter(function (x) { return String(x.id) === b.getAttribute('data-hopen'); })[0];
         if (!p) return;
-        var sh = UI.openSheet(pkgCard(p, { pay: true, closable: true }), { onClose: function () { render(); } });
+        var sh = UI.openSheet(pkgCard(p, { pay: true, closable: true }), { full: true, onClose: function () { render(); } });
         var cx2 = sh.querySelector('[data-close]');
         if (cx2) cx2.onclick = function () { UI.closeSheet(); };
         bindPkgActions(sh, [p]);
@@ -643,7 +643,7 @@
         var p = (e.items || []).filter(function (x) { return String(x.id) === b.getAttribute('data-kopen'); })[0];
         if (!p) return;
         var kapat = function () { host ? renderGecmis() : renderKazanc(); };
-        var sh = UI.openSheet(pkgCard(p, { pay: true, closable: true }), { onClose: kapat });
+        var sh = UI.openSheet(pkgCard(p, { pay: true, closable: true }), { full: true, onClose: kapat });
         var cx3 = sh.querySelector('[data-close]');
         if (cx3) cx3.onclick = function () { UI.closeSheet(); };
         bindPkgActions(sh, [p]);
