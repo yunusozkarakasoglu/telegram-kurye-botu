@@ -55,6 +55,14 @@
 
   function updateWho() {
     var el = $('who');
+    var mb = $('mod');
+    if (mb) {
+      var rol = (S.session && S.session.role) || '';
+      var etiket = rol === 'restoran' ? 'Restoran' : rol === 'yonetici' ? 'Yönetici' : rol === 'kurye' ? 'Kurye' : '';
+      mb.textContent = etiket;
+      mb.hidden = !etiket;
+      document.title = etiket ? 'Kurye Paket · ' + etiket : 'Kurye Paket';
+    }
     if (!el) return;
     var u = S.session && S.session.user;
     if (!u || S.role === 'restoran') { el.hidden = true; return; }

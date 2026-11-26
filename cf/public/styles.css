@@ -508,3 +508,8 @@ textarea{width:100%;font:inherit;font-size:15px;padding:10px 12px;border:1px sol
 .rulecard ul{margin:0;padding-left:18px}
 .rulecard li{font-size:13px;line-height:1.5;margin-bottom:6px}
 .rulecard li:last-child{margin-bottom:0}
+
+.modbadge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+  padding:2px 7px;border-radius:6px;background:var(--el2,rgba(127,127,127,.12));color:var(--t2);
+  border:1px solid var(--ln);margin-bottom:2px}
+header h1{display:inline}
