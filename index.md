@@ -4,9 +4,9 @@
 
 | Konu | Durum |
 |---|---|
-| Canlı | `53f58e01` · asset **v137** · 30/30 giriş 200 |
+| Canlı | `0e3e369f` · asset **v138** · 30/30 giriş 200 |
 | Plan | **Workers Paid ($5/ay)** — CPU 503'leri bitti, deploy açık |
-| Performans | **Faz A+B+C bitti** · sırada D (outbox), E (yük testi) |
+| Performans | **Faz A+B+C+D bitti** · sırada E (yük/kaos testi) |
 | Yedek | yerel (systemd 03:00) + CI artifact (90 gün) + GitHub Release (son 30) — üçü de çalışıyor |
 | İzleme | `izleme.yml` 10 dk'da bir `/saglik` → Telegram uyarısı |
 | Geri yükleme | yerel `sqlite3` testi geçti; otomatik tatbikat **açık** (`Tasks.md → Yedekleme ve Geri Yükleme`) |

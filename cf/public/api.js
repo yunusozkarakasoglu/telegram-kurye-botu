@@ -465,6 +465,8 @@
       if (what === 'odemeler') return req('GET', '/api/yonetim/odemeler');
       if (what === 'kuryeAta') return req('POST', '/api/yonetim/ata', arg || {});
       if (what === 'bildirimTemizle') return req('POST', '/api/bildirimler/temizle');
+      if (what === 'kuyruk') return req('GET', '/api/yonetim/kuyruk');
+      if (what === 'kuyrukTekrar') return req('POST', '/api/yonetim/kuyruk/tekrar', arg || {});
       if (what === 'temizle') return req('POST', '/api/yonetim/temizle', arg || {});
       return req('GET', '/api/yonetim/' + what);
     }

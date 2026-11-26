@@ -47,9 +47,66 @@ export class Bot {
       return result?.message_id ?? null;
     } catch (e: any) {
       if (e.code === 403 || e.code === 400) return null;
+      // Faz D: geçici hata → bildirim kuyruğa alınır, cron tekrar dener (kaybolmaz)
+      await this.kuyrugaAl(chat, payload, e);
       if (this.ignoreNotifyErrors) { console.warn("sendMessage failed", e?.message || e); return null; }
       throw e;
     }
+  }
+
+  /** Faz D: gönderilemeyen bildirimi kalıcı kuyruğa yaz. */
+  async kuyrugaAl(chat: number, payload: unknown, e: unknown) {
+    try {
+      const now = Math.floor(Date.now() / 1000);
+      await this.db.run(
+        `INSERT INTO notify_outbox(account,payload,tries,next_at,state,last_error,created_at)
+         VALUES (?,?,0,?,'new',?,?)`,
+        chat, JSON.stringify(payload), now + 60, String((e as any)?.message || e).slice(0, 300), now);
+    } catch {
+      /* kuyruk yazımı asla çağıranı bozmaz */
+    }
+  }
+
+  /** Faz D: kuyruğu boşalt — üstel geri çekilme, 8 denemede `dead`. */
+  async drainOutbox(max = 20) {
+    const BEKLEME = [60, 180, 600, 1800, 3600, 7200, 21600, 43200];
+    const now = Math.floor(Date.now() / 1000);
+    const rows = await this.db.all<{ id: number; payload: string; tries: number }>(
+      "SELECT id,payload,tries FROM notify_outbox WHERE state='new' AND next_at<=? ORDER BY id LIMIT ?", now, max);
+    let gonderilen = 0;
+    for (const r of rows) {
+      try {
+        await this.tg.call("sendMessage", JSON.parse(r.payload));
+        await this.db.run("DELETE FROM notify_outbox WHERE id=?", r.id);
+        gonderilen++;
+      } catch (e: any) {
+        const tries = r.tries + 1;
+        if (e?.code === 403 || e?.code === 400) {
+          await this.db.run("DELETE FROM notify_outbox WHERE id=?", r.id);
+          continue;
+        }
+        const olu = tries >= BEKLEME.length;
+        await this.db.run("UPDATE notify_outbox SET tries=?,next_at=?,state=?,last_error=? WHERE id=?",
+          tries, now + (BEKLEME[Math.min(tries, BEKLEME.length - 1)]), olu ? "dead" : "new",
+          String(e?.message || e).slice(0, 300), r.id);
+        if (olu) await this.oluUyar(r.id);
+      }
+    }
+    return { gonderilen, denenen: rows.length };
+  }
+
+  /** Ölü kuyruk uyarısı — yöneticiye bir kez haber ver. */
+  private async oluUyar(id: number) {
+    try {
+      const admin = await this.db.first<Account>("SELECT * FROM accounts WHERE role='yonetici' AND deleted=0 ORDER BY id LIMIT 1");
+      if (!admin) return;
+      const hedef = await this.chatId(admin.id);
+      if (hedef == null) return;
+      await this.tg.call("sendMessage", {
+        chat_id: hedef,
+        text: `⚠️ Bildirim gönderilemedi (kuyruk #${id}). 8 denemede ulaştırılamadı.\nSistem → Tanılama ekranından kuyruğu inceleyin.`,
+      });
+    } catch {}
   }
 
   async menu(user: Account, text: string) {

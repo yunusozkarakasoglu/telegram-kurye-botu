@@ -53,7 +53,7 @@
 - [x] **Faz A (performans)**: D1 retry+backoff, istemci 15 sn±jitter + 5xx tekrarı, overload alarmı (`23b47dc4`, v135). 30 paralel → 0 hata.
 - [x] **Faz B (v136)**: idempotency + istemci eylem kuyruğu + batch kabul + hız sınırı — test edildi.
 - [x] **Faz C (v137)**: tek uç `/api/durum?v=` + `unchanged` yanıtı + `package_events` denetim izi.
-- [ ] **Faz D**: Telegram `outbox` kuyruğu + dead-letter.
+- [x] **Faz D (v138)**: `notify_outbox` + cron tekrar (üstel geri çekilme) + `dead` + yönetici uyarısı/elle tekrar.
 - [ ] **Faz E**: 30/60/100 paralel yük testi + kaos + kapasite raporu.
 - [x] Yönetici menüsünde **Ayarlar → Sistem**; sekmeler tek satır (4); kurye paket limiti Kurallar'da ve **anlık kaydediyor** (`e7c499e`, v134).
 - [x] Kurallar senkronu: yönetici paneli boş görünme hatası düzeltildi (`d.settings || d`), varsayılanlar D1'e seed edildi; panelden düzenleme kurye+restoran Sistem ekranına anında yansıyor (`7d0aa3de`, v131).

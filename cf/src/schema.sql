@@ -85,3 +85,10 @@ CREATE TABLE IF NOT EXISTS package_events (
   at REAL NOT NULL, account INTEGER, meta TEXT
 );
 CREATE INDEX IF NOT EXISTS package_events_pkg ON package_events(package, id);
+
+CREATE TABLE IF NOT EXISTS notify_outbox (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, account INTEGER NOT NULL, payload TEXT NOT NULL,
+  tries INTEGER NOT NULL DEFAULT 0, next_at REAL NOT NULL, state TEXT NOT NULL DEFAULT 'new',
+  last_error TEXT, created_at REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS notify_outbox_durum ON notify_outbox(state, next_at);

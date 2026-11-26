@@ -747,11 +747,26 @@
         '<div><b>Son hata:</b> ' + esc(API.lastError || '—') + '</div></div>' +
       '<div class="card" style="padding:12px;font-size:12px;white-space:pre-wrap">' +
         (logs.length ? logs.map(esc).join('\n') : 'Kayıt yok.') + '</div>' +
+      '<div id="kq" class="card" style="padding:12px;font-size:12px;margin-top:8px">Bildirim kuyruğu yükleniyor…</div>' +
       '<button class="p" id="log-send" style="width:100%;margin-top:8px">Sunucuya Gönder</button>');
     $('log-send').onclick = function () {
       API.sendLogs('tanılama').then(function () { UI.toast('Gönderildi', 'success'); })
         .catch(function (e) { UI.toast(e.message || 'Gönderilemedi', 'error'); });
     };
+    // Faz D: bildirim kuyruğu durumu
+    API.yonetim('kuyruk').then(function (d) {
+      var c = d.counts || {};
+      var olu = (d.dead || []).length;
+      $('kq').innerHTML = '<div><b>Bildirim kuyruğu:</b> bekleyen ' + (c.yeni || 0) + ' · ölü ' + (c.olu || 0) + ' · toplam ' + (c.toplam || 0) + '</div>' +
+        (olu ? '<div style="margin-top:6px;color:#b00">8 denemede ulaşmayan ' + olu + ' bildirim var.</div>' +
+          '<button class="p sm" id="kq-tekrar" style="margin-top:8px">Ölüleri tekrar dene</button>' : '');
+      var b = $('kq-tekrar');
+      if (b) b.onclick = function () {
+        API.yonetim('kuyrukTekrar', {}).then(function (r) {
+          UI.toast('Tekrar denendi · gönderilen ' + (r.gonderilen || 0), 'success'); drawTanilama();
+        }).catch(function (e) { UI.toast(e.message || 'Hata', 'error'); });
+      };
+    }).catch(function () { var el = $('kq'); if (el) el.textContent = 'Kuyruk bilgisi alınamadı.'; });
   }
 
   function drawLogs() {

@@ -166,6 +166,28 @@ export async function adminRoutes(
     return json({ ok: true, deleted: silinen });
   }
 
+  // Faz D: bildirim kuyruğu görünürlüğü + elle tekrar
+  if (path === "/yonetim/kuyruk" && method === "GET") {
+    await bot.db.ensureColumns();
+    const sayac = await bot.db.first<{ yeni: number; olu: number; toplam: number }>(
+      `SELECT SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) AS yeni,
+              SUM(CASE WHEN state='dead' THEN 1 ELSE 0 END) AS olu, count(*) AS toplam FROM notify_outbox`);
+    const olu = await bot.db.all<any>("SELECT id,account,tries,next_at,last_error,created_at FROM notify_outbox WHERE state='dead' ORDER BY id DESC LIMIT 50");
+    const bekleyen = await bot.db.all<any>("SELECT id,account,tries,next_at,last_error,created_at FROM notify_outbox WHERE state='new' ORDER BY id DESC LIMIT 50");
+    return json({ counts: { yeni: sayac?.yeni ?? 0, olu: sayac?.olu ?? 0, toplam: sayac?.toplam ?? 0 }, dead: olu, pending: bekleyen });
+  }
+
+  if (path === "/yonetim/kuyruk/tekrar" && method === "POST") {
+    const body = await readBody(request);
+    const id = Number(body.id || 0);
+    const simdi = Math.floor(Date.now() / 1000);
+    const degisen = id
+      ? await bot.db.run("UPDATE notify_outbox SET state='new',tries=0,next_at=? WHERE id=?", simdi, id)
+      : await bot.db.run("UPDATE notify_outbox SET state='new',tries=0,next_at=? WHERE state='dead'", simdi);
+    const r = await bot.drainOutbox();
+    return json({ ok: true, requeued: degisen, ...r });
+  }
+
   if (path === "/yonetim/sistem" && method === "PUT") {
     const body = await readBody(request);
     const ok = (v: unknown) => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v || ""));

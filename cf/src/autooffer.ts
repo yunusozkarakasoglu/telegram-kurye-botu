@@ -8,6 +8,7 @@ export async function tick(bot: Bot) {
   await warnWaiting(bot);
   await createOffers(bot);
   await alertBurst(bot);
+  await bot.drainOutbox();
 }
 
 /** Faz A4: D1 aşırı yüklenme uyarısı — 10 dk'da >5 "overloaded" logu varsa yöneticiye haber ver. */

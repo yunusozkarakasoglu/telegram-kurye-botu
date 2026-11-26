@@ -336,3 +336,13 @@ python3 tools/verify_package.py
 | 20 yoklama turu (yerel) | eski **3 uç 13,4 s** → yeni **1 uç 6,7 s** → delta **3,7 s** (184 ms/tur) |
 | `package_events` | km kaydı: `{"km":6.5,"fee":300}` yazıldı |
 | e2e | **80/80** · deploy `53f58e01` (v137) |
+
+### Faz D doğrulaması (2026-11-26)
+
+| Test | Sonuç |
+|---|---|
+| Sahte bot token ile talep (bildirim hatası) | 2 bildirim `notify_outbox`'a düştü, `last_error=Telegram 401 Unauthorized`, `state=new` |
+| `tries=7` iken tekrar deneme | `tries=8` → **`state=dead`** (8 deneme sınırı) |
+| Yönetici `/api/yonetim/kuyruk` | `{yeni:0, olu:2, toplam:2}` + `last_error` görünür |
+| Panel Tanılama | Kuyruk sayacı + “Ölüleri tekrar dene” düğmesi |
+| e2e | **80/80** · deploy `0e3e369f` (v138) |
