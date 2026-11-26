@@ -1,5 +1,5 @@
 export const TURKIYE_OFFSET = 3;
-export const PAYMENTS = ["Nakit", "Kart", "Ödendi", "Cihaz hatası (ödemesiz)"] as const;
+export const PAYMENTS = ["Nakit", "Kart", "Ödendi", "Yemek Çeki", "Cihaz hatası (ödemesiz)"] as const;
 export const UNSPECIFIED = "Belirtilmedi";
 export const DEFAULT_ACTIVE_LIMIT = 3;
 export const DEFAULT_TARIFF = [120, 150, 190, 240, 300, 370, 450, 540, 640];

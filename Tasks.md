@@ -50,6 +50,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] **Restoran UX (v140)**: Yemek Çeki ödeme tipi · “Kurye Ekle” sekmesi → satır popup'ı (Bölge/Ödeme/Kurye/Not) · Paketlerim Tümü/Açık/Kapalı + yeşil sabit süre.
 - [x] **Faz A (performans)**: D1 retry+backoff, istemci 15 sn±jitter + 5xx tekrarı, overload alarmı (`23b47dc4`, v135). 30 paralel → 0 hata.
 - [x] **Faz B (v136)**: idempotency + istemci eylem kuyruğu + batch kabul + hız sınırı — test edildi.
 - [x] **Faz C (v137)**: tek uç `/api/durum?v=` + `unchanged` yanıtı + `package_events` denetim izi.

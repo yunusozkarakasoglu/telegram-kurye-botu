@@ -7,6 +7,8 @@
 
   var DURUM_KILIT_MSG = 'Üzerinizde paket varken meşgul/offline seçimi yapılamaz. Üzerinizdeki paketleri havuza/kuryeye aktardıktan sonra durum değişimi yapılabilir.';
 
+  var ODemeTipleri = ['Nakit', 'Kart', 'Ödendi', 'Yemek Çeki', 'Cihaz hatası (ödemesiz)'];
+
   var S = {
     role: 'courier',
     tab: 'havuz',
@@ -21,7 +23,7 @@
     reqItems: [],
     reqQty: 1,
     reqMode: 'siparis',
-    restFilter: 'all',
+    restFilter: 'open',
     kmPending: false,
     mineView: (localStorage.getItem('mineView') === 'card' ? 'card' : 'list'),
     histView: (localStorage.getItem('histView') === 'card' ? 'card' : 'list'),
@@ -899,23 +901,20 @@
   function renderTalep() {
     setHeader('Sipariş Ekle', '');
     var main = $('mn');
-    var mod = S.reqMode || 'siparis';
-    var modSeg = '<div class="seg two" style="margin-bottom:10px">' +
-      '<button data-rm="siparis" class="' + (mod === 'siparis' ? 'on' : '') + '">Sipariş Ekle</button>' +
-      '<button data-rm="kurye" class="' + (mod === 'kurye' ? 'on' : '') + '">Kurye Ekle</button></div>';
-    if (mod === 'kurye') { renderKuryeTalep(modSeg); return; }
     var st = (S.session && S.session.settings) || {};
     var regions = st.regions || [];
-    var payments = st.payments || ['Nakit', 'Kart', 'Ödendi'];
+    var payments = st.payments || ODemeTipleri;
     if (!S.reqDraft) S.reqDraft = { region: '', payment: '', note: '' };
     var d = S.reqDraft;
     var rows = S.reqItems.map(function (it, i) {
-      return '<div class="reqrow"><b>#' + (i + 1) + '</b>' +
-        '<span><em>' + esc(it.region || 'Bölge yok') + '</em><small>' + esc(it.payment || 'Ödeme yok') + (it.note ? ' · 📝 ' + esc(it.note) : '') + '</small></span>' +
-        '<button class="ic" data-edit="' + i + '" title="Düzenle">✎</button>' +
-        '<button class="ic" data-del="' + i + '" title="Sil">✕</button></div>';
+      var kurye = it.courier_name ? ('👤 ' + esc(it.courier_name)) : '';
+      return '<button class="reqrow" data-row="' + i + '">' +
+        '<span class="rq-l"><b>#' + (i + 1) + '</b>' +
+          '<small>' + esc(it.region || 'Bölge yok') + ' · ' + esc(it.payment || 'Ödeme yok') + (it.note ? ' · 📝' : '') + (kurye ? ' · ' + kurye : '') + '</small></span>' +
+        '<span class="rq-r">' + (it.courier ? '<em class="stg direct">Kuryeye</em>' : '<em class="stg">Havuza</em>') + '<i class="chev">›</i></span>' +
+      '</button>';
     }).join('');
-    main.innerHTML = modSeg +
+    main.innerHTML =
       '<div class="card addcard">' +
         '<div style="display:flex;flex-wrap:nowrap;align-items:center;gap:10px;margin-bottom:10px;width:100%"><label style="flex:0 0 84px;font-size:13px;color:#888;white-space:nowrap">Bölge</label><select id="ar" style="flex:1;min-width:0;width:auto;font:inherit;font-size:15px;padding:11px 10px;border:1px solid #ccc;border-radius:10px;background:transparent;color:inherit">' +
           '<option value="">— seçin —</option>' +
@@ -929,126 +928,87 @@
         '<button class="p addbtn" id="addbtn">＋ Paket Ekle</button>' +
       '</div>' +
       '<div class="reqlist">' + (rows || '<p class="note" style="margin:4px 0">Listeniz boş. Bölge ve ödeme seçip “Paket Ekle”ye basın.</p>') + '</div>' +
-      '<p class="hint" style="margin:6px 0 10px">✎ satırı düzenler, ✕ listeden çıkarır. En fazla 10 paket.</p>';
+      '<p class="hint" style="margin:6px 0 10px">Satıra dokunun: bölge/ödeme/not düzenleyin, isterseniz kurye seçin. Kurye seçilirse paket havuza düşmez.</p>';
 
-    Array.prototype.forEach.call(main.querySelectorAll('[data-rm]'), function (b) {
-      b.onclick = function () { S.reqMode = b.getAttribute('data-rm'); render(); };
-    });
     main.querySelector('#ar').onchange = function (e) { S.reqDraft.region = e.target.value; };
     main.querySelector('#ap').onchange = function (e) { S.reqDraft.payment = e.target.value; };
     main.querySelector('#an').oninput = function (e) { S.reqDraft.note = e.target.value; };
     main.querySelector('#addbtn').onclick = function () {
       if (S.reqItems.length >= 10) { UI.toast('En fazla 10 paket eklenebilir', 'error'); return; }
-      S.reqItems.push({ region: S.reqDraft.region, payment: S.reqDraft.payment, note: (S.reqDraft.note || '').trim() });
+      S.reqItems.push({ region: S.reqDraft.region, payment: S.reqDraft.payment, note: (S.reqDraft.note || '').trim(), courier: '', courier_name: '' });
       S.reqDraft = { region: '', payment: '', note: '' };
       render();
     };
-    Array.prototype.forEach.call(main.querySelectorAll('[data-edit]'), function (b) {
-      b.onclick = function () { editReqItem(Number(b.getAttribute('data-edit')), regions, payments); };
+    Array.prototype.forEach.call(main.querySelectorAll('[data-row]'), function (b) {
+      b.onclick = function () { reqItemSheet(Number(b.getAttribute('data-row')), regions, payments); };
     });
-    Array.prototype.forEach.call(main.querySelectorAll('[data-del]'), function (b) {
-      b.onclick = function () { S.reqItems.splice(Number(b.getAttribute('data-del')), 1); render(); };
-    });
-    $('cta').innerHTML = '<button class="p" id="req-send"' + (S.reqItems.length ? '' : ' disabled') + '>Talebi Havuza At' +
+    $('cta').innerHTML = '<button class="p" id="req-send"' + (S.reqItems.length ? '' : ' disabled') + '>Talebi Gönder' +
       (S.reqItems.length ? ' (' + S.reqItems.length + ')' : '') + '</button>';
     var cs = $('req-send');
     if (cs) cs.onclick = function () {
       if (!S.reqItems.length) { UI.toast('Önce paket ekleyin', 'error'); return; }
-      API.talepVer(S.reqItems).then(function (r) {
+      cs.disabled = true;
+      var havuz = S.reqItems.filter(function (it) { return !it.courier; });
+      var direkt = S.reqItems.filter(function (it) { return !!it.courier; });
+      var isler = [];
+      if (havuz.length) isler.push(API.talepVer(havuz).then(function (r) { return r.count + ' havuza'; }));
+      direkt.forEach(function (it, i) {
+        isler.push(API.kuryeTalep({ courier_id: Number(it.courier), region: it.region || '', payment: it.payment || '', note: (it.note || '').trim() })
+          .then(function () { return (it.courier_name || 'Kurye') + ' · #' + (i + 1); }));
+      });
+      Promise.all(isler).then(function (sonuc) {
         S.reqItems = [];
         S.reqDraft = { region: '', payment: '', note: '' };
-        UI.toast('Talep #' + r.req_no + ' · ' + r.count + ' paket havuza atıldı', 'success');
+        UI.toast('Gönderildi: ' + sonuc.join(' · '), 'success');
         S.tab = 'paketlerim';
-        S.mineView = 'list';
+        S.restFilter = 'open';
         refresh(true);
-      }).catch(function (e) { UI.toast(e.message || 'Gönderilemedi', 'error'); });
+      }).catch(function (e) { cs.disabled = false; UI.toast(e.message || 'Gönderilemedi', 'error'); });
     };
     nav(restaurantTabs(), {});
   }
 
-  function renderKuryeTalep(modSeg) {
-    var main = $('mn');
-    var st = (S.session && S.session.settings) || {};
-    var regions = st.regions || [];
-    var payments = st.payments || ['Nakit', 'Kart', 'Ödendi'];
-    if (!S.kuryeDraft) S.kuryeDraft = { region: '', payment: '', courier: '', note: '' };
-    var d = S.kuryeDraft;
-    main.innerHTML = modSeg +
-      '<div class="card addcard">' +
-        '<div class="frow"><label>Bölge</label><select id="kr-region">' +
-          '<option value="">— seçin —</option>' +
-          regions.map(function (r) { return '<option' + (d.region === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
-        '</select></div>' +
-        '<div class="frow"><label>Ödeme tipi</label><select id="kr-payment">' +
-          '<option value="">— seçin —</option>' +
-          payments.map(function (r) { return '<option' + (d.payment === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
-        '</select></div>' +
-        '<div class="frow"><label>Kurye</label><select id="kr-courier"><option value="">Yükleniyor…</option></select></div>' +
-        '<div class="fld" style="margin-top:10px"><label>Not (opsiyonel)</label>' +
-          '<textarea id="kr-note" rows="2" placeholder="Siparişe özel not (kurye görür)">' + esc(d.note || '') + '</textarea></div>' +
-      '</div>' +
-      '<p class="hint" style="margin:6px 0 10px">Kurye seçilirse paket havuza düşmez, doğrudan kuryeye “kabul edildi” olarak işlenir.</p>';
-
-    $('cta').innerHTML = '<button class="p" id="kr-send"' + (d.courier ? '' : ' disabled') + '>Kuryeye Gönder</button>';
-
-    Array.prototype.forEach.call(main.querySelectorAll('[data-rm]'), function (b) {
-      b.onclick = function () { S.reqMode = b.getAttribute('data-rm'); render(); };
-    });
-    $('kr-region').onchange = function (e) { S.kuryeDraft.region = e.target.value; };
-    $('kr-payment').onchange = function (e) { S.kuryeDraft.payment = e.target.value; };
-    $('kr-note').oninput = function (e) { S.kuryeDraft.note = e.target.value; };
-
-    API.restoranKuryeler().then(function (r) {
-      var sel = $('kr-courier');
-      if (!sel) return;
-      var list = r.couriers || [];
-      sel.innerHTML = '<option value="">— seçin —</option>' + list.map(function (c) {
-        var ek = c.online ? '' : ' (çevrimdışı)';
-        return '<option value="' + c.id + '"' + (String(d.courier) === String(c.id) ? ' selected' : '') + '>' + esc(c.name) + ek + '</option>';
-      }).join('');
-      sel.onchange = function () {
-        S.kuryeDraft.courier = sel.value;
-        var btn = $('kr-send');
-        if (btn) btn.disabled = !sel.value;
-      };
-      var btn = $('kr-send');
-      if (btn) btn.disabled = !sel.value;
-    }).catch(function (e) { UI.toast(e.message || 'Kurye listesi alınamadı', 'error'); });
-
-    var gonder = $('kr-send');
-    if (gonder) gonder.onclick = function () {
-      var cid = S.kuryeDraft.courier;
-      if (!cid) { UI.toast('Kurye seçin', 'error'); return; }
-      gonder.disabled = true;
-      API.kuryeTalep({
-        courier_id: Number(cid), region: S.kuryeDraft.region || '',
-        payment: S.kuryeDraft.payment || '', note: (S.kuryeDraft.note || '').trim(),
-      }).then(function (r) {
-        S.kuryeDraft = { region: '', payment: '', courier: '', note: '' };
-        UI.toast('Kuryeye gönderildi · Talep #' + r.req_no, 'success');
-        S.tab = 'paketlerim';
-        refresh(true);
-      }).catch(function (e) { gonder.disabled = false; UI.toast(e.message || 'Gönderilemedi', 'error'); });
-    };
-    nav(restaurantTabs(), {});
-  }
-
-  function editReqItem(i, regions, payments) {
-    var it = S.reqItems[i] || { region: '', payment: '' };
+  /** Sipariş satırı seçenekleri: bölge · ödeme · kurye · not (popup). */
+  function reqItemSheet(i, regions, payments) {
+    var it = S.reqItems[i];
+    if (!it) return;
     var sh = UI.openSheet(
-      '<h2>Paket ' + (i + 1) + '</h2>' +
+      '<h2>Sipariş #' + (i + 1) + '</h2>' +
       '<div class="fld"><label>Bölge</label><select id="er">' +
-        '<option value="">— seçin (opsiyonel) —</option>' +
+        '<option value="">— seçin —</option>' +
         regions.map(function (r) { return '<option' + (it.region === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
       '</select></div>' +
       '<div class="fld"><label>Ödeme</label><select id="ep">' +
-        '<option value="">— seçin (opsiyonel) —</option>' +
+        '<option value="">— seçin —</option>' +
         payments.map(function (r) { return '<option' + (it.payment === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
       '</select></div>' +
-      '<div class="fld"><label>Not</label><textarea id="en" rows="2" placeholder="Siparişe özel not">' + esc(it.note || '') + '</textarea></div>' +
-      '<button class="p" id="esave">Kaydet</button><button class="d" id="ecancel">İptal</button>');
+      '<div class="fld"><label>Kurye</label><select id="ek"><option value="">— seçin —</option></select></div>' +
+      '<div class="fld"><label>Not</label><textarea id="en" rows="2" placeholder="Siparişe özel not (kurye görür)">' + esc(it.note || '') + '</textarea></div>' +
+      '<button class="p" id="esave">Kaydet</button><button class="d" id="edel">Sil</button><button class="g" id="ecancel">Vazgeç</button>');
+    var sel = sh.querySelector('#ek');
+    API.restoranKuryeler().then(function (r) {
+      var list = (r && r.couriers) || [];
+      sel.innerHTML = '<option value="">— seçin —</option>' + list.map(function (c) {
+        var ek = c.online && !c.busy ? '' : (c.busy ? ' (meşgul)' : ' (çevrimdışı)');
+        return '<option value="' + c.id + '"' + (String(it.courier) === String(c.id) ? ' selected' : '') + '>' + esc(c.name) + ek + '</option>';
+      }).join('');
+      if (sel.value && !list.some(function (c) { return String(c.id) === String(sel.value); })) sel.value = '';
+    }).catch(function () { sel.innerHTML = '<option value="">— seçin —</option>'; });
     sh.querySelector('#esave').onclick = function () {
-      S.reqItems[i] = { region: sh.querySelector('#er').value, payment: sh.querySelector('#ep').value, note: (sh.querySelector('#en').value || '').trim() };
+      var cid = sel.value;
+      var secili = sel.options[sel.selectedIndex];
+      S.reqItems[i] = {
+        region: sh.querySelector('#er').value,
+        payment: sh.querySelector('#ep').value,
+        note: (sh.querySelector('#en').value || '').trim(),
+        courier: cid,
+        courier_name: cid ? (secili ? secili.textContent.replace(/\s*\(.*\)$/, '') : '') : '',
+      };
+      UI.closeSheet();
+      render();
+    };
+    sh.querySelector('#edel').onclick = function () {
+      S.reqItems.splice(i, 1);
       UI.closeSheet();
       render();
     };
@@ -1108,10 +1068,10 @@
 
   function renderRestPaketlerim() {
     setHeader('Paketlerim', '');
-    var filters = [['all', 'Tümü'], ['waiting', 'Bekleyen'], ['active', 'Yolda (Aktif)'], ['delivered', 'Teslim Edilen']];
+    var filters = [['all', 'Tümü'], ['open', 'Açık'], ['closed', 'Kapalı']];
     var main = $('mn');
     var items = (S.restItems && S.restItems.items) || [];
-    main.innerHTML = '<div class="seg four">' + filters.map(function (f) {
+    main.innerHTML = '<div class="seg three">' + filters.map(function (f) {
       return '<button data-f="' + f[0] + '" class="' + (S.restFilter === f[0] ? 'on' : '') + '">' + f[1] + '</button>';
     }).join('') + '</div>' +
     (function () {
@@ -1122,14 +1082,13 @@
     (function () {
       var list = restApplyAdv(items);
       return list.length ? list.map(function (p) {
-      var mins = p.created_at ? Math.max(0, Math.floor((Date.now() / 1000 - p.created_at) / 60)) : null;
       var st = String(p.status || '');
       var cls = /İptal/i.test(st) ? 'cancelled' : /Teslim/i.test(st) ? 'delivered' : /Yolda/i.test(st) ? 'onway'
         : /Kabul/i.test(st) ? 'accepted' : 'waiting';
       return '<button class="rrow ' + cls + '" data-pkg="' + p.id + '">' +
         '<span class="rl"><b>Talep #' + p.batch + '-' + p.number + '</b>' +
           '<small>' + esc(p.region || 'Bölge yok') + ' · ' + esc(p.payment || 'Ödeme yok') + '</small></span>' +
-        '<span class="rr"><em class="stg">' + esc(st || '—') + '</em>' + sureEtiket(p.created_at) + '</span></button>';
+        '<span class="rr"><em class="stg">' + esc(st || '—') + '</em>' + restSure(p) + '</span></button>';
       }).join('') : '<div class="empty"><b>Kayıt yok</b>Bu filtrede paket bulunmuyor.</div>';
     })();
     Array.prototype.forEach.call(main.querySelectorAll('button[data-f]'), function (b) {
@@ -1148,6 +1107,18 @@
     if (rc) rc.onclick = function () { S.restAdv = null; loadRest(); };
     $('cta').innerHTML = '';
     nav(restaurantTabs(), {});
+  }
+
+  /** Paketlerim süresi: teslim edilmişse sabit (yeşil), iptalde yok, açıkta canlı sayar. */
+  function restSure(p) {
+    if (!p.created_at) return '';
+    if (p.delivered_at) {
+      var dk = Math.max(0, Math.round((p.delivered_at - p.created_at) / 60));
+      var txt = dk >= 60 ? (Math.floor(dk / 60) + ' sa ' + (dk % 60) + ' dk') : (dk + ' dk');
+      return '<em class="sure done">✓ ' + txt + '</em>';
+    }
+    if (p.cancelled_at) return '';
+    return sureEtiket(p.created_at);
   }
 
   function restAdvCount() {

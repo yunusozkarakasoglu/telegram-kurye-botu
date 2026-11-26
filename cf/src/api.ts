@@ -636,7 +636,9 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     if (path === "/restoran/paketlerim" && method === "GET") {
       if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
       const filter = url.searchParams.get("filter") || "all";
-      const where = filter === "unpaid" ? "p.delivered_at IS NOT NULL AND p.cancelled_at IS NULL AND (p.payment_received IS NULL OR p.payment_received=0)"
+      const where = filter === "open" ? "p.delivered_at IS NULL AND p.cancelled_at IS NULL"
+        : filter === "closed" ? "(p.delivered_at IS NOT NULL OR p.cancelled_at IS NOT NULL)"
+        : filter === "unpaid" ? "p.delivered_at IS NOT NULL AND p.cancelled_at IS NULL AND (p.payment_received IS NULL OR p.payment_received=0)"
         : filter === "waiting" ? "p.courier IS NULL AND p.cancelled_at IS NULL"
         : filter === "active" ? "p.courier IS NOT NULL AND p.delivered_at IS NULL AND p.cancelled_at IS NULL"
         : filter === "delivered" ? "p.delivered_at IS NOT NULL"

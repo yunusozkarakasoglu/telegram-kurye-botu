@@ -360,3 +360,29 @@ python3 tools/verify_package.py
 | Kaos: 2 kurye aynı paket | tam 1 kazanan |
 | Kapasite (15 sn yoklama) | **≈ 1.290 kurye** hatasız (hedef 200+) |
 | e2e | **80/80** · deploy `d8d23243` |
+
+### Restoran UX (2026-11-27, v140)
+
+| Test | Sonuç |
+|---|---|
+| Ödeme listesi | `Nakit · Kart · Ödendi · **Yemek Çeki** · Cihaz hatası` (canlı `/api/oturum`) |
+| “Kurye Ekle” sekmesi | kaldırıldı (seg boş) |
+| Satır popup'ı | Bölge · Ödeme · Kurye · Not · Kaydet/Sil/Vazgeç (görseldeki tasarım) |
+| Kurye seçilen satır | `Gönderildi: Boş Kurye · #1` → paket **“Kabul edildi”**, havuza düşmedi |
+| Paketlerim sekmeleri | Tümü / **Açık\*** / Kapalı (varsayılan Açık) |
+| Kapalı sekme | Teslim: `✓ 48 dk` **yeşil sabit**; iptal: süre yok; canlı sayaç 0 |
+| Açık sekme | Teslim edilmemiş tüm paketler + canlı süre |
+| e2e | **80/80** · deploy `78994777` |
+
+### Restoran UX (2026-11-27, v140)
+
+| Test | Sonuç |
+|---|---|
+| Ödeme listesi | Nakit · Kart · Ödendi · **Yemek Çeki** · Cihaz hatası (canlı `/api/oturum`) |
+| "Kurye Ekle" sekmesi | kaldırıldı |
+| Satır popup'ı | Bölge · Ödeme · Kurye · Not · Kaydet/Sil/Vazgeç |
+| Kurye seçilen satır | `Gönderildi: Boş Kurye · #1` → paket "Kabul edildi", havuza düşmedi |
+| Paketlerim sekmeleri | Tümü / **Açık** (varsayılan) / Kapalı |
+| Kapalı sekme | Teslim: `✓ 48 dk` **yeşil sabit**; iptal: süre yok; canlı sayaç 0 |
+| Açık sekme | Teslim edilmemiş tüm paketler + canlı süre |
+| e2e | **80/80** · deploy `78994777` |

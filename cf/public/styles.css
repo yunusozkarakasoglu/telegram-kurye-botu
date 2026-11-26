@@ -609,3 +609,17 @@ header h1{display:inline}
 .ayar-seg button{font-size:11px;padding:6px 2px;min-height:34px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 #qbadge{font-size:11px;font-weight:700;color:#b07d00}
+
+/* Sipariş satırı (Sipariş Ekle) — dokununca seçenek popup'ı */
+.rreqrow{}
+.reqrow{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;border:1px solid var(--ln);background:var(--card);border-radius:10px;padding:11px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.reqrow:active{background:var(--el)}
+.reqrow .rq-l{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.reqrow .rq-l small{color:var(--t2);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reqrow .rq-r{flex:none;display:flex;align-items:center;gap:6px}
+.reqrow .stg{font-style:normal;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--el2);color:var(--t2)}
+.reqrow .stg.direct{background:rgba(230,168,23,.18);color:#b07d00}
+.reqrow .chev{font-style:normal;color:var(--t3);font-size:18px;line-height:1}
+/* Paketlerim: sabit süre (teslim) yeşil */
+.rrow .sure{font-style:normal;font-size:11px;font-weight:700}
+.rrow .sure.done{color:#1fa855}
