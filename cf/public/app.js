@@ -563,41 +563,50 @@
     var e = S.earnings || { total_tl: 0, count: 0, total_km: 0 };
     var hedef = host || $('mn');
     if (!host) setHeader('Kazançlarım', e.period || '');
-    var seg = '<div class="seg three">' + [['today', 'Bugün'], ['yesterday', 'Dün'], ['all', 'Tümü']].map(function (r) {
-      return '<button data-kr="' + r[0] + '" class="' + (!S.kazancDate && S.kazancRange === r[0] ? 'on' : '') + '">' + r[1] + '</button>';
-    }).join('') + '</div>' +
-      '<div class="filters" style="margin-top:8px"><input type="date" id="kdate" value="' + esc(S.kazancDate) + '"></div>';
-    var items = (e.items || []);
-    var paidSeg = '<div class="seg three" style="margin-top:6px">' + [['all', 'Tümü'], ['paid', 'Ödeme alındı'], ['unpaid', 'Ödeme alınmadı']].map(function (v) {
-      return '<button data-kp="' + v[0] + '" class="' + (S.kazancPaid === v[0] ? 'on' : '') + '">' + v[1] + '</button>';
-    }).join('') + '</div>';
-    var shown = items.filter(function (p) {
-      if (S.kazancPaid === 'paid') return p.payment_received === true;
-      if (S.kazancPaid === 'unpaid') return p.payment_received !== true;
+    if (!S.kazancAdv) {
+      S.kazancAdv = {
+        when: S.kazancDate ? 'date' : (S.kazancRange === 'all' ? '' : S.kazancRange),
+        date: S.kazancDate || '',
+        pay: S.kazancPaid === 'paid' ? 'paid' : S.kazancPaid === 'unpaid' ? 'unpaid' : 'all',
+      };
+    }
+    var f = S.kazancAdv;
+    var aktif = (f.when ? 1 : 0) + (f.pay !== 'all' ? 1 : 0);
+
+    var kartlar = '<div class="krow">' +
+      '<div class="big"><span>Toplam hakediş</span><div>' + money(e.total_tl) + '</div></div>' +
+      '<div class="big"><span>Teslim paket</span><div>' + (e.count || 0) + '</div></div>' +
+      '<div class="big"><span>Toplam km</span><div>' + (Math.round((e.total_km || 0) * 10) / 10) + '</div></div>' +
+    '</div>';
+
+    var bar = '<div class="filterbar" style="margin-top:10px"><button id="kf-open">⚙ Filtre' + (aktif ? ' (' + aktif + ')' : '') + '</button>' +
+      (aktif ? '<button id="kf-clear">✕ Temizle</button>' : '') + '</div>';
+
+    var items = (e.items || []).filter(function (p) {
+      if (f.pay === 'paid') return p.payment_received === true;
+      if (f.pay === 'unpaid') return p.payment_received !== true;
       return true;
     });
-    var listHtml = shown.length ? '<div class="card" style="margin-top:10px">' + shown.map(function (p) {
+    var listHtml = items.length ? '<div class="card">' + items.map(function (p) {
       return '<button class="prow" data-kopen="' + p.id + '"><span><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) + '</b>' +
         '<small>' + esc(p.region || '') + ' · ' + dt(p.delivered_at) + ' · ' +
         (p.payment_received === true ? 'ödeme alındı' : p.payment_received === false ? 'ödeme alınmadı' : 'ödeme —') + '</small></span>' +
         '<em>' + (p.fee_tl == null ? '' : money(p.fee_tl)) + '</em></button>';
     }).join('') + '</div>' : '<div class="empty">Bu dönemde paket yok.</div>';
-    hedef.innerHTML = seg + paidSeg +
-      '<div class="krow">' +
-        '<div class="big"><span>Toplam hakediş</span><div>' + money(e.total_tl) + '</div></div>' +
-        '<div class="big"><span>Teslim paket</span><div>' + (e.count || 0) + '</div></div>' +
-        '<div class="big"><span>Toplam km</span><div>' + (Math.round((e.total_km || 0) * 10) / 10) + '</div></div>' +
-      '</div>';
-    hedef.innerHTML += listHtml;
-    Array.prototype.forEach.call(hedef.querySelectorAll('[data-kr]'), function (b) {
-      b.onclick = function () { S.kazancRange = b.getAttribute('data-kr'); S.kazancDate = ''; loadKazanc(); };
-    });
-    Array.prototype.forEach.call(hedef.querySelectorAll('[data-kp]'), function (b) {
-      b.onclick = function () { S.kazancPaid = b.getAttribute('data-kp'); renderKazanc(host); };
-    });
+
+    hedef.innerHTML = kartlar + bar + listHtml;
+
+    var kf = hedef.querySelector('#kf-open');
+    if (kf) kf.onclick = function () { kazancFiltreSheet(host); };
+    var kc = hedef.querySelector('#kf-clear');
+    if (kc) kc.onclick = function () {
+      S.kazancAdv = { when: '', date: '', pay: 'all' };
+      S.kazancRange = 'all'; S.kazancDate = ''; S.kazancPaid = 'all';
+      loadKazanc();
+    };
     Array.prototype.forEach.call(hedef.querySelectorAll('[data-kopen]'), function (b) {
       b.onclick = function () {
-        var p = items.filter(function (x) { return String(x.id) === b.getAttribute('data-kopen'); })[0];
+        var p = (e.items || []).filter(function (x) { return String(x.id) === b.getAttribute('data-kopen'); })[0];
         if (!p) return;
         var kapat = function () { host ? renderGecmis() : renderKazanc(); };
         var sh = UI.openSheet(pkgCard(p, { pay: true, closable: true }), { onClose: kapat });
@@ -606,10 +615,60 @@
         bindPkgActions(sh, [p]);
       };
     });
-    var kd = hedef.querySelector('#kdate');
-    if (kd) kd.onchange = function () { S.kazancDate = kd.value; loadKazanc(); };
     $('cta').innerHTML = '';
     if (!host) nav(courierTabs(), { havuz: S.pool ? S.pool.packages.length : 0 });
+  }
+
+  function kazancFiltreSheet(host) {
+    var f = S.kazancAdv || {};
+    var bugun = new Date();
+    var sec = { when: f.when || '', date: f.date || bugun.toISOString().slice(0, 10), pay: f.pay || 'all' };
+    var sh = UI.openSheet(
+      '<div class="sheethead"><h2>Filtrele</h2><div class="shead-acts">' +
+        '<button class="sheetc" id="kf-reset" title="Filtreyi temizle">↺</button>' +
+        '<button class="sheetx" id="kf-x" title="Kapat">✕</button></div></div>' +
+      '<div class="fld"><label>Zaman</label><div class="seg four">' +
+        [['', 'Tümü'], ['today', 'Bugün'], ['yesterday', 'Dün'], ['date', 'Tarih seç']].map(function (x) {
+          return '<button data-when="' + x[0] + '" class="' + (sec.when === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
+        }).join('') + '</div></div>' +
+      '<div id="kf-date" style="display:' + (sec.when === 'date' ? 'block' : 'none') + '">' +
+        '<div class="fld"><label>Tarih</label><input id="kf-date-in" type="date" value="' + esc(sec.date) + '"></div>' +
+      '</div>' +
+      '<div class="fld"><label>Ödeme durumu</label><div class="seg four">' +
+        [['all', 'Tümü'], ['paid', 'Ödeme alındı'], ['unpaid', 'Ödeme alınmadı']].map(function (x) {
+          return '<button data-pay="' + x[0] + '" class="' + (sec.pay === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
+        }).join('') + '</div></div>' +
+      '<button class="p" id="kf-apply" style="width:100%">Filtrele</button>');
+
+    sh.querySelector('#kf-x').onclick = function () { UI.closeSheet(); };
+    sh.querySelector('#kf-reset').onclick = function () {
+      S.kazancAdv = { when: '', date: '', pay: 'all' };
+      S.kazancRange = 'all'; S.kazancDate = ''; S.kazancPaid = 'all';
+      UI.closeSheet(); loadKazanc();
+    };
+    Array.prototype.forEach.call(sh.querySelectorAll('[data-when],[data-pay]'), function (b) {
+      b.onclick = function () {
+        var grup = b.parentElement;
+        var attr = b.hasAttribute('data-when') ? 'data-when' : 'data-pay';
+        var v = b.getAttribute(attr);
+        if (attr === 'data-when') {
+          sec.when = v;
+          sh.querySelector('#kf-date').style.display = v === 'date' ? 'block' : 'none';
+        } else sec.pay = v;
+        Array.prototype.forEach.call(grup.children, function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+      };
+    });
+    sh.querySelector('#kf-apply').onclick = function () {
+      var d = sh.querySelector('#kf-date-in');
+      var tarih = d ? d.value : '';
+      if (sec.when === 'date' && !tarih) { UI.toast('Tarih seçin', 'error'); return; }
+      S.kazancAdv = { when: sec.when, date: sec.when === 'date' ? tarih : '', pay: sec.pay };
+      S.kazancPaid = sec.pay === 'paid' ? 'paid' : sec.pay === 'unpaid' ? 'unpaid' : 'all';
+      if (sec.when === 'date') { S.kazancDate = tarih; S.kazancRange = 'today'; }
+      else { S.kazancDate = ''; S.kazancRange = sec.when === '' ? 'all' : sec.when; }
+      UI.closeSheet(); loadKazanc();
+    };
   }
 
   function loadKazanc() {
