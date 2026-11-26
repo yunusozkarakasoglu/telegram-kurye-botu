@@ -386,6 +386,7 @@
     },
     havuz: function () { return req('GET', '/api/havuz'); },
     kabul: function (ids) { return req('POST', '/api/kabul', { ids: ids }); },
+    notEkle: function (id, note) { return req('POST', '/api/paket/' + id + '/not', { note: note }); },
     kmGir: function (id, km, note) { return req('POST', '/api/paket/' + id + '/km', { km: km, note: note || '' }); },
     teslim: function (id, paid) { return req('POST', '/api/paket/' + id + '/teslim', paid == null ? {} : { paid: !!paid }); },
     iptal: function (id, reason) { return req('POST', '/api/paket/' + id + '/iptal', { reason: reason }); },
@@ -485,7 +486,7 @@
       });
     }
   };
-  ['oturum', 'havuz', 'kabul', 'atamaKarar', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
+  ['oturum', 'havuz', 'kabul', 'atamaKarar', 'notEkle', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
     'kazanc', 'talepVer', 'kuryeTalep', 'restoranKuryeler', 'paketlerimRestoran', 'profil', 'durum', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'girisKullanicilar', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);

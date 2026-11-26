@@ -240,7 +240,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       return json({ ok: true, message: sonuc });
     }
 
-    let match = path.match(/^\/paket\/(\d+)\/(km|teslim|iptal|aktar)$/);
+    let match = path.match(/^\/paket\/(\d+)\/(km|teslim|iptal|aktar|not)$/);
     if (match && method === "POST") {
       const packageId = Number(match[1]);
       const action = match[2];
@@ -251,6 +251,13 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         const not_ = String(body.note ?? "").trim().slice(0, 500);
         const result = await apiCourier.setDistance(bot, user, packageId, value, not_ || null);
         return result.ok ? json(result) : fail(result.error || "Kilometre kaydedilemedi.", 422, "invalid");
+      }
+      if (action === "not") {
+        const note = String(body.note ?? "").trim().slice(0, 500);
+        const degisti = await bot.db.run(
+          "UPDATE packages SET courier_note=? WHERE id=? AND courier=? AND cancelled_at IS NULL", note || null, packageId, user.id);
+        if (!degisti) return fail("Bu pakete not eklenemiyor.", 409, "conflict");
+        return json({ ok: true, courier_note: note || null });
       }
       if (action === "teslim") {
         const result = await apiCourier.deliver(bot, user, packageId, body.paid == null ? null : !!body.paid);

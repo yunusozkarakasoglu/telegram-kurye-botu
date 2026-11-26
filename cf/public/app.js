@@ -292,7 +292,9 @@
         '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
       '</dl>' +
       '<div class="notebox"><small>Restoran notu</small><div>' + esc(p.note || '') + '</div></div>' +
-      '<div class="notebox cnote"><small>Kurye notu</small><div>' + esc(p.courier_note || '') + '</div></div>' +
+      '<div class="notebox cnote"><small>Kurye notu' +
+        (!cancelled && opts.own ? '<button class="notedit" data-a="not" data-i="' + p.id + '">' + (p.courier_note ? 'Düzenle' : '＋ Not ekle') + '</button>' : '') +
+        '</small><div>' + esc(p.courier_note || '') + '</div></div>' +
       (p.transfer_from ? '<p class="note">Aktarma bilgisi: önceki kurye ' + esc(p.transfer_from) + '</p>' : '') + warn + '</div>' +
       (actions ? '<div class="pk-ft">' + actions + '</div>' : '') +
     '</div>';
@@ -306,7 +308,8 @@
         if (a === 'harita') {
           if (p && p.map_url) TG.openLink(p.map_url);
           else if (p) TG.map((p.restaurant || '') + ' ' + (p.region || ''));
-        } else if (a === 'km') kmSheet(findPkg(id));
+        } else if (a === 'not') kuryeNotSheet(p);
+        else if (a === 'km') kmSheet(findPkg(id));
         else if (a === 'teslim') deliverConfirm(p);
         else if (a === 'odeme') {
           confirmSheet('#' + p.batch + '-' + p.number + ' için ödeme alındı olarak işaretlensin mi?', function () {
@@ -693,6 +696,22 @@
   }
 
   /* ---------------- KM / İPTAL / AKTAR ---------------- */
+  function kuryeNotSheet(p) {
+    if (!p) return;
+    var sh = UI.openSheet(
+      '<h2>Kurye notu · #' + p.batch + '-' + p.number + '</h2>' +
+      '<p>Ambalaj, gecikme, adres gibi durumları yazın. Restoran ve yönetici görür.</p>' +
+      '<textarea id="cn" rows="3" placeholder="Ör. ambalaj zayıf, geç teslim olabilir…">' + esc(p.courier_note || '') + '</textarea>' +
+      '<div class="err" id="cn-err"></div>' +
+      '<button class="p" id="cn-save" style="width:100%">Kaydet</button>');
+    sh.querySelector('#cn-save').onclick = function () {
+      var v = (sh.querySelector('#cn').value || '').trim();
+      API.notEkle(p.id, v).then(function () {
+        UI.closeSheet(); UI.toast('Not kaydedildi', 'success'); refresh(true);
+      }).catch(function (e) { sh.querySelector('#cn-err').textContent = e.message || 'Kaydedilemedi'; });
+    };
+  }
+
   function kmSheet(p) {
     if (!p) return;
     S.kmPending = true;
@@ -1218,7 +1237,9 @@
         '<dt>Hakediş</dt><dd>' + (p.payment_received === true ? 'Alındı' : p.payment_received === false ? 'Alınmadı' : '—') + '</dd>' +
       '</dl>' +
       '<div class="notebox"><small>Restoran notu</small><div>' + esc(p.note || '') + '</div></div>' +
-      '<div class="notebox cnote"><small>Kurye notu</small><div>' + esc(p.courier_note || '') + '</div></div>' + cancelInfo +
+      '<div class="notebox cnote"><small>Kurye notu' +
+        (!cancelled && opts.own ? '<button class="notedit" data-a="not" data-i="' + p.id + '">' + (p.courier_note ? 'Düzenle' : '＋ Not ekle') + '</button>' : '') +
+        '</small><div>' + esc(p.courier_note || '') + '</div></div>' + cancelInfo +
       (p.cancelled_at || p.delivered_at ? '' : '<button class="d" id="rp-cancel" style="width:100%">İptal Et</button>') +
       '<button class="d" id="rp-close" style="width:100%;margin-top:6px">Kapat</button>');
     sh.querySelector('#rp-close').onclick = function () { UI.closeSheet(); };
