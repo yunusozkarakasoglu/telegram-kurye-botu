@@ -13,6 +13,7 @@
 | VPS soğuk yedek | plan hazır (`docs/VPS-Yedek-Plani.md`), kurulum **ertelendi** |
 | CI token | Packonexpress hesabı D1+Workers Scripts Write (`~/.pi/packone-d1-token`) |
 
+- **Sır kuralı:** `files/` klasörü **gitignore'da** (ham ekran görüntüleri/token içerebilir); token'lar yalnız `~/.pi/packone-token` / `~/.pi/packone-d1-token`.
 - **Çalışma kuralı (26.11):** Faz bitimlerinde **commit + push zorunlu**; hafıza (index/Tasks/Roadmaps/Project_info/Test-Raporu) aynı commit'te güncellenir.
 - Hedef: restoran → kurye Telegram operasyon botu; Python 3.11+ / SQLite, ek Python paketi yok.
 - Durum ve açık işler: `Tasks.md` → `Roadmaps.md`; kararlar `Mimari.md`; canlı pilot `Canli-Pilot-Raporu.md`.
