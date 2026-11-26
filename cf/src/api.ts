@@ -49,8 +49,12 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     const phone = String(body.phone || "").replace(/\D/g, "").slice(-10);
     const pin = String(body.pin || "");
     if (phone.length < 3 || !validPin(pin)) return fail("Telefon veya PIN hatalı.", 401, "wrong_login");
-    const candidates = await env.DB.prepare("SELECT * FROM accounts WHERE deleted=0 AND active=1").all<Account>();
-    const match = (candidates.results || []).find((a) =>
+    const adaylar = await env.DB.prepare(
+      `SELECT * FROM accounts WHERE deleted=0 AND active=1 AND (
+         CAST(id AS TEXT)=? OR
+         replace(replace(replace(replace(replace(phone,' ',''),'(',''),')',''),'-',''),'+','') LIKE ?)`)
+      .bind(phone, `%${phone}`).all<Account>();
+    const match = (adaylar.results || []).find((a) =>
       String(a.phone || "").replace(/\D/g, "").slice(-10) === phone || String(a.id) === phone,
     );
     if (!match) return fail("Telefon veya PIN hatalı.", 401, "wrong_login");

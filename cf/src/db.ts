@@ -4,19 +4,42 @@ import { DEFAULT_TARIFF } from "./constants";
 let columnsReady = false;
 
 /** Yeni kolonlar: idempotent, isolate başına bir kez denenir. */
-const NEW_COLUMNS = [
-  "ALTER TABLE accounts ADD COLUMN tg_chat_id INTEGER",
-  "ALTER TABLE accounts ADD COLUMN pin_must_change INTEGER NOT NULL DEFAULT 0",
-  "ALTER TABLE packages ADD COLUMN courier_note TEXT",
-];
+const NEW_COLUMNS: Record<string, [string, string][]> = {
+  accounts: [
+    ["tenant_id", "INTEGER NOT NULL DEFAULT 1"],
+    ["tg_chat_id", "INTEGER"],
+    ["pin_must_change", "INTEGER NOT NULL DEFAULT 0"],
+    ["pin_plain", "TEXT"],
+    ["busy", "INTEGER NOT NULL DEFAULT 0"],
+    ["busy_reason", "TEXT"],
+  ],
+  packages: [
+    ["tenant_id", "INTEGER NOT NULL DEFAULT 1"],
+    ["note", "TEXT"],
+    ["courier_note", "TEXT"],
+  ],
+  batches: [["tenant_id", "INTEGER NOT NULL DEFAULT 1"]],
+  invites: [["tenant_id", "INTEGER NOT NULL DEFAULT 1"]],
+};
 
 export class Db {
   constructor(public d1: D1Database) {}
   async ensureColumns(): Promise<void> {
     if (columnsReady) return;
     columnsReady = true;
-    for (const sql of NEW_COLUMNS) { try { await this.d1.prepare(sql).run(); } catch {} }
-    // mevcut hesaplar: Telegram sohbeti zaten id ile aynı
+    for (const [tablo, kolonlar] of Object.entries(NEW_COLUMNS)) {
+      let mevcut: Set<string>;
+      try {
+        const info = await this.d1.prepare(`PRAGMA table_info(${tablo})`).all<{ name: string }>();
+        mevcut = new Set((info.results || []).map((c) => c.name));
+      } catch {
+        continue; // tablo yok
+      }
+      for (const [ad, tip] of kolonlar) {
+        if (mevcut.has(ad)) continue;
+        try { await this.d1.prepare(`ALTER TABLE ${tablo} ADD COLUMN ${ad} ${tip}`).run(); } catch {}
+      }
+    }
     try { await this.d1.prepare("UPDATE accounts SET tg_chat_id=id WHERE tg_chat_id IS NULL AND id > 1000").run(); } catch {}
   }
   async all<T = Record<string, unknown>>(sql: string, ...params: unknown[]): Promise<T[]> {

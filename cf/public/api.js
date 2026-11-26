@@ -478,7 +478,12 @@
       };
       if (qs.get('mock') === '1') return Promise.resolve(setMockRole());
       return real.oturum().then(function (s) { mode = 'real'; return s; }).catch(function (e) {
-        if (e && e.status === 403) throw e;
+        // Oturum geçersiz/süresi dolmuş: mock'a düşme, giriş ekranına yönlendir.
+        if (e && (e.status === 401 || e.status === 403 || e.code === 'login_required' || e.code === 'unauthorized')) {
+          localStorage.removeItem('loginToken');
+          localStorage.removeItem('loginTokenUser');
+          throw e;
+        }
         Api.lastError = (e && e.message) || 'kimlik doğrulanamadı';
         var mockSession = setMockRole();
         mockSession.then(function (s) { s.mock_reason = Api.lastError; });

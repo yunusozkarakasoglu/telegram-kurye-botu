@@ -2027,10 +2027,14 @@
       });
     }).catch(function (e) {
       if (e && e.code === 'pin_change_required') { renderPinChange(); return; }
+      if (!e || e.status === 401 || e.status === 403 || e.code === 'login_required' || e.code === 'need_login') {
+        renderLogin();
+        return;
+      }
       $('hdr-right').innerHTML = '';
       $('nv').innerHTML = '';
-      $('mn').innerHTML = '<div class="empty"><b>Giriş yapılamadı</b>' + esc(e.message || '') +
-        '<br><br>Yöneticiden yeni bir davet bağlantısı isteyin.</div>';
+      $('mn').innerHTML = '<div class="empty"><b>Bağlantı kurulamadı</b>' + esc(e.message || '') +
+        '<br><br>İnternet bağlantınızı kontrol edip tekrar deneyin.</div>';
     });
   }
 
