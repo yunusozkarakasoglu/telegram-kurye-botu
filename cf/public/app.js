@@ -1264,7 +1264,7 @@
     var restoran = S.session && S.session.role === 'restoran';
     var sekmeler = admin
       ? [['fiyat', 'Fiyatlandırma'], ['restoran', 'Restoranlar'], ['kurye', 'Kuryeler'], ['bolge', 'Bölgeler'], ['log', 'Tanılama']]
-      : (restoran ? [['fiyat', 'Fiyatlandırma'], ['kurallar', 'Kurallar'], ['log', 'Tanılama']] : [['fiyat', 'Fiyatlandırma'], ['log', 'Tanılama']]);
+      : [['fiyat', 'Fiyatlandırma'], ['kurallar', 'Kurallar'], ['log', 'Tanılama']];
     var seg = '<div class="seg four">' + sekmeler.map(function (x) {
       return '<button data-st="' + x[0] + '" class="' + (S.sistemTab === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
     }).join('') + '</div>';
@@ -1273,19 +1273,26 @@
         b.onclick = function () { S.sistemTab = b.getAttribute('data-st'); render(); };
       });
     }
-    function kurallarHtml() {
-      return (window.KURALLAR || []).map(function (b) {
+    function saatlerKart(st) {
+      return '<div class="card" style="padding:12px;margin-bottom:10px"><b>Çalışma saatleri</b>' +
+        '<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:14px"><span>Açılış</span><b>' + esc(st.open_time || '07:00') + '</b></div>' +
+        '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:14px"><span>Kapanış</span><b>' + esc(st.close_time || '22:00') + '</b></div></div>';
+    }
+    function kurallarHtml(st) {
+      var liste = (window.KURALLAR || []).map(function (b) {
         return '<div class="card rulecard"><b>' + esc(b.baslik) + '</b><ul>' +
           b.maddeler.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>';
       }).join('') || '<div class="empty">Kural tanımlı değil.</div>';
+      return saatlerKart(st) + liste;
     }
     function draw() {
-      if (S.sistemTab === 'kurallar') { main.innerHTML = seg + kurallarHtml(); bindSeg(); return; }
       var d = S.sistem;
       if (!d) { main.innerHTML = seg + '<div class="empty">Yükleniyor…</div>'; bindSeg(); return; }
       var body = '';
       var st = d.settings || {};
-      if (S.sistemTab === 'fiyat') {
+      if (S.sistemTab === 'kurallar') {
+        body = kurallarHtml(st);
+      } else if (S.sistemTab === 'fiyat') {
         var tariff = st.tariff || [], labels = st.tariff_intervals || [];
         body = '<div class="card" style="padding:12px"><b>Mesafe ücretleri (sabit)</b>' + tariff.map(function (v, i) {
           return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--ln);font-size:13px">' +
@@ -1320,10 +1327,7 @@
             (admin ? '<button class="sm" data-editc="' + c.id + '">Düzenle</button>' : '') + '</span></div>';
         }).join('') : '<div class="empty">Kurye yok</div>') + '</div>';
       }
-      var hours = '<div class="card" style="padding:12px;margin-bottom:8px"><b>Çalışma saatleri</b>' +
-        '<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:14px"><span>Açılış</span><b>' + esc(st.open_time || '07:00') + '</b></div>' +
-        '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:14px"><span>Kapanış</span><b>' + esc(st.close_time || '22:00') + '</b></div></div>';
-      main.innerHTML = hours + seg + body;
+      main.innerHTML = seg + body;
       bindSeg();
       function editSheet(row, role) {
         var sh = UI.openSheet('<h2>' + (role === 'restoran' ? 'Restoran' : 'Kurye') + ' düzenle</h2>' +
@@ -1475,7 +1479,6 @@
     h += '<h3>İşlemler</h3>';
     h += '<button data-da="refresh"><i>↻</i>Yenile</button>';
     h += '<button data-dt="sistem" class="' + (S.tab === 'sistem' ? 'on' : '') + '"><i>⚙</i>Sistem</button>';
-    if (curRole() !== 'restoran') h += '<button data-dt="kurallar" class="' + (S.tab === 'kurallar' ? 'on' : '') + '"><i>📋</i>Kurallar</button>';
     h += '<button data-dt="profil" class="' + (S.tab === 'profil' ? 'on' : '') + '"><i>👤</i>Profil</button>';
     h += '<button data-da="logout"><i>⏻</i>Çıkış</button>';
     d.innerHTML = h;
