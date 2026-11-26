@@ -519,6 +519,13 @@ def senaryo_durum_yetki(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
     tekrar = api.cagir("POST", "/api/kabul", {"ids": [pk["id"]]}, token=k1.token)
     T.esit("çevrimiçi olunca kabul etti", [pk["id"]], tekrar.get("accepted", []))
 
+    # üzerinde paket varken meşgul/offline engeli
+    engel = api.cagir("POST", "/api/durum", {"status": "offline"}, token=k1.token, bekle_hata=True)
+    T.esit("paket varken offline engellendi", 409, engel.get("_status"))
+    T.esit("engel kodu has_active", "has_active", engel.get("code"))
+    engel2 = api.cagir("POST", "/api/durum", {"status": "busy", "reason": "Mola"}, token=k1.token, bekle_hata=True)
+    T.esit("paket varken meşgul engellendi", 409, engel2.get("_status"))
+
     # çapraz yetki: kurye2, kurye1'in paketini teslim edemiyor
     capraz = api.cagir("POST", f"/api/paket/{pk['id']}/teslim", {"paid": True},
                        token=k2.token, bekle_hata=True)

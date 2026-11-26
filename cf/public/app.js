@@ -5,6 +5,8 @@
   'use strict';
   var $ = UI.$, esc = UI.esc, money = UI.money, kmf = UI.km, dt = UI.dt;
 
+  var DURUM_KILIT_MSG = 'Üzerinizde paket varken meşgul/offline seçimi yapılamaz. Üzerinizdeki paketleri havuza/kuryeye aktardıktan sonra durum değişimi yapılabilir.';
+
   var S = {
     role: 'courier',
     tab: 'havuz',
@@ -1274,7 +1276,16 @@
       UI.toast(st === 'online' ? 'Çevrimiçi oldunuz' : st === 'busy' ? 'Meşgul olarak işaretlendiniz' : 'Çevrimdışı oldunuz', 'success');
       closeDrawer();
       render();
-    }).catch(function (e) { UI.toast(e.message || 'Durum değişmedi', 'error'); });
+    }).catch(function (e) {
+      if (e && e.code === 'has_active') { bilgiSheet('Durum değiştirilemedi', e.message); return; }
+      UI.toast(e.message || 'Durum değişmedi', 'error');
+    });
+  }
+
+  function bilgiSheet(baslik, metin) {
+    var sh = UI.openSheet('<h2>' + esc(baslik) + '</h2><p style="white-space:pre-wrap">' + esc(metin) + '</p>' +
+      '<button class="p" id="bi-kapat" style="width:100%">Tamam</button>');
+    sh.querySelector('#bi-kapat').onclick = function () { UI.closeSheet(); };
   }
 
   function mesgulSebepSheet() {
@@ -1286,7 +1297,15 @@
       '<button class="d" id="br-cancel" style="width:100%;margin-top:10px">Vazgeç</button>');
     sh.querySelector('#br-cancel').onclick = function () { UI.closeSheet(); };
     Array.prototype.forEach.call(sh.querySelectorAll('[data-br2]'), function (b) {
-      b.onclick = function () { UI.closeSheet(); setKuryeDurum('busy', b.getAttribute('data-br2')); };
+      b.onclick = function () {
+        var aktif = (S.mine && S.mine.packages) ? S.mine.packages.length : 0;
+        if (aktif > 0) {
+          UI.closeSheet();
+          setTimeout(function () { bilgiSheet('Durum değiştirilemedi', DURUM_KILIT_MSG); }, 120);
+          return;
+        }
+        UI.closeSheet(); setKuryeDurum('busy', b.getAttribute('data-br2'));
+      };
     });
   }
 
@@ -1677,6 +1696,12 @@
     Array.prototype.forEach.call(d.querySelectorAll('[data-dst]'), function (b) {
       b.onclick = function () {
         var st = b.getAttribute('data-dst');
+        var aktif = (S.mine && S.mine.packages) ? S.mine.packages.length : 0;
+        if (st !== 'online' && aktif > 0) {
+          closeDrawer();
+          setTimeout(function () { bilgiSheet('Durum değiştirilemedi', DURUM_KILIT_MSG); }, 120);
+          return;
+        }
         closeDrawer();
         if (st === 'busy') { setTimeout(function () { mesgulSebepSheet(); }, 120); return; }
         setKuryeDurum(st, null);

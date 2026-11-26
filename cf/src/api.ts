@@ -284,6 +284,13 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const body = await readBody(request);
       const status = ["online", "offline", "busy"].includes(String(body.status)) ? String(body.status) : (body.online ? "online" : "offline");
       const reason = ["Mola", "Arıza", "Kaza", "İhtiyaç"].includes(String(body.reason)) ? String(body.reason) : null;
+      if (status !== "online") {
+        const aktif = await bot.activeCount(user.id);
+        if (aktif > 0) {
+          return fail("Üzerinizde paket varken meşgul/offline seçimi yapılamaz. " +
+            "Üzerinizdeki paketleri havuza/kuryeye aktardıktan sonra durum değişimi yapılabilir.", 409, "has_active");
+        }
+      }
       const online = status === "online" ? 1 : status === "busy" ? 1 : 0;
       const busy = status === "busy" ? 1 : 0;
       await bot.db.run("UPDATE accounts SET online=?, busy=?, busy_reason=? WHERE id=? AND role='kurye'", online, busy, busy ? (reason || "Mola") : null, user.id);
