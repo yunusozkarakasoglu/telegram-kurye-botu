@@ -271,7 +271,9 @@
     var actions = '';
     if (duzenlenebilir) {
       actions += picked
-        ? '<button class="p w" data-a="teslim" data-i="' + p.id + '">Teslim ettim</button>'
+        ? '<button class="p w" data-a="teslim" data-i="' + p.id + '">Teslim ettim</button>' +
+          '<button class="w" data-a="km" data-i="' + p.id + '">Km düzenle (' +
+            (p.distance_km == null ? '—' : kmf(p.distance_km)) + ')</button>'
         : '<button class="p w" data-a="km" data-i="' + p.id + '">Km gir · teslim aldım</button>';
       if (mapBtn || callBtn) actions += '<div class="two">' + mapBtn + callBtn + '</div>';
       actions += '<div class="two"><button data-a="aktar" data-i="' + p.id + '">Aktar</button>' +
@@ -742,15 +744,17 @@
     S.kmPending = true;
     var base = (S.session && S.session.settings) ? S.session.settings : {};
     var tariff = base.tariff || [120, 150, 190, 240, 300, 370, 450, 540, 640];
+    var duzenle = !!p.picked_up_at;
     var sh = UI.openSheet(
-      '<h2>Teslim aldım · #' + p.batch + '-' + p.number + '</h2>' +
-      '<p>Teslimat mesafesini kilometre olarak girin.</p>' +
-      '<input id="kmin" type="number" inputmode="decimal" step="0.1" min="0" placeholder="Örn. 3,5">' +
+      '<h2>' + (duzenle ? 'Kilometreyi düzenle' : 'Teslim aldım') + ' · #' + p.batch + '-' + p.number + '</h2>' +
+      '<p>Teslimat mesafesini kilometre olarak girin. Teslim edilene kadar değiştirilebilir.</p>' +
+      '<input id="kmin" type="number" inputmode="decimal" step="0.1" min="0" placeholder="Örn. 3,5" value="' +
+        (duzenle && p.distance_km != null ? String(p.distance_km).replace('.', ',') : '') + '">' +
       '<div class="notebox cnote" style="margin-top:10px"><small>📝 Kurye notu (opsiyonel)</small>' +
         '<textarea id="knote" rows="2" placeholder="Ör. ambalaj zayıf, geç teslim olabilir, adres tarifi…"></textarea>' +
         '<div class="note" style="margin-top:4px">Yazdığınız not restoran ve yönetici kartında da görünür.</div></div>' +
       '<div class="err" id="kerr"></div><div id="kpv"></div>' +
-      '<button class="p" id="kok">Onayla</button>' +
+      '<button class="p" id="kok">' + (duzenle ? 'Güncelle' : 'Onayla') + '</button>' +
       '<button class="d" id="kback">Vazgeç</button>',
       { onClose: function () { S.kmPending = false; render(); } }
     );
@@ -767,6 +771,7 @@
       pv.innerHTML = '<p>Bu paketten alacağınız: <b>' + API.feePreview(tariff, v, base.extra_per_km) + '</b></p>' + uyari;
     }
     input.oninput = calc;
+    if (duzenle) calc();
     sh.querySelector('#kback').onclick = function () { UI.closeSheet(); };
     sh.querySelector('#kok').onclick = function () {
       var v = parseFloat(String(input.value).replace(',', '.'));
@@ -774,7 +779,7 @@
       var knote = ($('knote') && $('knote').value ? $('knote').value : '').trim();
       API.kmGir(p.id, v, knote).then(function (r) {
         UI.closeSheet();
-        UI.toast('Kazanç hesaplandı: ' + money(r.fee_tl), 'success');
+        UI.toast((duzenle ? 'Kilometre güncellendi: ' : 'Kazanç hesaplandı: ') + money(r.fee_tl), 'success');
         refresh(true);
       }).catch(function (e) { err.textContent = e.message || 'Kaydedilemedi'; });
     };

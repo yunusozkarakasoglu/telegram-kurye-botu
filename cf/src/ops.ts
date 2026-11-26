@@ -14,7 +14,7 @@ export function parseKm(value: string): number | null {
   return Number.isFinite(d) && d > 0 ? d : null;
 }
 
-function feeFor(tariff: number[], distance: number, extraPerKm = 0) {
+export function feeFor(tariff: number[], distance: number, extraPerKm = 0) {
   let band = 0;
   while (band < TARIFF_BOUNDS.length && distance > TARIFF_BOUNDS[band]) band++;
   const base = tariff[band] ?? tariff[tariff.length - 1] ?? 0;
@@ -24,6 +24,24 @@ function feeFor(tariff: number[], distance: number, extraPerKm = 0) {
     return base + extraKm * extraPerKm;
   }
   return base;
+}
+
+/** Teslimden önce kilometre girilebilir/düzeltilebilir; teslim sonrası kilitli. */
+export async function updateDistance(
+  bot: Bot, courier: number, packageId: number, value: string, courierNote: string | null = null,
+): Promise<{ ok: boolean; error?: string; fee?: number; distance?: number }> {
+  const rows = await bot.packages("p.id=? AND p.courier=? AND p.cancelled_at IS NULL", [packageId, courier]);
+  if (!rows.length) return { ok: false, error: "Bu paket size ait değil." };
+  const pkg = rows[0];
+  if (pkg.delivered_at) return { ok: false, error: "Teslim edilmiş paketin kilometresi değiştirilemez." };
+  const distance = parseKm(value);
+  if (!distance) return { ok: false, error: "Geçerli bir kilometre girin. Örnek: 4,5" };
+  const fee = feeFor(await bot.tariff(), distance, await bot.extraPerKm());
+  await bot.db.run(`UPDATE packages SET distance_km=?,courier_fee=?,picked_up_at=coalesce(picked_up_at,?),
+      courier_note=coalesce(?,courier_note) WHERE id=? AND courier=? AND delivered_at IS NULL AND cancelled_at IS NULL`,
+    String(distance), fee, bot.now(), courierNote || null, packageId, courier);
+  await bot.db.run("DELETE FROM pending_distance WHERE courier=?", courier);
+  return { ok: true, fee, distance };
 }
 
 export async function startKm(bot: Bot, user: Account, packageId: number): Promise<any> {

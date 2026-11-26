@@ -48,6 +48,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] Km düzenleme: teslim edilene kadar serbest (ücret yeniden hesaplanır), teslim sonrası kilitli; kartta "Km düzenle (x km)". E2E **80/80**.
 - [x] Kurye sipariş kartı v2: ✕ kaldırıldı, Restoran notu satırı + kart içi Kurye notu (otomatik kayıt), buton düzeni ve **Çıkış** (`cd0e7ce5`, v120).
 - [x] Kurye durum seçici drawer’ın en altına taşındı (3’lü, tek satır; meşgulde sebep penceresi); Profil sadeleşti (`50aef4e9`, v111).
 - [x] Kurye satırlarında “Paket N” kaldırıldı; geçen süre **istemci tarafında** (0 istek) gösteriliyor (`f0cc124`, v107). Kota etkisi yok — asıl yük 5 sn'lik yoklama.

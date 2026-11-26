@@ -37,21 +37,10 @@ export async function acceptPackages(bot: Bot, user: Account, ids: number[]) {
 
 /** Km girişi (teslim aldım): aynı km kilidi ve ücret hesabı chat akışıyla birebir aynıdır. */
 export async function setDistance(bot: Bot, user: Account, packageId: number, value: string, courierNote: string | null = null) {
-  const rows = await bot.packages(
-    "p.id=? AND p.courier=? AND p.delivered_at IS NULL AND p.cancelled_at IS NULL", [packageId, user.id]);
-  if (!rows.length) return { ok: false, error: "Bu paket size ait değil." };
-  const pkg = rows[0];
-  if (pkg.picked_up_at) return { ok: false, error: "Bu paketin kilometresi zaten kayıtlı." };
-  const pending = await bot.db.first<{ package: number }>("SELECT package FROM pending_distance WHERE courier=?", user.id);
-  if (pending && pending.package !== packageId) {
-    return { ok: false, error: "Önce bekleyen kilometre girişini tamamlayın." };
-  }
-  if (!ops.parseKm(value)) return { ok: false, error: "Geçerli bir kilometre girin. Örnek: 4,5" };
-  await bot.db.run("INSERT OR IGNORE INTO pending_distance VALUES (?,?)", user.id, packageId);
-  await ops.recordDistance(bot, user.id, value, courierNote);
+  const r = await ops.updateDistance(bot, user.id, packageId, value, courierNote);
+  if (!r.ok) return { ok: false, error: r.error };
   const fresh = await packageById(bot, packageId);
-  if (!fresh?.distance_km) return { ok: false, error: "Geçerli bir kilometre girin. Örnek: 4,5" };
-  return { ok: true, fee_tl: fresh.courier_fee, distance_km: Number(fresh.distance_km), picked_up_at: fresh.picked_up_at };
+  return { ok: true, fee_tl: fresh?.courier_fee ?? r.fee, distance_km: Number(fresh?.distance_km ?? r.distance), picked_up_at: fresh?.picked_up_at ?? null };
 }
 
 /** Teslim: teslim alma (picked_up_at) zorunlu, iptal ücret kuralı chat ile aynı. */
