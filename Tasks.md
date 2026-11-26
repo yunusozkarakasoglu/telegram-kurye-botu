@@ -35,6 +35,8 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] Kurye satırlarında “Paket N” kaldırıldı; geçen süre **istemci tarafında** (0 istek) gösteriliyor (`f0cc124`, v107). Kota etkisi yok — asıl yük 5 sn'lik yoklama.
+- [x] Kurye notu karttan da eklenebiliyor (`POST /api/paket/{id}/not`) (`5a649cd6`, v109).
 - [x] Kurye Geçmiş iki sekmeye ayrıldı: **Siparişler** + **Kazanç**; Kazanç menüden kaldırılıp buraya taşındı (`fa599ee8`, v97).
 - [x] Km girişinde **Kurye notu** alanı; not tüm kartlarda (kurye/restoran/yönetici/geçmiş) amber kutuda (`290ec9d0`, v96). E2E **75/75**.
 - [x] Filtre panelleri: temizle küçük ikon (🧹) + küçük kırmızı ✕; kurye Geçmiş hızlı filtre butonları kaldırıldı.
