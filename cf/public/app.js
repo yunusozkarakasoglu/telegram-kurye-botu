@@ -253,15 +253,16 @@
     // Eylemler durum etiketine değil kayıt alanlarına göre belirlenir (etiket sunucudan gelir).
     var cancelled = !!p.cancelled_at, delivered = !!p.delivered_at, picked = !!p.picked_up_at;
     var mapBtn = !cancelled && !delivered && !picked
-      ? '<button class="btn" data-a="harita" data-i="' + p.id + '">Haritada Aç</button>' : '';
+      ? '<button class="btn" data-a="harita" data-i="' + p.id + '">Restoran Konumu</button>' : '';
     var callBtn = !delivered && !cancelled && p.restaurant_phone
       ? '<a class="btn" href="tel:' + esc(p.restaurant_phone) + '">Restoranı Ara</a>' : '';
     var actions = '';
     if (opts.own && !cancelled && !delivered) {
+      actions = mapBtn + callBtn;
       if (!picked) {
-        actions = mapBtn + callBtn + '<button class="p w" data-a="km" data-i="' + p.id + '">Km gir · teslim aldım</button>';
+        actions += '<button class="p w" data-a="km" data-i="' + p.id + '">Km gir · teslim aldım</button>';
       } else {
-        actions = callBtn + '<button class="p w" data-a="teslim" data-i="' + p.id + '">Teslim ettim</button>';
+        actions += '<button class="p w" data-a="teslim" data-i="' + p.id + '">Teslim ettim</button>';
       }
       actions += '<div class="two"><button data-a="aktar" data-i="' + p.id + '">Aktar</button>' +
                  '<button class="d" data-a="iptal" data-i="' + p.id + '">İptal et</button></div>';
@@ -289,8 +290,8 @@
         (p.cancelled_at ? '<dt>İptal eden</dt><dd>' + esc((p.cancelled_by_role === 'restoran' ? 'Restoran' : p.cancelled_by_role === 'kurye' ? 'Kurye' : 'Yönetici') + ' · ' + (p.cancelled_by_name || '—')) + '</dd>' : '') +
         '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
       '</dl>' +
-      '<div class="notebox"><small>Not</small><div>' + esc(p.note || '') + '</div></div>' +
-      (p.courier_note ? '<div class="notebox cnote"><small>Kurye notu</small><div>' + esc(p.courier_note) + '</div></div>' : '') +
+      '<div class="notebox"><small>Restoran notu</small><div>' + esc(p.note || '') + '</div></div>' +
+      '<div class="notebox cnote"><small>Kurye notu</small><div>' + esc(p.courier_note || '') + '</div></div>' +
       (p.transfer_from ? '<p class="note">Aktarma bilgisi: önceki kurye ' + esc(p.transfer_from) + '</p>' : '') + warn + '</div>' +
       (actions ? '<div class="pk-ft">' + actions + '</div>' : '') +
     '</div>';
@@ -1194,8 +1195,8 @@
         '<dt>Ücret</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +
         '<dt>Hakediş</dt><dd>' + (p.payment_received === true ? 'Alındı' : p.payment_received === false ? 'Alınmadı' : '—') + '</dd>' +
       '</dl>' +
-      '<div class="notebox"><small>Not</small><div>' + esc(p.note || '') + '</div></div>' +
-      (p.courier_note ? '<div class="notebox cnote"><small>Kurye notu</small><div>' + esc(p.courier_note) + '</div></div>' : '') + cancelInfo +
+      '<div class="notebox"><small>Restoran notu</small><div>' + esc(p.note || '') + '</div></div>' +
+      '<div class="notebox cnote"><small>Kurye notu</small><div>' + esc(p.courier_note || '') + '</div></div>' + cancelInfo +
       (p.cancelled_at || p.delivered_at ? '' : '<button class="d" id="rp-cancel" style="width:100%">İptal Et</button>') +
       '<button class="d" id="rp-close" style="width:100%;margin-top:6px">Kapat</button>');
     sh.querySelector('#rp-close').onclick = function () { UI.closeSheet(); };
