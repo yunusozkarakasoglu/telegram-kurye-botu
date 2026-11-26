@@ -8,7 +8,7 @@
   var S = {
     role: 'courier',
     tab: 'havuz',
-    view: 'bolge',
+    view: 'tumu',
     sel: {},
     session: null,
     pool: null,
@@ -117,7 +117,7 @@
       return;
     }
 
-    var h = '<div class="seg four">' + [['bolge', 'Bölgeye göre'], ['restoran', 'Restorana göre'], ['talep', 'Talebe göre'], ['gecik', 'Gecikenler']]
+    var h = '<div class="seg five">' + [['tumu', 'Tümü'], ['bolge', 'Bölgeye göre'], ['restoran', 'Restorana göre'], ['talep', 'Talebe göre'], ['gecik', 'Gecikenler']]
       .map(function (s) { return '<button data-g="' + s[0] + '" class="' + (S.view === s[0] ? 'on' : '') + '">' + s[1] + '</button>'; })
       .join('') + '</div>';
 
@@ -148,7 +148,10 @@
         '<span class="tag' + (p.payment === 'Kart' ? ' ac' : '') + '">' + esc(p.payment || '') + '</span></label>';
     }
 
-    if (S.view === 'sira') {
+    if (S.view === 'tumu') {
+      L.sort(function (a, b) { return (b.created_at || 0) - (a.created_at || 0); });
+      h += '<div class="gcard">' + groupHead('Tüm havuz', L) + L.map(row).join('') + '</div>';
+    } else if (S.view === 'sira') {
       L.sort(function (a, b) { return a.id - b.id; });
       h += '<div class="card" style="margin-top:12px">' + L.map(row).join('') + '</div>';
     } else if (S.view === 'talep') {
