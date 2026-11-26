@@ -557,7 +557,10 @@
       err.textContent = '';
       var v = parseFloat(String(input.value).replace(',', '.'));
       if (!(v > 0)) { pv.innerHTML = ''; return; }
-      pv.innerHTML = '<p>Bu paketten alacağınız: <b>' + API.feePreview(tariff, v, base.extra_per_km) + '</b></p>';
+      var uyari = v > 10
+        ? '<p class="pk-warn" style="margin:6px 0 0">10 km üzeri: bölge teslimat çapı 10 km. Ek ücret uygulanır; operasyon uygun görmezse sipariş kabul edilmeyebilir.</p>'
+        : '';
+      pv.innerHTML = '<p>Bu paketten alacağınız: <b>' + API.feePreview(tariff, v, base.extra_per_km) + '</b></p>' + uyari;
     }
     input.oninput = calc;
     sh.querySelector('#kback').onclick = function () { UI.closeSheet(); };
@@ -1234,6 +1237,18 @@
     });
   }
 
+  function renderKurallar() {
+    setHeader('Kurallar', 'Operasyon kuralları');
+    var main = $('mn');
+    var data = window.KURALLAR || [];
+    main.innerHTML = data.map(function (b) {
+      return '<div class="card rulecard"><b>' + esc(b.baslik) + '</b><ul>' +
+        b.maddeler.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>';
+    }).join('') || '<div class="empty">Kural tanımlı değil.</div>';
+    $('cta').innerHTML = '';
+    nav(curRole() === 'restoran' ? restaurantTabs() : courierTabs(), {});
+  }
+
   function renderSistem() {
     setHeader('Sistem', 'Fiyatlandırma · Restoranlar · Kuryeler · Bölgeler · v10');
     var main = $('mn');
@@ -1441,6 +1456,7 @@
     h += '<h3>İşlemler</h3>';
     h += '<button data-da="refresh"><i>↻</i>Yenile</button>';
     h += '<button data-dt="sistem" class="' + (S.tab === 'sistem' ? 'on' : '') + '"><i>⚙</i>Sistem</button>';
+    h += '<button data-dt="kurallar" class="' + (S.tab === 'kurallar' ? 'on' : '') + '"><i>📋</i>Kurallar</button>';
     h += '<button data-dt="profil" class="' + (S.tab === 'profil' ? 'on' : '') + '"><i>👤</i>Profil</button>';
     h += '<button data-da="logout"><i>⏻</i>Çıkış</button>';
     d.innerHTML = h;
@@ -1474,13 +1490,15 @@
       if (S.tab === 'talep') renderTalep();
       else if (S.tab === 'rapor') renderRestRapor();
       else if (S.tab === 'sistem') renderSistem();
-      else if (S.tab === 'profil') renderProfil();
+      else if (S.tab === 'kurallar') renderKurallar();
+    else if (S.tab === 'profil') renderProfil();
       else renderRestPaketlerim();
       renderDrawer();
       return;
     }
     if (S.tab === 'loglar') renderLogs();
     else if (S.tab === 'sistem') renderSistem();
+    else if (S.tab === 'kurallar') renderKurallar();
     else if (S.tab === 'profil') renderProfil();
     else if (S.tab === 'paketlerim') renderPaketlerim();
     else if (S.tab === 'gecmis') renderGecmis();

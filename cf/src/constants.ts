@@ -1,5 +1,5 @@
 export const TURKIYE_OFFSET = 3;
-export const PAYMENTS = ["Nakit", "Kart", "Ödendi"] as const;
+export const PAYMENTS = ["Nakit", "Kart", "Ödendi", "Cihaz hatası (ödemesiz)"] as const;
 export const UNSPECIFIED = "Belirtilmedi";
 export const DEFAULT_ACTIVE_LIMIT = 3;
 export const DEFAULT_TARIFF = [120, 150, 190, 240, 300, 370, 450, 540, 640];
@@ -33,7 +33,7 @@ export const AUTO_OFFER_RETRY = 300;
 export const WARN_COOLDOWN = 600;
 export const CALL_HINT = "Aramak için numaraya dokunun.";
 export const MAP_URL = (lat: number, lng: number) => `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-export const CANCEL_REASONS = ["Müşteri iptal etti", "Adres yanlış", "Restoran kapandı", "Gecikme", "Paket hasarlı", "Müşteriye ulaşılamadı", "Diğer"];
+export const CANCEL_REASONS = ["Müşteri iptal etti", "Adres yanlış", "Restoran kapandı", "Gecikme", "Paket hasarlı", "Ambalaj yetersiz/patladı", "30 dk teslim süresi aşıldı", "Müşteriye ulaşılamadı", "Diğer"];
 export const MENUS: Record<string, string[]> = {
   restoran: ["Kurye Çağır", "Paketlerim", "Profil", "Analiz", "Komutlar", "Yöneticiyi Ara"],
   kurye: ["Havuz", "Açık Paketler", "Paketlerim", "Profil", "Komutlar", "Yöneticiyi Ara"],

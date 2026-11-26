@@ -4,6 +4,14 @@
 > (`8c55b6c`). Tek bölgeli yapı geçerli; SaaS mimarisi `~/Masaüstü/Kurye-Flow-Mobil`
 > projesinde yaşıyor (`AGENTS.md`, `Mimari.md`, `PLAN.md`).
 
+## Operasyon kuralları (2026-11-26)
+
+- Metin tek kaynak: `cf/public/kurallar.js` (`window.KURALLAR`), ekran: Menü → **Kurallar**.
+- 10 km teslimat çapı: km girişinde yalnız **uyarı** (engel yok, ek ücret devrede).
+- Gecikme eşiği **10 dk** olarak kaldı (kurallar metni 30 dk hedefini anlatır; kod değişmedi).
+- `PAYMENTS`: Nakit, Kart, Ödendi, **Cihaz hatası (ödemesiz)**.
+- `CANCEL_REASONS`: + **Ambalaj yetersiz/patladı**, + **30 dk teslim süresi aşıldı**.
+
 ## Yönetici paneli (2026-11-25)
 
 - Menü: 2 sütun; en altta Profil (tam satır) + Ayarlar|Çıkış (yan yana).

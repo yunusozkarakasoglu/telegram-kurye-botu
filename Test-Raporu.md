@@ -221,3 +221,10 @@ python3 tools/verify_package.py
 - Kurye tarafında durum **Kabul edildi**.
 - Negatif: olmayan kurye reddedildi, kurye rolü ucu kullanamıyor (403), kurye kurye listesini göremiyor (403).
 - e2e **73/73** · `tsc` ✅ · deploy `1c9c3503` (v85).
+
+### Son doğrulama (2026-11-26, operasyon kuralları)
+
+- Menü → **Kurallar**: 5 başlık, 14 madde göründü.
+- Km girişi 12,1 km: “Bu paketten alacağınız: 940 TL” + **10 km üzeri uyarısı**; kayıt engellenmedi.
+- `/api/sistem` → `payments` içinde “Cihaz hatası (ödemesiz)”; `reasons` içinde “Ambalaj yetersiz/patladı” ve “30 dk teslim süresi aşıldı”.
+- e2e **73/73** · `tsc` ✅ · deploy `5525ee3c` (v86).
