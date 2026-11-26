@@ -88,7 +88,7 @@ button[disabled]{opacity:.45;cursor:not-allowed}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 
 /* ---------- alt panel (sheet) ---------- */
-.ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:5}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:120}
 .sh{background:var(--card);width:100%;max-width:440px;border-radius:16px 16px 0 0;padding:16px 16px calc(16px + var(--sab));max-height:88vh;overflow-y:auto}
 .sh h2{font-size:17px;margin:0 0 4px}
 .sh p{color:var(--t2);margin:0 0 12px;font-size:13px}

@@ -1674,8 +1674,9 @@
     Array.prototype.forEach.call(d.querySelectorAll('[data-dst]'), function (b) {
       b.onclick = function () {
         var st = b.getAttribute('data-dst');
-        if (st === 'busy') mesgulSebepSheet();
-        else setKuryeDurum(st, null);
+        closeDrawer();
+        if (st === 'busy') { setTimeout(function () { mesgulSebepSheet(); }, 120); return; }
+        setKuryeDurum(st, null);
       };
     });
     Array.prototype.forEach.call(d.querySelectorAll('[data-da]'), function (b) {
