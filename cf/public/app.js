@@ -24,7 +24,6 @@
     histView: (localStorage.getItem('histView') === 'card' ? 'card' : 'list'),
     histRange: 'all',
     histDate: '',
-    histPay: false,
     paySel: {},
     pinEdit: false,
     kazancRange: 'today',
@@ -401,80 +400,73 @@
   }
 
   function renderGecmis() {
-    var items = (S.history && S.history.items) || [];
+    var all = (S.history && S.history.items) || [];
     var bounds = null;
     if (S.histDate) {
       bounds = [Math.floor(Date.parse(S.histDate + 'T00:00:00+03:00') / 1000), Math.floor(Date.parse(S.histDate + 'T00:00:00+03:00') / 1000) + 86400];
     } else if (S.histRange !== 'all') {
       bounds = dayBounds(S.histRange === 'today' ? 0 : 1);
     }
-    if (bounds) {
-      items = items.filter(function (p) {
-        var t = p.cancelled_at || p.delivered_at || p.created_at || 0;
-        return t >= bounds[0] && t < bounds[1];
-      });
-    }
+    var items = all.filter(function (p) {
+      if (!bounds) return true;
+      var t = p.cancelled_at || p.delivered_at || p.created_at || 0;
+      return t >= bounds[0] && t < bounds[1];
+    });
+    var f = S.histAdv || {};
+    items = items.filter(function (p) {
+      if (f.status) {
+        var st = String(p.status || '');
+        if (f.status === 'teslim' && st !== 'Teslim edildi') return false;
+        if (f.status === 'iptal' && st !== 'İptal edildi') return false;
+        if (f.status === 'yolda' && !/Yolda|Kuryede/i.test(st)) return false;
+      }
+      if (f.pay === 'var' && p.payment_received !== true) return false;
+      if (f.pay === 'yok' && p.payment_received !== false) return false;
+      return true;
+    });
     setHeader('Geçmiş', items.length + ' kayıt');
     var main = $('mn');
-    var rseg = '<div class="seg two">' +
-      '<button data-hmode="list" class="' + (!S.histPay ? 'on' : '') + '">Paketler</button>' +
-      '<button data-hmode="pay" class="' + (S.histPay ? 'on' : '') + '">Ödeme</button></div>' +
-      '<div class="seg four" style="margin-top:6px">' +
+    var advCount = (f.status ? 1 : 0) + (f.pay ? 1 : 0) + (f.grup ? 1 : 0);
+    var bar = '<div class="filterbar"><button id="hf-open">⚙ Filtre' + (advCount ? ' (' + advCount + ')' : '') + '</button>' +
+      (advCount ? '<button id="hf-clear">✕ Temizle</button>' : '') + '</div>';
+    var quick = '<div class="seg four">' +
       [['all', 'Tümü'], ['today', 'Bugün'], ['yesterday', 'Dün']].map(function (r) {
         return '<button data-r="' + r[0] + '" class="' + (!S.histDate && S.histRange === r[0] ? 'on' : '') + '">' + r[1] + '</button>';
       }).join('') +
       '<label class="cal' + (S.histDate ? ' on' : '') + '" title="Tarih seç">📅<input type="date" id="hdate" value="' + esc(S.histDate) + '"></label></div>';
-    if (S.histPay) {
-      items = items.filter(function (p) { return p.delivered_at && !p.cancelled_at && p.payment_received !== true; });
-    }
-    var unpaid = items.filter(function (p) { return p.delivered_at && !p.cancelled_at && p.payment_received !== true; });
-    var payBar = (S.histPay && unpaid.length) ? '<div class="filters" style="margin-top:6px">' +
-      '<button class="p sm" id="pay-sel">Seçilenleri Ödeme Alındı</button>' +
-      '<button class="sm" id="pay-all">Tümünü Ödeme Alındı (' + unpaid.length + ')</button></div>' : '';
-    var body = items.length ? '<div class="card">' + items.map(function (p) {
-      var isUnpaid = S.histPay && p.delivered_at && !p.cancelled_at && p.payment_received !== true;
-      return '<div class="hrow">' + (isUnpaid ? '<input type="checkbox" data-pay="' + p.id + '">' : '<span class="hgap"></span>') +
-        '<button class="prow" data-hopen="' + p.id + '"><span><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) + '</b>' +
+
+    function satir(p) {
+      return '<button class="prow" data-hopen="' + p.id + '"><span><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) + '</b>' +
         '<small>' + esc(p.region || '') + ' · ' + esc(p.status) + ' · ' + dt(p.delivered_at || p.cancelled_at) +
         (p.payment_received === true ? ' · ödeme alındı' : p.payment_received === false ? ' · ödeme alınmadı' : '') + '</small></span>' +
-        '<em>' + (p.fee_tl == null ? '' : money(p.fee_tl)) + '</em></button></div>';
-    }).join('') + '</div>' : '<div class="empty"><b>Kayıt yok</b>Bu aralıkta tamamlanan/iptal edilen iş bulunmuyor.</div>';
-    main.innerHTML = rseg + payBar + body;
-    Array.prototype.forEach.call(main.querySelectorAll('[data-hmode]'), function (b) {
-      b.onclick = function () { S.histPay = b.getAttribute('data-hmode') === 'pay'; S.paySel = {}; S.histDate = ''; if (S.histPay) S.histRange = 'all'; render(); };
-    });
-    function selCount() { return Object.keys(S.paySel).filter(function (k) { return S.paySel[k]; }).length; }
-    Array.prototype.forEach.call(main.querySelectorAll('[data-pay]'), function (c) {
-      c.checked = !!S.paySel[c.getAttribute('data-pay')];
-      c.onchange = function () {
-        var id = c.getAttribute('data-pay');
-        if (c.checked) S.paySel[id] = 1; else delete S.paySel[id];
-        var btn = main.querySelector('#pay-sel');
-        if (btn) btn.textContent = 'Seçilenleri Ödeme Alındı (' + selCount() + ')';
-      };
-    });
-    var paySelBtn = main.querySelector('#pay-sel');
-    if (paySelBtn) paySelBtn.onclick = function () {
-      var ids = Object.keys(S.paySel).filter(function (k) { return S.paySel[k]; }).map(Number);
-      if (!ids.length) { UI.toast('Paket seçin', 'error'); return; }
-      confirmSheet(ids.length + ' paket için ödeme alındı olarak işaretlensin mi?', function () {
-        API.odeme(ids, false).then(function (r) {
-          S.paySel = {}; UI.closeSheet(); UI.toast((r.count || 0) + ' paket ödeme alındı', 'success'); refresh(true);
-        }).catch(function (e) { UI.toast(e.message || 'Kaydedilemedi', 'error'); });
-      });
-    };
-    var payAllBtn = main.querySelector('#pay-all');
-    if (payAllBtn) payAllBtn.onclick = function () {
-      confirmSheet(unpaid.length + ' paketin tamamı ödeme alındı olarak işaretlensin mi?', function () {
-        API.odeme([], true).then(function (r) {
-          S.paySel = {}; UI.closeSheet(); UI.toast((r.count || 0) + ' paket ödeme alındı', 'success'); refresh(true);
-        }).catch(function (e) { UI.toast(e.message || 'Kaydedilemedi', 'error'); });
-      });
-    };
+        '<em>' + (p.fee_tl == null ? '' : money(p.fee_tl)) + '</em></button>';
+    }
+
+    var body;
+    if (!items.length) {
+      body = '<div class="empty"><b>Kayıt yok</b>Bu filtrede tamamlanan/iptal edilen iş bulunmuyor.</div>';
+    } else if (!f.grup) {
+      body = '<div class="card">' + items.map(satir).join('') + '</div>';
+    } else {
+      var key = f.grup === 'region' ? 'region' : 'restaurant';
+      var groups = {};
+      items.forEach(function (p) { var k = p[key] || 'Belirtilmedi'; (groups[k] = groups[k] || []).push(p); });
+      body = Object.keys(groups).sort().map(function (k) {
+        return '<div class="ghead"><span class="gname">' + esc(k) + '</span>' +
+          '<span class="gcount">' + groups[k].length + ' kayıt</span></div>' +
+          '<div class="card">' + groups[k].map(satir).join('') + '</div>';
+      }).join('');
+    }
+
+    main.innerHTML = quick + bar + body;
     Array.prototype.forEach.call(main.querySelectorAll('[data-r]'), function (b) {
       b.onclick = function () { S.histRange = b.getAttribute('data-r'); S.histDate = ''; render(); };
     });
     $('hdate').onchange = function () { S.histDate = $('hdate').value; render(); };
+    var hf = $('hf-open');
+    if (hf) hf.onclick = histFiltreSheet;
+    var hc = $('hf-clear');
+    if (hc) hc.onclick = function () { S.histAdv = null; render(); };
     Array.prototype.forEach.call(main.querySelectorAll('[data-hopen]'), function (b) {
       b.onclick = function () {
         var p = items.filter(function (x) { return String(x.id) === b.getAttribute('data-hopen'); })[0];
@@ -487,6 +479,44 @@
     });
     $('cta').innerHTML = '';
     nav(courierTabs(), { havuz: S.pool ? S.pool.packages.length : 0 });
+  }
+
+  function histFiltreSheet() {
+    var f = S.histAdv || {};
+    var sec = { status: f.status || '', pay: f.pay || '', grup: f.grup || '' };
+    var sh = UI.openSheet(
+      '<h2>Filtrele</h2>' +
+      '<div class="fld"><label>Durum</label><div class="seg two">' +
+        [['', 'Tümü'], ['teslim', 'Teslim edildi'], ['iptal', 'İptal edildi']].map(function (x) {
+          return '<button data-st="' + x[0] + '" class="' + (sec.status === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
+        }).join('') + '</div></div>' +
+      '<div class="fld"><label>Ödeme durumu</label><div class="seg four">' +
+        [['', 'Tümü'], ['var', 'Ödeme alındı'], ['yok', 'Ödeme alınmadı']].map(function (x) {
+          return '<button data-pay="' + x[0] + '" class="' + (sec.pay === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
+        }).join('') + '</div></div>' +
+      '<div class="fld"><label>Grupla</label><div class="seg four">' +
+        [['', 'Yok'], ['region', 'Bölgeye'], ['restaurant', 'Restorana']].map(function (x) {
+          return '<button data-grup="' + x[0] + '" class="' + (sec.grup === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
+        }).join('') + '</div></div>' +
+      '<button class="p" id="hf-apply" style="width:100%">Filtrele</button>' +
+      '<button class="d" id="hf-reset" style="width:100%;margin-top:6px">Filtreyi temizle</button>');
+    Array.prototype.forEach.call(sh.querySelectorAll('[data-st],[data-pay],[data-grup]'), function (b) {
+      b.onclick = function () {
+        var grup = b.parentElement;
+        var attr = b.hasAttribute('data-st') ? 'data-st' : b.hasAttribute('data-pay') ? 'data-pay' : 'data-grup';
+        var v = b.getAttribute(attr);
+        if (attr === 'data-st') sec.status = v;
+        else if (attr === 'data-pay') sec.pay = v;
+        else sec.grup = v;
+        Array.prototype.forEach.call(grup.children, function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+      };
+    });
+    sh.querySelector('#hf-reset').onclick = function () { S.histAdv = null; UI.closeSheet(); render(); };
+    sh.querySelector('#hf-apply').onclick = function () {
+      S.histAdv = { status: sec.status, pay: sec.pay, grup: sec.grup };
+      UI.closeSheet(); render();
+    };
   }
 
   function renderKazanc() {

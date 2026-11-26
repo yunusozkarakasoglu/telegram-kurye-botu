@@ -59,20 +59,103 @@
   }
 
   /* ---------------- ekranlar ---------------- */
+  function ozetFiltreSheet() {
+    var f = S.ozetFilter || {};
+    var gun = function (off) { var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + off); return d; };
+    var iso = function (d) { return d.toISOString().slice(0, 10); };
+    var bas = f.from ? new Date(f.from * 1000) : gun(0);
+    var bit = f.to ? new Date((f.to - 1) * 1000) : gun(0);
+    var sec = { preset: f.preset || 'today', status: f.status || '', pay: f.pay || '', grup: f.grup || '' };
+    var sh = UI.openSheet(
+      '<h2>Filtrele</h2>' +
+      '<div class="fld"><label>Zaman</label><div class="seg four">' +
+        [['today', 'Bugün'], ['yesterday', 'Dün'], ['range', 'Tarih aralığı'], ['all', 'Tümü']].map(function (x) {
+          return '<button data-t="' + x[0] + '" class="' + (sec.preset === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
+        }).join('') + '</div></div>' +
+      '<div id="of-dates" style="display:' + (sec.preset === 'range' ? 'block' : 'none') + '">' +
+        '<div class="fld"><label>Başlangıç</label><input id="of-from" type="date" value="' + iso(bas) + '"></div>' +
+        '<div class="fld"><label>Bitiş</label><input id="of-to" type="date" value="' + iso(bit) + '"></div>' +
+      '</div>' +
+      '<div class="fld"><label>Durum</label><div class="seg two">' +
+        [['', 'Tümü'], ['havuz', 'Havuzda bekliyor'], ['kabul', 'Kabul edildi'], ['aktarim', 'Aktarım onayı'],
+         ['yolda', 'Kuryede / Yolda'], ['teslim', 'Teslim edildi'], ['iptal', 'İptal edildi'], ['late', 'Gecikenler']]
+          .map(function (x) { return '<button data-st="' + x[0] + '" class="' + (sec.status === x[0] ? 'on' : '') + '">' + x[1] + '</button>'; }).join('') +
+      '</div></div>' +
+      '<div class="fld"><label>Ödeme durumu</label><div class="seg four">' +
+        [['', 'Tümü'], ['var', 'Ödeme alındı'], ['yok', 'Ödeme alınmadı']].map(function (x) {
+          return '<button data-pay="' + x[0] + '" class="' + (sec.pay === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
+        }).join('') + '</div></div>' +
+      '<div class="fld"><label>Grupla</label><div class="seg four">' +
+        [['', 'Yok'], ['region', 'Bölgeye'], ['restaurant', 'Restorana']].map(function (x) {
+          return '<button data-grup="' + x[0] + '" class="' + (sec.grup === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
+        }).join('') + '</div></div>' +
+      '<button class="p" id="of-apply" style="width:100%">Filtrele</button>' +
+      '<button class="d" id="of-clear" style="width:100%;margin-top:6px">Filtreyi temizle</button>');
+
+    Array.prototype.forEach.call(sh.querySelectorAll('[data-t],[data-st],[data-pay],[data-grup]'), function (b) {
+      b.onclick = function () {
+        var grup = b.parentElement;
+        var attr = b.hasAttribute('data-t') ? 'data-t' : b.hasAttribute('data-st') ? 'data-st'
+          : b.hasAttribute('data-pay') ? 'data-pay' : 'data-grup';
+        var v = b.getAttribute(attr);
+        if (attr === 'data-t') sec.preset = v;
+        else if (attr === 'data-st') sec.status = v;
+        else if (attr === 'data-pay') sec.pay = v;
+        else sec.grup = v;
+        Array.prototype.forEach.call(grup.children, function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        if (attr === 'data-t') {
+          if (v === 'today' || v === 'yesterday') {
+            var d0 = v === 'yesterday' ? gun(-1) : gun(0);
+            sh.querySelector('#of-from').value = iso(d0);
+            sh.querySelector('#of-to').value = iso(d0);
+          }
+          sh.querySelector('#of-dates').style.display = v === 'range' ? 'block' : 'none';
+        }
+      };
+    });
+    sh.querySelector('#of-clear').onclick = function () {
+      S.ozetFilter = { preset: 'today', from: null, to: null, status: '', pay: '', grup: '' };
+      UI.closeSheet(); viewOzet();
+    };
+    sh.querySelector('#of-apply').onclick = function () {
+      var from = null, to = null;
+      if (sec.preset === 'all') { from = null; to = null; }
+      else if (sec.preset === 'today' || sec.preset === 'yesterday') {
+        var d0 = sec.preset === 'yesterday' ? gun(-1) : gun(0);
+        from = Math.floor(d0.getTime() / 1000); to = from + 86400;
+      } else {
+        var fs = sh.querySelector('#of-from').value, ts = sh.querySelector('#of-to').value;
+        if (!fs || !ts) { UI.toast('Başlangıç ve bitiş seçin', 'error'); return; }
+        from = Math.floor(new Date(fs + 'T00:00:00').getTime() / 1000);
+        to = Math.floor(new Date(ts + 'T23:59:59').getTime() / 1000);
+        if (from > to) { UI.toast('Bitiş, başlangıçtan önce olamaz', 'error'); return; }
+      }
+      S.ozetFilter = { preset: sec.preset, from: from, to: to, status: sec.status, pay: sec.pay, grup: sec.grup };
+      UI.closeSheet(); viewOzet();
+    };
+  }
+
   function viewOzet() {
     head('Canlı Saha', 'Sistem durumu');
-    if (!S.ozetFilter) S.ozetFilter = { durum: 'all', grup: '', pay: '' };
-    if (S.ozetOpen === undefined) S.ozetOpen = true;
+    if (!S.ozetFilter) S.ozetFilter = { preset: 'today', from: null, to: null, status: '', pay: '', grup: '' };
 
     function yukle(refresh) {
-      API.yonetim('siparisler').then(function (d) {
+      API.yonetim('siparisler', { from: S.ozetFilter.from, to: S.ozetFilter.to }).then(function (d) {
         var f = S.ozetFilter;
         var all = d.items || [];
         var kpi = d.kpi || {};
         var list = all.filter(function (p) {
-          if (f.durum === 'late') return p.late;
-          if (f.durum === 'cancelled') return !!p.cancelled_at;
-          if (f.durum === 'transfer') return /Aktarım/i.test(p.status || '');
+          if (f.status) {
+            var s = String(p.status || '');
+            if (f.status === 'havuz' && !/Havuzda bekliyor/i.test(s)) return false;
+            if (f.status === 'kabul' && s !== 'Kabul edildi') return false;
+            if (f.status === 'aktarim' && !/Aktarım onayı/i.test(s)) return false;
+            if (f.status === 'yolda' && !/Yolda|Kuryede/i.test(s)) return false;
+            if (f.status === 'teslim' && s !== 'Teslim edildi') return false;
+            if (f.status === 'iptal' && s !== 'İptal edildi') return false;
+            if (f.status === 'late' && !p.late) return false;
+          }
           if (f.pay === 'var' && p.payment_received !== true) return false;
           if (f.pay === 'yok' && p.payment_received !== false) return false;
           return true;
@@ -105,25 +188,10 @@
           }).join('');
         }
 
-        var durumlar = [['all', 'Tümü'], ['late', 'Gecikenler'], ['cancelled', 'İptaller'], ['transfer', 'Aktarılanlar']];
-        var gruplar = [['region', 'Bölgeye'], ['restaurant', 'Restorana']];
         var odemeler = [['', 'Tümü'], ['var', 'Ödeme alındı'], ['yok', 'Ödeme alınmadı']];
-        var aktifFiltre = (f.durum !== 'all' ? 1 : 0) + (f.grup ? 1 : 0) + (f.pay ? 1 : 0);
-        var filtre = S.ozetOpen
-          ? '<div class="fpanel">' +
-              '<div class="frow"><span class="flabel">Durum</span><div class="chips">' + durumlar.map(function (x) {
-                return '<button class="chip' + (f.durum === x[0] ? ' on' : '') + '" data-durum="' + x[0] + '">' + x[1] + '</button>';
-              }).join('') + '</div></div>' +
-              '<div class="frow"><span class="flabel">Ödeme</span><div class="chips">' + odemeler.map(function (x) {
-                return '<button class="chip' + (f.pay === x[0] ? ' on' : '') + '" data-pay="' + x[0] + '">' + x[1] + '</button>';
-              }).join('') + '</div></div>' +
-              '<div class="frow"><span class="flabel">Grupla</span><div class="chips">' + gruplar.map(function (x) {
-                return '<button class="chip' + (f.grup === x[0] ? ' on' : '') + '" data-grup="' + x[0] + '">' + x[1] + '</button>';
-              }).join('') + '</div></div>' +
-            '</div>'
-          : '';
+        var aktifFiltre = (f.preset && f.preset !== 'today' ? 1 : 0) + (f.status ? 1 : 0) + (f.grup ? 1 : 0) + (f.pay ? 1 : 0);
         var fbtn = (aktifFiltre ? '<button class="fclear" id="oz-clear" title="Filtreleri temizle">✕</button>' : '') +
-          '<button class="fbtn' + (S.ozetOpen ? ' on' : '') + '" id="oz-filter">Filtreler</button>';
+          '<button class="fbtn" id="oz-filter">⚙ Filtre' + (aktifFiltre ? ' (' + aktifFiltre + ')' : '') + '</button>';
 
         panel(
           '<div class="ph-row"><div><span id="oz-ref" class="ph-ref" title="Yenile">↻</span></div></div>' +
@@ -133,40 +201,19 @@
             kpiKart(kpi.packages, 'Toplam paket (bugün)') +
             kpiKart(kpi.cancelled, 'İptal') +
           '</div>' +
-          '<div class="sh-title"><h3>SİPARİŞLER <span>(bugün)</span></h3><div class="acts">' + fbtn + '</div></div>' +
-          filtre +
+          '<div class="sh-title"><h3>SİPARİŞLER <span>(' + (f.preset === 'today' ? 'bugün' : f.preset === 'yesterday' ? 'dün' : f.preset === 'range' ? 'tarih aralığı' : 'tümü') + ')</span></h3><div class="acts">' + fbtn + '</div></div>' +
           '<div class="slist">' + govde + '</div>'
         );
 
         if (refresh) UI.toast('Güncellendi', 'success');
         $('oz-ref').onclick = function () { viewOzet(); };
-        $('oz-filter').onclick = function () { S.ozetOpen = !S.ozetOpen; viewOzet(); };
+        $('oz-filter').onclick = function () { ozetFiltreSheet(); };
         var fc = $('oz-clear');
         if (fc) fc.onclick = function () {
-          S.ozetFilter = { durum: 'all', grup: '', pay: '' };
+          S.ozetFilter = { preset: 'today', from: null, to: null, status: '', pay: '', grup: '' };
           viewOzet();
         };
-        Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-durum]'), function (b) {
-          b.onclick = function () {
-            var v = b.getAttribute('data-durum');
-            S.ozetFilter.durum = S.ozetFilter.durum === v ? 'all' : v;
-            viewOzet();
-          };
-        });
-        Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-grup]'), function (b) {
-          b.onclick = function () {
-            var v = b.getAttribute('data-grup');
-            S.ozetFilter.grup = S.ozetFilter.grup === v ? '' : v;
-            viewOzet();
-          };
-        });
-        Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-pay]'), function (b) {
-          b.onclick = function () {
-            var v = b.getAttribute('data-pay');
-            S.ozetFilter.pay = S.ozetFilter.pay === v ? '' : v;
-            viewOzet();
-          };
-        });
+
         Array.prototype.forEach.call($('adm-body').querySelectorAll('.srow'), function (row, i) {
           row.onclick = function () {
             var p = list[i];

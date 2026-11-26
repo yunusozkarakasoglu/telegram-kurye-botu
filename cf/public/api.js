@@ -427,7 +427,13 @@
       if (what === 'bolge') return req('POST', '/api/yonetim/bolge', arg || {});
       if (what === 'bolgeSirala') return req('POST', '/api/yonetim/bolge-sirala', arg || {});
       if (what === 'sontalepler') return req('GET', '/api/yonetim/sontalepler');
-      if (what === 'siparisler') return req('GET', '/api/yonetim/siparisler' + (arg && arg.date ? '?date=' + encodeURIComponent(arg.date) : ''));
+      if (what === 'siparisler') {
+        var q = [];
+        if (arg && arg.date) q.push('date=' + encodeURIComponent(arg.date));
+        if (arg && arg.from) q.push('from=' + arg.from);
+        if (arg && arg.to) q.push('to=' + arg.to);
+        return req('GET', '/api/yonetim/siparisler' + (q.length ? '?' + q.join('&') : ''));
+      }
       if (what === 'rapor') return req('GET', '/api/yonetim/rapor' + (arg && arg.date ? '?date=' + encodeURIComponent(arg.date) : ''));
       if (what === 'mesaj') return req('POST', '/api/yonetim/mesaj', arg || {});
       if (what === 'mesajlar') return req('GET', '/api/yonetim/mesajlar');

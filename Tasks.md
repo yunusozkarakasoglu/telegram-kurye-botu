@@ -35,6 +35,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] Filtre standardı: Canlı Saha ve kurye Geçmiş aynı filtre paneline geçti (Zaman/Durum/Ödeme/Grupla); Geçmiş’te Paketler-Ödeme sekmeleri kaldırıldı (`02bdd167`, v91). `/api/yonetim/siparisler` artık `from/to` kabul ediyor.
 - [x] Operasyon kuralları eklendi: Menü → **Kurallar** sayfası (`kurallar.js`), km girişinde 10 km uyarısı, ödeme tipi “Cihaz hatası (ödemesiz)”, 2 yeni iptal gerekçesi (`5525ee3c`, v86).
 - [x] Restoran → kuryeye doğrudan gönderim: Sipariş Ekle içinde **Kurye Ekle** sekmesi (Bölge/Ödeme/Kurye/Not → Kuryeye Gönder); paket havuza düşmeden kuryeye "Kabul edildi" işlenir (`1c9c3503`, v85). E2E **73/73**.
 - [x] Yönetici paneli yeniden düzenlendi: 2 sütun menü, **Ayarlar** sekme sayfası, **Profil** (ad/telefon/PIN), Canlı Saha (4 KPI + bugünün siparişleri + Filtreler/✕ Temizle + Durum/Ödeme/Grupla), iç sekmeler kaldırıldı (`210e9bfb`, v84).

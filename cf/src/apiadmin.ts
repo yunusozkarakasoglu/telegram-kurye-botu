@@ -382,13 +382,21 @@ export async function adminRoutes(
   // Canlı Saha: bugünün tüm siparişleri (tek çağrı) + sayaçlar
   if (path === "/yonetim/siparisler" && method === "GET") {
     const dateParam = url.searchParams.get("date") || "";
+    const fromParam = Number(url.searchParams.get("from") || 0);
+    const toParam = Number(url.searchParams.get("to") || 0);
     let start: number;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) start = Math.floor(Date.parse(dateParam + "T00:00:00+03:00") / 1000);
-    else {
+    let end: number;
+    if (fromParam > 0) {
+      start = fromParam;
+      end = toParam > 0 ? toParam : start + 86400;
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+      start = Math.floor(Date.parse(dateParam + "T00:00:00+03:00") / 1000);
+      end = start + 86400;
+    } else {
       const n = bot.now();
       start = Math.floor((n + 3 * 3600) / 86400) * 86400 - 3 * 3600;
+      end = start + 86400;
     }
-    const end = start + 86400;
     const rows = await bot.packages("b.created_at>=? AND b.created_at<?", [start, end]);
     const states = await statesFor(bot, rows);
     const aktifRest = await bot.db.first<{ n: number }>(
