@@ -8,7 +8,7 @@
   var S = {
     role: 'courier',
     tab: 'havuz',
-    view: 'tumu',
+    view: 'bolge',
     sel: {},
     session: null,
     pool: null,
@@ -117,7 +117,7 @@
       return;
     }
 
-    var h = '<div class="seg five">' + [['tumu', 'Tümü'], ['bolge', 'Bölgeye göre'], ['restoran', 'Restorana göre'], ['talep', 'Talebe göre'], ['gecik', 'Gecikenler']]
+    var h = '<div class="seg four">' + [['tumu', 'Tümü'], ['bolge', 'Bölgeye göre'], ['restoran', 'Restorana göre'], ['gecik', 'Gecikenler']]
       .map(function (s) { return '<button data-g="' + s[0] + '" class="' + (S.view === s[0] ? 'on' : '') + '">' + s[1] + '</button>'; })
       .join('') + '</div>';
 
@@ -154,13 +154,6 @@
     } else if (S.view === 'sira') {
       L.sort(function (a, b) { return a.id - b.id; });
       h += '<div class="card" style="margin-top:12px">' + L.map(row).join('') + '</div>';
-    } else if (S.view === 'talep') {
-      var gT = {};
-      L.forEach(function (p) { (gT[p.batch] = gT[p.batch] || []).push(p); });
-      Object.keys(gT).sort(function (a, b) { return Number(b) - Number(a); }).forEach(function (k) {
-        var arr = gT[k];
-        h += '<div class="gcard">' + groupHead('Talep #' + k, arr) + arr.map(row).join('') + '</div>';
-      });
     } else if (S.view === 'restoran') {
       var gR = {};
       L.forEach(function (p) { (gR[p.restaurant] = gR[p.restaurant] || []).push(p); });
