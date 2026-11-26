@@ -26,13 +26,22 @@ const NEW_COLUMNS: Record<string, [string, string][]> = {
   invites: [["tenant_id", "INTEGER NOT NULL DEFAULT 1"]],
 };
 
+/** Kolon tanımlarının kısa imzası (djb2) — şema önbellek anahtarı. */
+function semaImzasi(): string {
+  const metin = JSON.stringify(NEW_COLUMNS);
+  let h = 5381;
+  for (let i = 0; i < metin.length; i++) h = ((h * 33) ^ metin.charCodeAt(i)) >>> 0;
+  return "s" + h.toString(36);
+}
+
 export class Db {
   constructor(public d1: D1Database) {}
   async ensureColumns(): Promise<void> {
     if (columnsReady) return;
     columnsReady = true;
-    // Faz E: stateless modda her istek yeni isolate → şema kontrolü Cache API ile 5 dk önbelleklenir.
-    const anahtar = "https://sema.local/v1";
+    // Faz E: stateless modda her istek yeni isolate → şema kontrolü Cache API ile önbelleklenir.
+    // Anahtar, kolon tanımlarından OTOMATİK türetilir: yeni kolon eklenince işaret kendiliğinden değişir.
+    const anahtar = `https://sema.local/${semaImzasi()}`;
     try {
       const vur = await caches.default.match(anahtar);
       if (vur) return;
