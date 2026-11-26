@@ -273,9 +273,10 @@
       actions += picked
         ? '<button class="p w" data-a="teslim" data-i="' + p.id + '">Teslim ettim</button>'
         : '<button class="p w" data-a="km" data-i="' + p.id + '">Km gir · teslim aldım</button>';
-      if (mapBtn || callBtn) actions += '<div class="two">' + mapBtn + callBtn + '</div>';
-      actions += '<div class="two"><button data-a="aktar" data-i="' + p.id + '">Aktar</button>' +
-                 '<button class="d" data-a="iptal" data-i="' + p.id + '">Paketi iptal et</button></div>';
+      if (mapBtn) actions += mapBtn.replace('class="btn"', 'class="btn w"');
+      if (callBtn) actions += callBtn.replace('class="btn"', 'class="btn w"');
+      actions += '<button class="w" data-a="aktar" data-i="' + p.id + '">Aktar</button>' +
+                 '<button class="d w" data-a="iptal" data-i="' + p.id + '">Paketi iptal et</button>';
     }
     if (opts.pay && !cancelled && delivered && p.payment_received !== true) {
       actions += '<button class="p w" data-a="odeme" data-i="' + p.id + '">Ödeme Aldım</button>';
@@ -289,6 +290,7 @@
       : '<dt>Kurye notu</dt><dd>' + esc(p.courier_note || '—') + '</dd>';
 
     return '<div class="pk">' +
+      '<div class="pk-title">SİPARİŞ KARTI</div>' +
       '<div class="pk-hd"><b>' + esc(p.restaurant) + '</b><em class="lb r">' + esc(p.region || '—') + '</em>' +
         UI.statusTag(p.status) + '</div>' +
       '<div class="pk-bd"><dl class="pk-fields">' +
