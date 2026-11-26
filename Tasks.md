@@ -2,7 +2,7 @@
 
 ## Açık
 
-- [ ] **CI yedeği için token**: 6d2d… hesabına D1 Edit yetkili yeni API token → `gh secret set CLOUDFLARE_API_TOKEN` (panel açılınca).
+- [x] **CI yedeği için token**: Packonexpress hesabı D1+Workers Scripts Write → secret eklendi, `yedek.yml` yeşil, Release'e yükleniyor (26.11).
 - [ ] Yedek/izleme sağlık kontrolü: haftada bir `backups/` boyutu + `yedek.log` gözden geçir.
 - [ ] VPS tatbikatı (plan hazır: `docs/VPS-Yedek-Plani.md`).
 
