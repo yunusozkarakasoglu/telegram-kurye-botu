@@ -708,7 +708,7 @@
 
   function drawKurallar() {
     API.yonetim('tarife').then(function (d) {
-      var st = d.settings || {};
+      var st = d.settings || d || {};
       var r = st.rules || {};
       var alan = function (id, baslik, deger) {
         return '<div class="fld"><label>' + baslik + '</label><textarea id="' + id + '" rows="4">' + esc(deger || '') + '</textarea></div>';

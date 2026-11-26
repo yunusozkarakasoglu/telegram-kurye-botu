@@ -291,3 +291,11 @@ python3 tools/verify_package.py
 - Kurye Sistem sekmeleri: **Fiyatlandırma + Kurallar** (Tanılama yok).
 - Logs: `/api/log` → `app_logs` (kaynak kurye), liste 1 kayıt, `temizle` → `deleted:1`.
 - e2e **80/80** · deploy `d478d7c4` (v130).
+
+### Senkron doğrulaması (2026-11-26, yönetici → kurye/restoran)
+
+- Yönetici Ayarlar → Kurallar artık **dolu** (5 metin + saatler); boş görünme nedeni `d.settings || d` düzeltmesi.
+- Panelden kaydet (09:15/20:45 + “SENKRON TESTİ 123”) → **kurye** `/api/sistem` aynı değerleri gördü; **restoran** da aynı.
+- UI: panelde “UI SENKRON 777” yazıldı → kurye **Sistem → Kurallar** ekranında saatler `09:15/20:45` ve metin “UI SENKRON 777”.
+- Boş metin gönderilince **varsayılana** döndü (`RULE_DEFAULTS`), saatler 07:00/22:00.
+- Canlı: `v131`, `/api/yonetim/tarife` → `open 08:00`, mesafeler varsayılan metin.

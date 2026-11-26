@@ -1,5 +1,5 @@
 import type { D1Database } from "@cloudflare/workers-types";
-import { DEFAULT_TARIFF } from "./constants";
+import { DEFAULT_TARIFF, RULE_DEFAULTS } from "./constants";
 
 let columnsReady = false;
 
@@ -67,6 +67,11 @@ export class Db {
   async ensureSeeds(regions: string[]) {
     await this.ensureColumns();
     await this.run("INSERT OR IGNORE INTO settings VALUES ('active_limit',3)");
+    for (const [key, metin] of Object.entries(RULE_DEFAULTS)) {
+      await this.run("INSERT OR IGNORE INTO settings(key,value) VALUES (?,?)", key, metin);
+    }
+    await this.run("INSERT OR IGNORE INTO settings(key,value) VALUES ('open_time','07:00')");
+    await this.run("INSERT OR IGNORE INTO settings(key,value) VALUES ('close_time','22:00')");
     await this.run("INSERT OR IGNORE INTO settings(key,value) VALUES ('extra_per_km',100)");
     for (let i = 0; i < DEFAULT_TARIFF.length; i++) {
       await this.run("INSERT OR IGNORE INTO tariff VALUES (?,?)", i, DEFAULT_TARIFF[i]);
