@@ -401,6 +401,10 @@
       var sp = new URLSearchParams(location.search).get('tgWebAppStartParam') || '';
       return req('GET', '/api/oturum' + (sp ? '?tgWebAppStartParam=' + encodeURIComponent(sp) : ''));
     },
+    durum: function (v, mine) {
+      var q = '/api/durum?mine=' + (mine ? 1 : 0) + (v ? ('&v=' + encodeURIComponent(v)) : '');
+      return req('GET', q);
+    },
     havuz: function () { return req('GET', '/api/havuz'); },
     kabul: function (ids, key) { return req('POST', '/api/kabul', { ids: ids }, key); },
     notEkle: function (id, note, key) { return req('POST', '/api/paket/' + id + '/not', { note: note }, key); },

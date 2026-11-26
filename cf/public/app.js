@@ -14,6 +14,7 @@
     sel: {},
     session: null,
     pool: null,
+    damga: '',
     mine: null,
     history: null,
     earnings: null,
@@ -1888,10 +1889,16 @@
       render();
       return Promise.resolve();
     }
-    var jobs = [API.havuz().then(function (r) { S.pool = r; })];
-    jobs.push(API.aktarimTeklifler().then(function (r) { S.offers = r.offers || []; }).catch(function () {}));
-    jobs.push(API.bildirimler().then(function (r) { S.notifs = r; }).catch(function () {}));
-    if (full || S.tab === 'paketlerim') jobs.push(API.paketlerim().then(function (r) { S.mine = r; }));
+    // Faz C: tek uç — havuz + teklifler + bildirimler (+ gerekiyorsa kendi paketlerim)
+    var kendi = !!(full || S.tab === 'paketlerim');
+    var jobs = [API.durum(S.damga || '', kendi).then(function (r) {
+      if (r && r.unchanged) return;
+      S.damga = r.v || '';
+      if (r.pool) S.pool = r.pool;
+      if (r.offers) S.offers = r.offers;
+      if (r.notifs) S.notifs = r.notifs;
+      if (r.mine) S.mine = r.mine;
+    })];
     if (full || S.tab === 'gecmis') jobs.push(API.gecmis().then(function (r) { S.history = r; }));
     if (full || S.tab === 'kazanc' || (S.tab === 'gecmis' && S.histTab === 'kazanc')) jobs.push(API.kazanc(S.kazancRange, S.kazancDate).then(function (r) { S.earnings = r; }));
     return Promise.all(jobs).then(function () {

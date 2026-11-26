@@ -26,6 +26,20 @@ async function readBody(request: Request): Promise<any> {
 }
 
 
+
+/** Bildirim listesi (ortak): /bildirimler ve /durum aynı biçimi döner. */
+async function apiNotif(bot: Bot, account: number) {
+  await bot.db.run("CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, created_at REAL NOT NULL)");
+  await bot.db.run("CREATE TABLE IF NOT EXISTS notif_targets(notif INTEGER NOT NULL, account INTEGER NOT NULL, PRIMARY KEY(notif,account))");
+  await bot.db.run("CREATE TABLE IF NOT EXISTS notif_read(account INTEGER PRIMARY KEY, last_id INTEGER NOT NULL)");
+  const rows = await bot.db.all<{ id: number; text: string; created_at: number; kind: string | null; ref: number | null }>(
+    `SELECT n.id, n.text, n.created_at, n.kind, n.ref FROM notifications n JOIN notif_targets t ON t.notif=n.id
+     WHERE t.account=? ORDER BY n.id DESC LIMIT 50`, account);
+  const read = await bot.db.first<{ last_id: number }>("SELECT last_id FROM notif_read WHERE account=?", account);
+  const lastId = read?.last_id ?? 0;
+  return { items: rows, unread: rows.filter((r) => r.id > lastId).length, last_read: lastId };
+}
+
 /** Faz B1: aynı Idempotency-Key ile gelen ikinci istek aynı yanıtı döner (çift kayıt olmaz). */
 async function idemJson(bot: Bot, account: number, endpoint: string, key: string, fn: () => Promise<any>): Promise<any> {
   if (!key) return fn();
@@ -261,6 +275,60 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       });
     }
 
+    // Faz C: tek uç — havuz + teklifler + bildirimler + kapasite (+ kendi paketlerim).
+    // ?v=<damga> aynıysa yalnız {unchanged:true} döner → boş yoklama tek turda biter.
+    if (path === "/durum" && method === "GET") {
+      if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const url = new URL(request.url);
+      const v = url.searchParams.get("v") || "";
+      const mine = url.searchParams.get("mine") === "1";
+      const [sayac, notifMax, teklifMax] = await Promise.all([
+        bot.db.first<{ pool: number; mine: number; son: number }>(
+          `SELECT (SELECT count(*) FROM packages WHERE courier IS NULL AND delivered_at IS NULL AND cancelled_at IS NULL) AS pool,
+                  (SELECT count(*) FROM packages WHERE courier=? AND delivered_at IS NULL AND cancelled_at IS NULL) AS mine,
+                  (SELECT COALESCE(max(COALESCE(accepted_at,0)+COALESCE(picked_up_at,0)*2+COALESCE(delivered_at,0)*3+COALESCE(cancelled_at,0)*4),0) FROM packages) AS son`,
+          user.id),
+        bot.db.first<{ n: number }>(
+          `SELECT COALESCE(max(n.id),0) AS n FROM notifications n JOIN notif_targets t ON t.notif=n.id WHERE t.account=?`, user.id).catch(() => null),
+        bot.db.first<{ n: number }>(
+          "SELECT COALESCE(max(id),0) AS n FROM claim_offers WHERE courier=?", user.id).catch(() => null),
+      ]);
+      const damga = [sayac?.pool ?? 0, sayac?.mine ?? 0, sayac?.son ?? 0, notifMax?.n ?? 0, teklifMax?.n ?? 0, mine ? 1 : 0].join(".");
+      if (v && v === damga) return json({ unchanged: true, v: damga });
+      const pkgs = await bot.packages("p.courier IS NULL AND p.delivered_at IS NULL AND p.cancelled_at IS NULL");
+      const durumlar = await statesFor(bot, pkgs);
+      const azami = await bot.activeLimit();
+      const bos = await bot.capacity(user.id);
+      const benim = await bot.activePackages(user.id);
+      const rezerve = await bot.db.all<{ package: number; expires: number }>(
+        "SELECT package, expires FROM reservations WHERE courier=? AND expires>?", user.id, bot.nowF());
+      const notif = await apiNotif(bot, user.id);
+      const yanit: Record<string, unknown> = {
+        v: damga,
+        pool: {
+          capacity: { limit: azami, active: benim.length, free: bos, locked: !!user.locked || bos === 0 },
+          priority: rezerve.length ? { package: rezerve[0].package, until: Math.floor(rezerve[0].expires) } : null,
+          packages: pkgs.map((p, i) => pkgDto(p, durumlar[i])),
+        },
+        offers: await apiCourier.offersFor(bot, user.id),
+        notifs: notif,
+      };
+      if (mine) {
+        const sirali = benim.sort((a, b) => a.batch - b.batch || a.number - b.number);
+        const st = await statesFor(bot, sirali);
+        yanit.mine = {
+          packages: sirali.map((p, i) => pkgDto(p, st[i])),
+          summary: {
+            count: sirali.length,
+            ready: sirali.filter((r) => r.picked_up_at).length,
+            waiting_km: sirali.filter((r) => !r.picked_up_at).length,
+            limit: azami,
+          },
+        };
+      }
+      return json(yanit);
+    }
+
     if (path === "/kabul" && method === "POST") {
       if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
       const body = await readBody(request);
@@ -361,18 +429,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     }
 
     if (path === "/bildirimler" && method === "GET") {
-      await bot.db.run("CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, created_at REAL NOT NULL)");
-      await bot.db.run("CREATE TABLE IF NOT EXISTS notif_targets(notif INTEGER NOT NULL, account INTEGER NOT NULL, PRIMARY KEY(notif,account))");
-      await bot.db.run("CREATE TABLE IF NOT EXISTS notif_read(account INTEGER PRIMARY KEY, last_id INTEGER NOT NULL)");
-      for (const col of ["kind TEXT", "ref INTEGER"]) {
-        try { await bot.db.run(`ALTER TABLE notifications ADD COLUMN ${col}`); } catch {}
-      }
-      const rows = await bot.db.all<{ id: number; text: string; created_at: number; kind: string | null; ref: number | null }>(
-        `SELECT n.id, n.text, n.created_at, n.kind, n.ref FROM notifications n JOIN notif_targets t ON t.notif=n.id
-         WHERE t.account=? ORDER BY n.id DESC LIMIT 50`, user.id);
-      const read = await bot.db.first<{ last_id: number }>("SELECT last_id FROM notif_read WHERE account=?", user.id);
-      const lastId = read?.last_id ?? 0;
-      return json({ items: rows, unread: rows.filter((r) => r.id > lastId).length, last_read: lastId });
+      return json(await apiNotif(bot, user.id));
     }
 
     if (path === "/bildirimler/okundu" && method === "POST") {

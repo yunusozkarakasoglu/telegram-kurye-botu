@@ -3,6 +3,7 @@ import type { Account, PackageRow } from "./types";
 import { PRIORITY_SECONDS, TRANSFER_OFFER_SECONDS, TRANSFER_SCOPE_SECONDS, INCOMING_HOLD_SECONDS } from "./constants";
 import { details, keyboard } from "./views";
 import { fmtTime } from "./util";
+import { logEvent } from "./events";
 
 async function eligible(bot: Bot, courier: number): Promise<[Account | null, string | null]> {
   const user = await bot.db.first<Account>("SELECT * FROM accounts WHERE id=? AND role='kurye'", courier);
@@ -98,6 +99,7 @@ export async function takePackages(bot: Bot, user: Account, ids: number[]): Prom
         user.id, ...adaylar)
     : [];
   const taken = alinan.map((r) => r.id);
+  for (const id of taken) await logEvent(bot, id, "kabul", user.id);
   if (!taken.length) return "Alınabilecek paket yok; havuza bakın.";
   await bot.db.run("DELETE FROM pool_select WHERE courier=?", user.id);
   if ((await bot.activeCount(user.id)) >= (await bot.activeLimit())) await bot.lockCourier(user.id, await bot.activeLimit());

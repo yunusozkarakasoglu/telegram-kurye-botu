@@ -79,3 +79,9 @@ CREATE INDEX IF NOT EXISTS idempotency_at ON idempotency(at);
 CREATE TABLE IF NOT EXISTS rate_limit (
   account INTEGER PRIMARY KEY, window_start REAL NOT NULL, count INTEGER NOT NULL DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS package_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, package INTEGER NOT NULL, kind TEXT NOT NULL,
+  at REAL NOT NULL, account INTEGER, meta TEXT
+);
+CREATE INDEX IF NOT EXISTS package_events_pkg ON package_events(package, id);

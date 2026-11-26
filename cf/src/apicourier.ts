@@ -2,6 +2,7 @@ import type { Bot } from "./core";
 import type { Account, PackageRow } from "./types";
 import * as accept from "./accept";
 import * as ops from "./ops";
+import { logEvent } from "./events";
 
 /**
  * Mini App için kurye işlemleri.
@@ -39,6 +40,7 @@ export async function acceptPackages(bot: Bot, user: Account, ids: number[]) {
 export async function setDistance(bot: Bot, user: Account, packageId: number, value: string, courierNote: string | null = null) {
   const r = await ops.updateDistance(bot, user.id, packageId, value, courierNote);
   if (!r.ok) return { ok: false, error: r.error };
+  await logEvent(bot, packageId, "km", user.id, { km: r.distance, fee: r.fee });
   const fresh = await packageById(bot, packageId);
   return { ok: true, fee_tl: fresh?.courier_fee ?? r.fee, distance_km: Number(fresh?.distance_km ?? r.distance), picked_up_at: fresh?.picked_up_at ?? null };
 }
@@ -51,6 +53,7 @@ export async function deliver(bot: Bot, user: Account, packageId: number, paid?:
   if (!rows[0].picked_up_at) return { ok: false, error: "Önce paketi restorandan aldığınızı işaretleyin." };
   if (paid != null) await bot.db.run("UPDATE packages SET payment_received=? WHERE id=? AND courier=?", paid ? 1 : 0, packageId, user.id);
   await ops.advance(bot, user, packageId, "deliver");
+  await logEvent(bot, packageId, "teslim", user.id, { paid: paid ?? null });
   return { ok: true };
 }
 
@@ -68,6 +71,7 @@ export async function cancel(bot: Bot, user: Account, packageId: number, reason:
   await ops.confirmCancel(bot, user);
   const fresh = await packageById(bot, packageId);
   if (!fresh?.cancelled_at) return { ok: false, error: "İptal tamamlanamadı." };
+  await logEvent(bot, packageId, "iptal", user.id, { reason, fee: fresh.courier_fee ?? null });
   return { ok: true, fee_tl: fresh.courier_fee ?? null, cancel_reason: fresh.cancel_reason };
 }
 

@@ -326,3 +326,13 @@ python3 tools/verify_package.py
 | Ağ kesikken not kaydı | `eylemKuyrugu`'na düştü (`tries` arttı) |
 | Ağ gelince (`online`) | Kuyruk boşaldı, not **tek kez** DB'ye yazıldı |
 | e2e | **80/80** · deploy `611454e3` (v136) |
+
+### Faz C doğrulaması (2026-11-26)
+
+| Test | Sonuç |
+|---|---|
+| `/api/durum?mine=1` | `v=8.3.12…3.0.1`, havuz 8 · teklif 0 · bildirim 2 · kendi 3 |
+| Aynı damga ile tekrar | `{"unchanged":true}` (yalnız 3 ucuz sorgu) |
+| 20 yoklama turu (yerel) | eski **3 uç 13,4 s** → yeni **1 uç 6,7 s** → delta **3,7 s** (184 ms/tur) |
+| `package_events` | km kaydı: `{"km":6.5,"fee":300}` yazıldı |
+| e2e | **80/80** · deploy `53f58e01` (v137) |
