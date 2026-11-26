@@ -274,3 +274,11 @@ python3 tools/verify_package.py
 - Geri yükleme: `sqlite3` → 9 hesap / 40 paket / 25 batch doğrulandı.
 - İzleme workflow: `success`, `kod=200`.
 - `tsc --noEmit` ✅ · `ruff` ✅ · e2e **78/78** (son çalıştırma) · asset v119.
+
+### Son doğrulama (2026-11-26, kurye kartı v2)
+
+- Kart başlığı: restoran + bölge + durum; **✕ yok**.
+- Alanlar: … Kurye, **Restoran notu = "Zili çalma, kapıda bekle"**.
+- **Kurye notu** kart içi sarı alan (border `rgb(245,197,66)`), blur'da “Not kaydedildi”, DB `courier_note="Ambalaj zayıf"`.
+- Butonlar: `Km gir · teslim aldım` → `Restoran Konumu | Restoranı Ara` → `Aktar | Paketi iptal et` → `Çıkış` (sheet kapandı).
+- e2e **78/78** · deploy `cd0e7ce5` (v120).

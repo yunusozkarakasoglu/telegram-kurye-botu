@@ -262,28 +262,34 @@
     var st = { t: p.status };
     // Eylemler durum etiketine değil kayıt alanlarına göre belirlenir (etiket sunucudan gelir).
     var cancelled = !!p.cancelled_at, delivered = !!p.delivered_at, picked = !!p.picked_up_at;
-    var mapBtn = !cancelled && !delivered && !picked
+    var duzenlenebilir = opts.own && !cancelled && !delivered;
+    var mapBtn = duzenlenebilir && !picked
       ? '<button class="btn" data-a="harita" data-i="' + p.id + '">Restoran Konumu</button>' : '';
     var callBtn = !delivered && !cancelled && p.restaurant_phone
       ? '<a class="btn" href="tel:' + esc(p.restaurant_phone) + '">Restoranı Ara</a>' : '';
+
     var actions = '';
-    if (opts.own && !cancelled && !delivered) {
-      actions = mapBtn + callBtn;
-      if (!picked) {
-        actions += '<button class="p w" data-a="km" data-i="' + p.id + '">Km gir · teslim aldım</button>';
-      } else {
-        actions += '<button class="p w" data-a="teslim" data-i="' + p.id + '">Teslim ettim</button>';
-      }
+    if (duzenlenebilir) {
+      actions += picked
+        ? '<button class="p w" data-a="teslim" data-i="' + p.id + '">Teslim ettim</button>'
+        : '<button class="p w" data-a="km" data-i="' + p.id + '">Km gir · teslim aldım</button>';
+      if (mapBtn || callBtn) actions += '<div class="two">' + mapBtn + callBtn + '</div>';
       actions += '<div class="two"><button data-a="aktar" data-i="' + p.id + '">Aktar</button>' +
-                 '<button class="d" data-a="iptal" data-i="' + p.id + '">İptal et</button></div>';
+                 '<button class="d" data-a="iptal" data-i="' + p.id + '">Paketi iptal et</button></div>';
     }
     if (opts.pay && !cancelled && delivered && p.payment_received !== true) {
       actions += '<button class="p w" data-a="odeme" data-i="' + p.id + '">Ödeme Aldım</button>';
     }
+    if (opts.closable) actions += '<button class="w" data-a="kapat" data-i="' + p.id + '">Çıkış</button>';
+
     var warn = (S.kmPending && opts.own) ? '<div class="pk-warn">Km girişi bekleniyor. Önce km girişini tamamlayın.</div>' : '';
+    var kuryeNotu = duzenlenebilir
+      ? '<div class="notebox cnote"><textarea class="cnote-input" data-note="' + p.id + '" rows="2" placeholder="Not ekle…">' + esc(p.courier_note || '') + '</textarea></div>'
+      : (p.courier_note ? '<dl class="pk-fields"><dt>Kurye notu</dt><dd>' + esc(p.courier_note) + '</dd></dl>' : '');
+
     return '<div class="pk">' +
       '<div class="pk-hd"><b>' + esc(p.restaurant) + '</b><em class="lb r">' + esc(p.region || '—') + '</em>' +
-        UI.statusTag(p.status) + (opts.closable ? '<button class="pkx" data-close="1" title="Kapat">✕</button>' : '') + '</div>' +
+        UI.statusTag(p.status) + '</div>' +
       '<div class="pk-bd"><dl class="pk-fields">' +
         '<dt>Sipariş no</dt><dd>Talep #' + p.batch + '-' + p.number + '</dd>' +
         '<dt>Restoran</dt><dd>' + esc(p.restaurant) + '</dd>' +
@@ -299,21 +305,31 @@
         '<dt>Durum</dt><dd>' + esc(st.t) + '</dd>' +
         (p.cancelled_at ? '<dt>İptal eden</dt><dd>' + esc((p.cancelled_by_role === 'restoran' ? 'Restoran' : p.cancelled_by_role === 'kurye' ? 'Kurye' : 'Yönetici') + ' · ' + (p.cancelled_by_name || '—')) + '</dd>' : '') +
         '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
+        '<dt>Restoran notu</dt><dd>' + esc(p.note || '—') + '</dd>' +
       '</dl>' +
-      '<div class="notebox"><small>Restoran notu</small><div>' + esc(p.note || '') + '</div></div>' +
-      '<div class="notebox cnote"><small>Kurye notu' +
-        (!cancelled && opts.own ? '<button class="notedit" data-a="not" data-i="' + p.id + '">' + (p.courier_note ? 'Düzenle' : '＋ Not ekle') + '</button>' : '') +
-        '</small><div>' + esc(p.courier_note || '') + '</div></div>' +
+      kuryeNotu +
       (p.transfer_from ? '<p class="note">Aktarma bilgisi: önceki kurye ' + esc(p.transfer_from) + '</p>' : '') + warn + '</div>' +
       (actions ? '<div class="pk-ft">' + actions + '</div>' : '') +
     '</div>';
   }
 
   function bindPkgActions(root, list) {
+    Array.prototype.forEach.call(root.querySelectorAll('[data-note]'), function (ta) {
+      var onceki = ta.value.trim();
+      ta.onblur = function () {
+        var yeni = ta.value.trim();
+        if (yeni === onceki) return;
+        API.notEkle(Number(ta.getAttribute('data-note')), yeni).then(function () {
+          onceki = yeni;
+          UI.toast('Not kaydedildi', 'success');
+        }).catch(function (e) { UI.toast(e.message || 'Not kaydedilemedi', 'error'); });
+      };
+    });
     Array.prototype.forEach.call(root.querySelectorAll('button[data-a]'), function (b) {
       b.onclick = function () {
         var a = b.getAttribute('data-a'), id = b.getAttribute('data-i');
         var p = (list || []).filter(function (x) { return String(x.id) === String(id); })[0] || findPkg(id);
+        if (a === 'kapat') { UI.closeSheet(); return; }
         if (a === 'harita') {
           if (p && p.map_url) TG.openLink(p.map_url);
           else if (p) TG.map((p.restaurant || '') + ' ' + (p.region || ''));
