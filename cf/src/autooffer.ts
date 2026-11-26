@@ -7,6 +7,25 @@ export async function tick(bot: Bot) {
   await expire(bot);
   await warnWaiting(bot);
   await createOffers(bot);
+  await alertBurst(bot);
+}
+
+/** Faz A4: D1 aşırı yüklenme uyarısı — 10 dk'da >5 "overloaded" logu varsa yöneticiye haber ver. */
+export async function alertBurst(bot: Bot) {
+  try {
+    await bot.db.ensureColumns();
+    const on = bot.nowF() - 600;
+    const row = await bot.db.first<{ n: number }>(
+      "SELECT count(*) AS n FROM app_logs WHERE at>=? AND message LIKE '%overloaded%'", on);
+    if (!row?.n || row.n < 5) return;
+    const son = await bot.db.first<{ value: number }>("SELECT value FROM settings WHERE key='last_burst_alert'");
+    if (son && bot.nowF() - son.value < 1800) return; // 30 dk'da bir
+    await bot.db.run("INSERT OR REPLACE INTO settings(key,value) VALUES ('last_burst_alert',?)", bot.now());
+    const admin = await bot.db.first<Account>("SELECT * FROM accounts WHERE role='yonetici' ORDER BY id LIMIT 1");
+    if (!admin) return;
+    await bot.send(admin.id, `⚠️ D1 aşırı yük uyarısı\nSon 10 dakikada ${row.n} kez "overloaded" hatası alındı.\n` +
+      `Yoğunluk artıyor; istekler tekrar denendi. Gerekirse yoklama sıklığını artırın.`);
+  } catch {}
 }
 
 async function expire(bot: Bot) {

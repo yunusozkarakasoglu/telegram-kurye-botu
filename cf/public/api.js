@@ -340,6 +340,11 @@
   /* =======================  GERÇEK İSTEMCİ  ======================= */
   var actAs = sessionStorage.getItem('actAs') || new URLSearchParams(location.search).get('mode') === 'courier' ? 'kurye' : '';
   if (actAs) sessionStorage.setItem('actAs', actAs);
+  function jitter(ms, oran) {
+    var s = Math.round(ms * (oran == null ? 0.2 : oran));
+    return ms + Math.round((Math.random() * 2 - 1) * s);
+  }
+
   function headers() {
     var h = { 'Content-Type': 'application/json' };
     var tg = window.TG && window.TG.app;
@@ -364,7 +369,8 @@
       if (window.__kuryeLogs.length > 100) window.__kuryeLogs.shift();
     } catch (e) {}
   }
-  function req(method, path, body) {
+  function req(method, path, body, _deneme) {
+    var deneme = _deneme || 0;
     return fetch(path, {
       method: method,
       headers: headers(),
@@ -373,7 +379,15 @@
     }).then(function (r) {
       if (!r.ok) logLine('HTTP ' + r.status + ' ' + method + ' ' + path);
       return r.json().catch(function () { return {}; }).then(function (j) {
-        if (!r.ok) { var e = new Error(j.error || ('Hata ' + r.status)); e.status = r.status; e.code = j.code; throw e; }
+        if (!r.ok) {
+          var e = new Error(j.error || ('Hata ' + r.status)); e.status = r.status; e.code = j.code;
+          // Faz A3: geçici sunucu hatasında bir kez sessiz tekrar
+          if ((r.status === 500 || r.status === 503 || r.status === 429) && deneme < 1) {
+            return new Promise(function (res) { setTimeout(res, 1200); })
+              .then(function () { return req(method, path, body, deneme + 1); });
+          }
+          throw e;
+        }
         return j;
       });
     });
@@ -505,5 +519,6 @@
       };
     });
 
+  Api.jitter = jitter;
   window.API = Api;
 })();

@@ -306,3 +306,13 @@ python3 tools/verify_package.py
 - Sekmeler tek satır: `Fiyatlandırma · Kurallar · Tanılama · Logs` (4 × 182 px, top=98).
 - Kurallar → paket limiti: **“Limiti Kaydet” butonu yok**; değer 4 yapılınca “Limit kaydedildi: 4” → kurye `/api/sistem` `limit=4`; 3'e geri alındı.
 - deploy `c7d286dd`/`e7c499e` (v134).
+
+### Yük ölçümü (2026-11-26, Faz A)
+
+| Test | Sonuç |
+|---|---|
+| 300 istek / 30 paralel (retry öncesi) | 248×403 + **~52×500** (`D1 DB is overloaded`) |
+| 300 istek / 30 paralel (retry sonrası) | **300×403, 0×500** |
+| 600 istek / 60 paralel (burst) | 161×500 → D1 10 sn penceresi; Faz B/C gerekli |
+| İstemci yoklama | 5 sn → **15 sn ± %20 jitter**, sekme gizliyken durur |
+| e2e | **80/80** · deploy `23b47dc4` (v135) |

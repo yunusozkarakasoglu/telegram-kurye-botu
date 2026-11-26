@@ -1843,7 +1843,14 @@
     }
   }
   refresh(true);
-  setInterval(function () { refresh(false); }, 5000);
+  // Faz A2: 15 sn ± %20 jitter; sekme gizliyken istek atılmaz
+  (function dongu() {
+    var gecikme = (window.API && API.jitter) ? API.jitter(15000, 0.2) : 15000;
+    setTimeout(function () {
+      if (!document.hidden) refresh(false);
+      dongu();
+    }, gecikme);
+  })();
   setInterval(tick, 1000);
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden) refresh(false);
@@ -2040,7 +2047,14 @@
         }
       }
       refresh(true);
-      setInterval(function () { refresh(false); }, 5000);
+      // Faz A2: 15 sn ± %20 jitter (senkron dalgayı kırar), sekme gizliyken durur
+      (function dongu() {
+        var gecikme = (window.API && API.jitter) ? API.jitter(15000, 0.2) : 15000;
+        setTimeout(function () {
+          if (!document.hidden) refresh(false);
+          dongu();
+        }, gecikme);
+      })();
       setInterval(tickElapsed, 30000);
       setInterval(tick, 1000);
       document.addEventListener('visibilitychange', function () {

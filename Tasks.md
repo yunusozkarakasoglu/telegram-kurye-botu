@@ -48,6 +48,11 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] **Faz A (performans)**: D1 retry+backoff, istemci 15 sn±jitter + 5xx tekrarı, overload alarmı (`23b47dc4`, v135). 30 paralel → 0 hata.
+- [ ] **Faz B**: idempotency + istemci eylem kuyruğu + batch yazma + hız sınırı.
+- [ ] **Faz C**: `/api/durum?since=` delta yoklama, `package_events`, 304.
+- [ ] **Faz D**: Telegram `outbox` kuyruğu + dead-letter.
+- [ ] **Faz E**: 30/60/100 paralel yük testi + kaos + kapasite raporu.
 - [x] Yönetici menüsünde **Ayarlar → Sistem**; sekmeler tek satır (4); kurye paket limiti Kurallar'da ve **anlık kaydediyor** (`e7c499e`, v134).
 - [x] Kurallar senkronu: yönetici paneli boş görünme hatası düzeltildi (`d.settings || d`), varsayılanlar D1'e seed edildi; panelden düzenleme kurye+restoran Sistem ekranına anında yansıyor (`7d0aa3de`, v131).
 - [x] Sistem verileri dinamik: yönetici Ayarlar 4 sekme (fiyatlandırma/kurallar/tanılama/logs), kurallar+h saatler düzenlenebilir, `app_logs` tablosu ve log listesi; kurye/restoran Sistem'de yalnız fiyat+kurallar (`d478d7c4`, v130).
