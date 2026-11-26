@@ -527,3 +527,5 @@ header h1{display:inline}
 
 .notebox.cnote{border-color:#e6a817;background:rgba(230,168,23,.10)}
 .notebox.cnote small{color:#b07d00}
+
+.notebox textarea{margin-top:4px;border-color:#e6a817;background:var(--card)}

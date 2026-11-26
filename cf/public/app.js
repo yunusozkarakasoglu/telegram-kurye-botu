@@ -689,8 +689,9 @@
       '<h2>Teslim aldım · #' + p.batch + '-' + p.number + '</h2>' +
       '<p>Teslimat mesafesini kilometre olarak girin.</p>' +
       '<input id="kmin" type="number" inputmode="decimal" step="0.1" min="0" placeholder="Örn. 3,5">' +
-      '<div class="fld" style="margin-top:10px"><label>Kurye notu (opsiyonel)</label>' +
-        '<textarea id="knote" rows="2" placeholder="Ör. ambalaj zayıf, geç teslim riski…"></textarea></div>' +
+      '<div class="notebox cnote" style="margin-top:10px"><small>📝 Kurye notu (opsiyonel)</small>' +
+        '<textarea id="knote" rows="2" placeholder="Ör. ambalaj zayıf, geç teslim olabilir, adres tarifi…"></textarea>' +
+        '<div class="note" style="margin-top:4px">Yazdığınız not restoran ve yönetici kartında da görünür.</div></div>' +
       '<div class="err" id="kerr"></div><div id="kpv"></div>' +
       '<button class="p" id="kok">Onayla</button>' +
       '<button class="d" id="kback">Vazgeç</button>',
