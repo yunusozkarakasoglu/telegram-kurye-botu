@@ -35,8 +35,8 @@ body.admin{background:var(--el2);display:block}
 
 /* ---------- Mini App iskeleti ---------- */
 .app{width:100%;max-width:440px;height:100%;display:flex;flex-direction:column;background:var(--bg);position:relative}
-header{position:relative;padding:calc(14px + var(--sat)) 16px 8px;flex:none}
-h1{font-size:20px;font-weight:600;margin:0;letter-spacing:-.2px}
+header{position:relative;padding:calc(14px + var(--sat)) 16px 8px;flex:none;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;min-width:0}
+h1{font-size:20px;font-weight:600;margin:0;letter-spacing:-.2px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 header p{margin:2px 0 0;color:var(--t2);font-size:13px}
 main{flex:1;min-height:0;overflow-y:auto;padding:4px 12px 16px;-webkit-overflow-scrolling:touch}
 .seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;background:var(--ln);padding:3px;border-radius:10px;margin:4px 0 0}
@@ -44,6 +44,7 @@ main{flex:1;min-height:0;overflow-y:auto;padding:4px 12px 16px;-webkit-overflow-
 .seg button.on{background:var(--card);color:var(--tx);font-weight:600}
 .seg.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 .seg.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.seg.four button{font-size:11px;padding:4px 2px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .seg.five{grid-template-columns:repeat(5,minmax(0,1fr))}
 .seg.five button{font-size:11px;padding:4px 2px}
 .grp{display:inline-block;font-size:15px;font-weight:600;padding:5px 14px;border-radius:99px;margin:16px 4px 8px}
@@ -194,7 +195,7 @@ body.sheet-open #toast{bottom:auto;top:calc(14px + var(--sat));z-index:12}
 .row .acts .sm{white-space:nowrap}
 .nv-ref{opacity:.85}
 header{position:relative}
-#hdr-right{position:absolute;right:14px;top:0}
+#hdr-right{position:static;display:flex;align-items:center;gap:6px}
 .hdr-sw{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2);margin:0}
 .hdr-sw input{width:38px;height:22px;accent-color:var(--ok);appearance:none;background:var(--ln);border-radius:99px;position:relative;cursor:pointer;transition:.2s}
 .hdr-sw input:checked{background:var(--ok)}
@@ -263,7 +264,7 @@ header{position:relative}
 .offeritem .act{display:flex;gap:6px;margin-top:6px}
 
 .hicons{display:flex;gap:6px;align-items:center}
-.ico{position:relative;border:1px solid var(--ln);background:var(--el);border-radius:10px;width:38px;height:38px;font-size:18px;cursor:pointer}
+.ico{position:relative;border:1px solid var(--ln);background:var(--el);border-radius:10px;width:36px;height:36px;font-size:17px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .ico em{position:absolute;top:-4px;right:-4px;background:var(--er);color:#fff;font-style:normal;font-size:11px;font-weight:700;border-radius:99px;padding:1px 5px}
 .notif{border-bottom:1px solid var(--ln);padding:8px 0}
 .notif small{color:var(--t2);display:block;font-size:11px}
@@ -345,7 +346,7 @@ header{display:flex;align-items:center;gap:8px}
 #wst{color:var(--t2);white-space:nowrap;font-size:11px}
 #who:not(.online):not(.busy) #wst{opacity:.75}
 
-.hstats{display:flex;align-items:center;gap:8px;margin-left:auto}
+.hstats{display:flex;align-items:center;gap:8px;margin-left:auto;flex:none;min-width:0}
 #pkb{display:inline-flex;align-items:center;gap:2px;font-size:14px;font-weight:600}
 #pkb b{font-size:13px}
 #sysd{width:8px;height:8px;border-radius:50%;background:#1fa855;display:inline-block;flex:none}
@@ -512,9 +513,10 @@ textarea{width:100%;font:inherit;font-size:15px;padding:10px 12px;border:1px sol
 .rulecard li{font-size:13px;line-height:1.5;margin-bottom:6px}
 .rulecard li:last-child{margin-bottom:0}
 
-.modbadge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+.modbadge{display:inline-flex;align-items:center;flex:none;white-space:nowrap;
+  font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;line-height:1.4;
   padding:2px 7px;border-radius:6px;background:var(--el2,rgba(127,127,127,.12));color:var(--t2);
-  border:1px solid var(--ln);margin-bottom:2px}
+  border:1px solid var(--ln)}
 header h1{display:inline}
 
 .shead-acts{display:flex;align-items:center;gap:6px;flex:0 0 auto;margin-left:auto;width:auto}

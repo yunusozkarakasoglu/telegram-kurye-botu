@@ -396,3 +396,14 @@ python3 tools/verify_package.py
 | Paketi olmayan kurye | yoklama her 15 sn'de onu **çevrimdışı** yapıyordu | Yoklama durum değiştirmiyor |
 
 Doğrulama: 5× `GET /api/durum` → hepsi 200, `online` korunuyor; e2e **85/85** (3 yeni regresyon testi: havuz döndürme, `v` damgası, `unchanged`, çevrimiçi kalma). Deploy `ef1a90cd` (v141).
+
+### Header düzeni (2026-11-27, v143)
+
+| Önce | Sonra |
+|---|---|
+| `#hdr-right{position:absolute;right:14px;top:0}` → 🔔, 📦 ve durum noktasının **üstüne** biniyordu | `#hdr-right{position:static}` → ikonlar `.hstats` içinde sırayla: `📦 0 · ● · 🔔` |
+| `KURYE` rozeti daralıp kırpılıyordu | `inline-flex; flex:none; white-space:nowrap` |
+| 4'lü segment etiketleri iki satıra kırılıyordu | `font-size:11px; white-space:nowrap; ellipsis` |
+| Başlık uzun isimde taşıyordu | `header{display:flex}` + `h1{overflow:hidden;text-overflow:ellipsis}` |
+
+Doğrulama: 390 px viewport ekran görüntüsü — tek satır, çakışma yok · e2e **85/85** · deploy `afd2ccbf` (v143).
