@@ -5,6 +5,9 @@ on:
     - cron: '0 0 * * *'   # her gün 03:00 TR (00:00 UTC)
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   yedek:
     runs-on: ubuntu-latest
