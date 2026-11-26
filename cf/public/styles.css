@@ -568,3 +568,11 @@ header h1{display:inline}
   min-height:24px;margin-left:6px;padding:0;border-radius:6px;border:1px solid #d99a1b;background:transparent;
   color:#b07d00;font-size:12px;vertical-align:middle}
 .pk-fields dd{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+
+.pk-fields dd .pk-edit{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
+  border:1.5px dashed #d99a1b;border-radius:8px;padding:3px 6px;min-height:26px}
+.pk-fields dd .pk-edit > span{min-width:0;overflow-wrap:anywhere}
+.pk-edit-note > span{white-space:pre-wrap;line-height:1.35}
+.pk-fields .mini-edit{flex:none;min-height:0;padding:1px 7px;font-size:10px;line-height:1.6;border-radius:5px;
+  border:1px solid #e6a817;background:#e6a817;color:#1b1b1b;font-weight:700}
+.pk-fields .mini-edit:active{background:#d99a1b}

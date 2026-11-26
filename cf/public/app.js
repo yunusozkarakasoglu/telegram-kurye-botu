@@ -271,9 +271,7 @@
     var actions = '';
     if (duzenlenebilir) {
       actions += picked
-        ? '<button class="p w" data-a="teslim" data-i="' + p.id + '">Teslim ettim</button>' +
-          '<button class="w" data-a="km" data-i="' + p.id + '">Km düzenle (' +
-            (p.distance_km == null ? '—' : kmf(p.distance_km)) + ')</button>'
+        ? '<button class="p w" data-a="teslim" data-i="' + p.id + '">Teslim ettim</button>'
         : '<button class="p w" data-a="km" data-i="' + p.id + '">Km gir · teslim aldım</button>';
       if (mapBtn || callBtn) actions += '<div class="two">' + mapBtn + callBtn + '</div>';
       actions += '<div class="two"><button data-a="aktar" data-i="' + p.id + '">Aktar</button>' +
@@ -285,8 +283,10 @@
     if (opts.closable) actions += '<button class="w pkexit" data-a="kapat" data-i="' + p.id + '">Çıkış</button>';
 
     var warn = (S.kmPending && opts.own) ? '<div class="pk-warn">Km girişi bekleniyor. Önce km girişini tamamlayın.</div>' : '';
-    var kuryeNotuSatir = '<dt>Kurye notu</dt><dd>' + esc(p.courier_note || '—') +
-      (duzenlenebilir ? '<button class="notedit" data-a="not" data-i="' + p.id + '" title="Kurye notunu düzenle">✎</button>' : '') + '</dd>';
+    var kuryeNotuSatir = duzenlenebilir
+      ? '<dt>Kurye notu</dt><dd><span class="pk-edit pk-edit-note"><span>' + esc(p.courier_note || '—') + '</span>' +
+        '<button class="mini-edit" data-a="not" data-i="' + p.id + '">Düzenle</button></span></dd>'
+      : '<dt>Kurye notu</dt><dd>' + esc(p.courier_note || '—') + '</dd>';
 
     return '<div class="pk">' +
       '<div class="pk-hd"><b>' + esc(p.restaurant) + '</b><em class="lb r">' + esc(p.region || '—') + '</em>' +
@@ -300,7 +300,10 @@
         '<dt>Kabul</dt><dd>' + dt(p.accepted_at) + '</dd>' +
         '<dt>Alım</dt><dd>' + dt(p.picked_up_at) + '</dd>' +
         '<dt>Teslim</dt><dd>' + dt(p.delivered_at) + '</dd>' +
-        '<dt>Mesafe</dt><dd>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</dd>' +
+        '<dt>Mesafe</dt><dd>' + (picked && duzenlenebilir
+          ? '<span class="pk-edit"><span>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</span>' +
+            '<button class="mini-edit" data-a="km" data-i="' + p.id + '">Düzenle</button></span>'
+          : (p.distance_km == null ? '—' : kmf(p.distance_km))) + '</dd>' +
         '<dt>Paket ücreti</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +
         '<dt>Ödeme (hakediş)</dt><dd>' + (p.payment_received === true ? 'Alındı' : p.payment_received === false ? 'Alınmadı' : '—') + '</dd>' +
         '<dt>Durum</dt><dd>' + esc(st.t) + '</dd>' +
@@ -1262,7 +1265,10 @@
         '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
         '<dt>Bölge</dt><dd>' + esc(p.region || '—') + '</dd>' +
         '<dt>Ödeme</dt><dd>' + esc(p.payment || '—') + '</dd>' +
-        '<dt>Mesafe</dt><dd>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</dd>' +
+        '<dt>Mesafe</dt><dd>' + (picked && duzenlenebilir
+          ? '<span class="pk-edit"><span>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</span>' +
+            '<button class="mini-edit" data-a="km" data-i="' + p.id + '">Düzenle</button></span>'
+          : (p.distance_km == null ? '—' : kmf(p.distance_km))) + '</dd>' +
         '<dt>Ücret</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +
         '<dt>Hakediş</dt><dd>' + (p.payment_received === true ? 'Alındı' : p.payment_received === false ? 'Alınmadı' : '—') + '</dd>' +
       '</dl>' +
