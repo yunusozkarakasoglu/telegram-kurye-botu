@@ -35,6 +35,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] Kurye Geçmiş iki sekmeye ayrıldı: **Siparişler** + **Kazanç**; Kazanç menüden kaldırılıp buraya taşındı (`fa599ee8`, v97).
 - [x] Km girişinde **Kurye notu** alanı; not tüm kartlarda (kurye/restoran/yönetici/geçmiş) amber kutuda (`290ec9d0`, v96). E2E **75/75**.
 - [x] Filtre panelleri: temizle küçük ikon (🧹) + küçük kırmızı ✕; kurye Geçmiş hızlı filtre butonları kaldırıldı.
 - [x] Filtre standardı: Canlı Saha ve kurye Geçmiş aynı filtre paneline geçti (Zaman/Durum/Ödeme/Grupla); Geçmiş’te Paketler-Ödeme sekmeleri kaldırıldı (`02bdd167`, v91). `/api/yonetim/siparisler` artık `from/to` kabul ediyor.

@@ -29,6 +29,7 @@
     kazancRange: 'today',
     kazancDate: '',
     kazancPaid: 'all',
+    histTab: 'siparis',
     sistemTab: 'fiyat',
     lateGroup: '',
     notifs: { items: [], unread: 0 },
@@ -439,8 +440,21 @@
       if (f.pay === 'yok' && p.payment_received !== false) return false;
       return true;
     });
-    setHeader('Geçmiş', items.length + ' kayıt');
     var main = $('mn');
+    var htab = S.histTab || 'siparis';
+    var hseg = '<div class="seg two" style="margin-bottom:8px">' +
+      '<button data-ht="siparis" class="' + (htab === 'siparis' ? 'on' : '') + '">Siparişler</button>' +
+      '<button data-ht="kazanc" class="' + (htab === 'kazanc' ? 'on' : '') + '">Kazanç</button></div>';
+    if (htab === 'kazanc') {
+      setHeader('Geçmiş', 'Kazanç');
+      main.innerHTML = hseg + '<div id="kz-host"></div>';
+      Array.prototype.forEach.call(main.querySelectorAll('[data-ht]'), function (b) {
+        b.onclick = function () { S.histTab = b.getAttribute('data-ht'); render(); };
+      });
+      renderKazanc($('kz-host'));
+      return;
+    }
+    setHeader('Geçmiş', items.length + ' kayıt');
     var advCount = (f.when ? 1 : 0) + (f.status ? 1 : 0) + (f.pay ? 1 : 0) + (f.grup ? 1 : 0);
     var bar = '<div class="filterbar"><button id="hf-open">⚙ Filtre' + (advCount ? ' (' + advCount + ')' : '') + '</button>' +
       (advCount ? '<button id="hf-clear">✕ Temizle</button>' : '') + '</div>';
@@ -468,7 +482,10 @@
       }).join('');
     }
 
-    main.innerHTML = bar + body;
+    main.innerHTML = hseg + bar + body;
+    Array.prototype.forEach.call(main.querySelectorAll('[data-ht]'), function (b) {
+      b.onclick = function () { S.histTab = b.getAttribute('data-ht'); render(); };
+    });
     var hf = $('hf-open');
     if (hf) hf.onclick = histFiltreSheet;
     var hc = $('hf-clear');
@@ -542,9 +559,10 @@
     };
   }
 
-  function renderKazanc() {
+  function renderKazanc(host) {
     var e = S.earnings || { total_tl: 0, count: 0, total_km: 0 };
-    setHeader('Kazançlarım', e.period || '');
+    var hedef = host || $('mn');
+    if (!host) setHeader('Kazançlarım', e.period || '');
     var seg = '<div class="seg three">' + [['today', 'Bugün'], ['yesterday', 'Dün'], ['all', 'Tümü']].map(function (r) {
       return '<button data-kr="' + r[0] + '" class="' + (!S.kazancDate && S.kazancRange === r[0] ? 'on' : '') + '">' + r[1] + '</button>';
     }).join('') + '</div>' +
@@ -564,36 +582,42 @@
         (p.payment_received === true ? 'ödeme alındı' : p.payment_received === false ? 'ödeme alınmadı' : 'ödeme —') + '</small></span>' +
         '<em>' + (p.fee_tl == null ? '' : money(p.fee_tl)) + '</em></button>';
     }).join('') + '</div>' : '<div class="empty">Bu dönemde paket yok.</div>';
-    $('mn').innerHTML = seg + paidSeg +
+    hedef.innerHTML = seg + paidSeg +
       '<div class="krow">' +
         '<div class="big"><span>Toplam hakediş</span><div>' + money(e.total_tl) + '</div></div>' +
         '<div class="big"><span>Teslim paket</span><div>' + (e.count || 0) + '</div></div>' +
         '<div class="big"><span>Toplam km</span><div>' + (Math.round((e.total_km || 0) * 10) / 10) + '</div></div>' +
       '</div>';
-    $('mn').innerHTML += listHtml;
-    Array.prototype.forEach.call($('mn').querySelectorAll('[data-kr]'), function (b) {
+    hedef.innerHTML += listHtml;
+    Array.prototype.forEach.call(hedef.querySelectorAll('[data-kr]'), function (b) {
       b.onclick = function () { S.kazancRange = b.getAttribute('data-kr'); S.kazancDate = ''; loadKazanc(); };
     });
-    Array.prototype.forEach.call($('mn').querySelectorAll('[data-kp]'), function (b) {
-      b.onclick = function () { S.kazancPaid = b.getAttribute('data-kp'); renderKazanc(); };
+    Array.prototype.forEach.call(hedef.querySelectorAll('[data-kp]'), function (b) {
+      b.onclick = function () { S.kazancPaid = b.getAttribute('data-kp'); renderKazanc(host); };
     });
-    Array.prototype.forEach.call($('mn').querySelectorAll('[data-kopen]'), function (b) {
+    Array.prototype.forEach.call(hedef.querySelectorAll('[data-kopen]'), function (b) {
       b.onclick = function () {
         var p = items.filter(function (x) { return String(x.id) === b.getAttribute('data-kopen'); })[0];
         if (!p) return;
-        var sh = UI.openSheet(pkgCard(p, { pay: true, closable: true }), { onClose: function () { renderKazanc(); } });
+        var kapat = function () { host ? renderGecmis() : renderKazanc(); };
+        var sh = UI.openSheet(pkgCard(p, { pay: true, closable: true }), { onClose: kapat });
         var cx3 = sh.querySelector('[data-close]');
         if (cx3) cx3.onclick = function () { UI.closeSheet(); };
         bindPkgActions(sh, [p]);
       };
     });
-    $('kdate').onchange = function () { S.kazancDate = $('kdate').value; loadKazanc(); };
+    var kd = hedef.querySelector('#kdate');
+    if (kd) kd.onchange = function () { S.kazancDate = kd.value; loadKazanc(); };
     $('cta').innerHTML = '';
-    nav(courierTabs(), { havuz: S.pool ? S.pool.packages.length : 0 });
+    if (!host) nav(courierTabs(), { havuz: S.pool ? S.pool.packages.length : 0 });
   }
 
   function loadKazanc() {
-    API.kazanc(S.kazancRange, S.kazancDate).then(function (r) { S.earnings = r; renderKazanc(); }).catch(function () {});
+    API.kazanc(S.kazancRange, S.kazancDate).then(function (r) {
+      S.earnings = r;
+      if (S.tab === 'gecmis' && S.histTab === 'kazanc') { renderGecmis(); return; }
+      renderKazanc();
+    }).catch(function () {});
   }
 
   /* ---------------- KM / İPTAL / AKTAR ---------------- */
@@ -1531,7 +1555,6 @@
     if (!d) return;
     var role = curRole();
     var pages = role === 'restoran' ? restaurantTabs() : courierTabs();
-    if (role !== 'restoran') pages = pages.concat([['kazanc', '₺', 'Kazanç']]);
     var h = '<h3>Sayfalar</h3>' + pages.map(function (p) {
       return '<button data-dt="' + p[0] + '" class="' + (S.tab === p[0] ? 'on' : '') + '"><i>' + p[1] + '</i>' + p[2] + '</button>';
     }).join('');
@@ -1583,7 +1606,6 @@
     else if (S.tab === 'profil') renderProfil();
     else if (S.tab === 'paketlerim') renderPaketlerim();
     else if (S.tab === 'gecmis') renderGecmis();
-    else if (S.tab === 'kazanc') renderKazanc();
     else renderHavuz();
     renderIcons();
     renderDrawer();
@@ -1608,7 +1630,7 @@
     jobs.push(API.bildirimler().then(function (r) { S.notifs = r; }).catch(function () {}));
     if (full || S.tab === 'paketlerim') jobs.push(API.paketlerim().then(function (r) { S.mine = r; }));
     if (full || S.tab === 'gecmis') jobs.push(API.gecmis().then(function (r) { S.history = r; }));
-    if (full || S.tab === 'kazanc') jobs.push(API.kazanc(S.kazancRange, S.kazancDate).then(function (r) { S.earnings = r; }));
+    if (full || S.tab === 'kazanc' || (S.tab === 'gecmis' && S.histTab === 'kazanc')) jobs.push(API.kazanc(S.kazancRange, S.kazancDate).then(function (r) { S.earnings = r; }));
     return Promise.all(jobs).then(function () {
       render();
       if (curRole() === 'kurye' && (S.offers || []).length && !UI.sheetOpen()) offersPopup();
