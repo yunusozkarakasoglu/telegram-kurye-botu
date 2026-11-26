@@ -283,9 +283,8 @@
     if (opts.closable) actions += '<button class="w pkexit" data-a="kapat" data-i="' + p.id + '">Çıkış</button>';
 
     var warn = (S.kmPending && opts.own) ? '<div class="pk-warn">Km girişi bekleniyor. Önce km girişini tamamlayın.</div>' : '';
-    var kuryeNotu = duzenlenebilir
-      ? '<div class="notebox cnote"><textarea class="cnote-input" data-note="' + p.id + '" rows="2" placeholder="Not ekle…">' + esc(p.courier_note || '') + '</textarea></div>'
-      : (p.courier_note ? '<dl class="pk-fields"><dt>Kurye notu</dt><dd>' + esc(p.courier_note) + '</dd></dl>' : '');
+    var kuryeNotuSatir = '<dt>Kurye notu</dt><dd>' + esc(p.courier_note || '—') +
+      (duzenlenebilir ? '<button class="notedit" data-a="not" data-i="' + p.id + '" title="Kurye notunu düzenle">✎</button>' : '') + '</dd>';
 
     return '<div class="pk">' +
       '<div class="pk-hd"><b>' + esc(p.restaurant) + '</b><em class="lb r">' + esc(p.region || '—') + '</em>' +
@@ -306,25 +305,14 @@
         (p.cancelled_at ? '<dt>İptal eden</dt><dd>' + esc((p.cancelled_by_role === 'restoran' ? 'Restoran' : p.cancelled_by_role === 'kurye' ? 'Kurye' : 'Yönetici') + ' · ' + (p.cancelled_by_name || '—')) + '</dd>' : '') +
         '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
         '<dt>Restoran notu</dt><dd>' + esc(p.note || '—') + '</dd>' +
+        kuryeNotuSatir +
       '</dl>' +
-      kuryeNotu +
       (p.transfer_from ? '<p class="note">Aktarma bilgisi: önceki kurye ' + esc(p.transfer_from) + '</p>' : '') + warn + '</div>' +
       (actions ? '<div class="pk-ft">' + actions + '</div>' : '') +
     '</div>';
   }
 
   function bindPkgActions(root, list) {
-    Array.prototype.forEach.call(root.querySelectorAll('[data-note]'), function (ta) {
-      var onceki = ta.value.trim();
-      ta.onblur = function () {
-        var yeni = ta.value.trim();
-        if (yeni === onceki) return;
-        API.notEkle(Number(ta.getAttribute('data-note')), yeni).then(function () {
-          onceki = yeni;
-          UI.toast('Not kaydedildi', 'success');
-        }).catch(function (e) { UI.toast(e.message || 'Not kaydedilemedi', 'error'); });
-      };
-    });
     Array.prototype.forEach.call(root.querySelectorAll('button[data-a]'), function (b) {
       b.onclick = function () {
         var a = b.getAttribute('data-a'), id = b.getAttribute('data-i');

@@ -563,3 +563,8 @@ header h1{display:inline}
 
 .pk-ft .pkexit{background:var(--er);border-color:var(--er);color:#fff;font-weight:600}
 .pk-ft .pkexit:active{background:#c0353a;border-color:#c0353a}
+
+.pk-fields dd .notedit{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+  min-height:24px;margin-left:6px;padding:0;border-radius:6px;border:1px solid #d99a1b;background:transparent;
+  color:#b07d00;font-size:12px;vertical-align:middle}
+.pk-fields dd{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
