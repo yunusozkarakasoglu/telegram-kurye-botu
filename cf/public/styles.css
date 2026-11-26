@@ -531,3 +531,10 @@ header h1{display:inline}
 .notebox.cnote small{color:#b07d00}
 
 .notebox textarea{margin-top:4px;border-color:#e6a817;background:var(--card)}
+
+/* havuz tek satır bilgi kartı */
+.poolinfo{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;padding:9px 12px;
+  border:1px solid #d99a1b;background:linear-gradient(90deg,rgba(217,154,27,.16),rgba(217,154,27,.06));
+  border-radius:12px;font-size:13px;line-height:1.3}
+.poolinfo .pill{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;
+  background:#e6a817;color:#1b1b1b;font-weight:700;font-size:13px}

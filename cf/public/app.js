@@ -121,6 +121,11 @@
       .map(function (s) { return '<button data-g="' + s[0] + '" class="' + (S.view === s[0] ? 'on' : '') + '">' + s[1] + '</button>'; })
       .join('') + '</div>';
 
+    var _perRest = {};
+    L.forEach(function (p) { _perRest[p.restaurant] = 1; });
+    h += '<div class="poolinfo"><span class="pill">' + Object.keys(_perRest).length + ' restoran</span>da ' +
+      '<span class="pill">' + L.length + ' paket</span> beklemektedir.</div>';
+
     if (pool.priority) {
       var left = Math.ceil((pool.priority.until - Date.now()) / 1000);
       if (left > 0) {
@@ -192,17 +197,6 @@
         h += '<div class="gcard">' + groupHead(a, A) + A.map(row).join('') + '</div>';
       });
     }
-    var perRest = {};
-    L.forEach(function (p) { perRest[p.restaurant] = (perRest[p.restaurant] || 0) + 1; });
-    var cap = pool.capacity ? pool.capacity.limit : 0;
-    h += '<div class="card" style="padding:12px;margin-top:12px">' +
-      '<b>Toplam havuzda ' + Object.keys(perRest).length + ' restorandan ' + L.length + ' paket beklemektedir.</b>' +
-      Object.keys(perRest).sort().map(function (name) {
-        return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--ln)">' +
-          '<span>' + esc(name) + '</span><b>' + perRest[name] + ' paket</b></div>';
-      }).join('') +
-      '<p class="hint" style="margin:8px 0 0">Seçim yapmak için sipariş kartlarından seçin. En fazla ' + cap + ' paket alınabilir.</p>' +
-      '</div>';
 
     main.innerHTML = h;
     Array.prototype.forEach.call(main.querySelectorAll('button[data-g]'), function (b) {
