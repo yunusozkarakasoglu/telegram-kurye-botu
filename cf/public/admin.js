@@ -68,7 +68,7 @@
     var sec = { preset: f.preset || 'today', status: f.status || '', pay: f.pay || '', grup: f.grup || '' };
     var sh = UI.openSheet(
       '<div class="sheethead"><h2>Filtrele</h2><div class="shead-acts">' +
-        '<button class="sheetc" id="of-clear" title="Filtreyi temizle">🧹</button>' +
+        '<button class="sheetc" id="of-clear" title="Filtreyi temizle">↺</button>' +
         '<button class="sheetx" id="of-x" title="Kapat">✕</button></div></div>' +
       '<div class="fld"><label>Zaman</label><div class="seg four">' +
         [['today', 'Bugün'], ['yesterday', 'Dün'], ['range', 'Tarih aralığı'], ['all', 'Tümü']].map(function (x) {

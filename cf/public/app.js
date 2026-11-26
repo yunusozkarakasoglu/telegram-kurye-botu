@@ -510,7 +510,7 @@
     var sec = { when: f.when || '', date: f.date || bugun.toISOString().slice(0, 10), status: f.status || '', pay: f.pay || '', grup: f.grup || '' };
     var sh = UI.openSheet(
       '<div class="sheethead"><h2>Filtrele</h2><div class="shead-acts">' +
-        '<button class="sheetc" id="hf-reset" title="Filtreyi temizle">🧹</button>' +
+        '<button class="sheetc" id="hf-reset" title="Filtreyi temizle">↺</button>' +
         '<button class="sheetx" id="hf-x" title="Kapat">✕</button></div></div>' +
       '<div class="fld"><label>Zaman</label><div class="seg four">' +
         [['', 'Tümü'], ['today', 'Bugün'], ['yesterday', 'Dün'], ['date', 'Tarih seç']].map(function (x) {
@@ -1060,7 +1060,7 @@
     var preset = f.preset || '';
     var sh = UI.openSheet(
       '<div class="sheethead"><h2>Filtrele</h2><div class="shead-acts">' +
-        '<button class="sheetc" id="rf-clear" title="Filtreyi temizle">🧹</button>' +
+        '<button class="sheetc" id="rf-clear" title="Filtreyi temizle">↺</button>' +
         '<button class="sheetx" id="rf-x" title="Kapat">✕</button></div></div>' +
       '<div class="fld"><label>Zaman</label><div class="seg four">' +
         '<button data-t="" class="' + (preset === '' ? 'on' : '') + '">Tümü</button>' +

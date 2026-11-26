@@ -515,7 +515,10 @@ textarea{width:100%;font:inherit;font-size:15px;padding:10px 12px;border:1px sol
   border:1px solid var(--ln);margin-bottom:2px}
 header h1{display:inline}
 
-.shead-acts{display:flex;align-items:center;gap:6px;flex:none}
+.shead-acts{display:flex;align-items:center;gap:6px;flex:0 0 auto;margin-left:auto;width:auto}
+.sheethead{min-width:0}
+.sheethead h2{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0}
+.sh .shead-acts button{width:28px;min-width:28px;margin:0;padding:0}
 .sheetx{width:28px;height:28px;min-height:28px;padding:0;border-radius:7px;border:1px solid var(--er);
   background:transparent;color:var(--er);font-size:13px;font-weight:700;line-height:1;flex:none}
 .sheetc{width:28px;height:28px;min-height:28px;padding:0;border-radius:7px;border:1px solid var(--ln);
