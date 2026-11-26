@@ -607,3 +607,5 @@ header h1{display:inline}
 /* ayarlar sekmeleri: 4 sekme tek satır */
 .ayar-seg{grid-template-columns:repeat(4,minmax(0,1fr));gap:3px}
 .ayar-seg button{font-size:11px;padding:6px 2px;min-height:34px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+#qbadge{font-size:11px;font-weight:700;color:#b07d00}

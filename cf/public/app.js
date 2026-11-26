@@ -237,7 +237,7 @@
     c.innerHTML = '<div class="cta"><button class="p" id="kb">' + n + ' paketi kabul et</button></div>';
     $('kb').onclick = function () {
       var ids = Object.keys(S.sel).map(Number);
-      API.kabul(ids).then(function (r) {
+      eylem('kabul', { ids: ids }).then(function (r) {
         S.sel = {};
         if (r.accepted && r.accepted.length) UI.toast(r.accepted.length + ' paket kabul edildi', 'success');
         if (r.missed && r.missed.length) {
@@ -333,7 +333,7 @@
         else if (a === 'teslim') deliverConfirm(p);
         else if (a === 'odeme') {
           confirmSheet('#' + p.batch + '-' + p.number + ' için ödeme alındı olarak işaretlensin mi?', function () {
-            API.odeme([Number(id)], false).then(function () {
+            eylem('odeme', { ids: [Number(id)], all: false }).then(function () {
               UI.closeSheet(); UI.toast('Ödeme alındı olarak kaydedildi', 'success'); refresh(true);
             }).catch(function (e) { UI.toast(e.message || 'Kaydedilemedi', 'error'); });
           });
@@ -357,7 +357,7 @@
     function send(paid) {
       sh.querySelector('#dv-paid').disabled = true;
       sh.querySelector('#dv-unpaid').disabled = true;
-      API.teslim(p.id, paid).then(function () {
+      eylem('teslim', { id: p.id, paid: paid }).then(function () {
         UI.closeSheet();
         TG.haptic('success');
         UI.toast(paid ? 'Teslim edildi · ödeme alındı' : 'Teslim edildi · ödeme alınmadı', 'success');
@@ -731,7 +731,7 @@
     };
     sh.querySelector('#cn-save').onclick = function () {
       var v = (sh.querySelector('#cn').value || '').trim();
-      API.notEkle(p.id, v).then(function () {
+      eylem('not', { id: p.id, note: v }).then(function () {
         var yeni = v || null;
         p.courier_note = yeni;
         [S.mine && S.mine.packages, S.pool && S.pool.packages, S.history && S.history.items].forEach(function (liste) {
@@ -782,7 +782,8 @@
       var v = parseFloat(String(input.value).replace(',', '.'));
       if (!(v > 0)) { err.textContent = 'Geçerli bir kilometre girin'; return; }
       var knote = ($('knote') && $('knote').value ? $('knote').value : '').trim();
-      API.kmGir(p.id, v, knote).then(function (r) {
+      eylem('km', { id: p.id, km: v, note: knote }).then(function (r) {
+        if (r && r.queued) { UI.closeSheet(); S.kmPending = false; render(); return; }
         UI.closeSheet();
         UI.toast((duzenle ? 'Kilometre güncellendi: ' : 'Kazanç hesaplandı: ') + money(r.fee_tl), 'success');
         refresh(true);
@@ -804,8 +805,9 @@
     Array.prototype.forEach.call(sh.querySelectorAll('button[data-n]'), function (b) {
       b.onclick = function () {
         var reason = reasons[Number(b.getAttribute('data-n'))];
-        API.iptal(p.id, reason).then(function (r) {
+        eylem('iptal', { id: p.id, reason: reason }).then(function (r) {
           UI.closeSheet();
+          if (r && r.queued) { render(); return; }
           UI.toast(r.fee_tl ? 'İptal edildi · ücret: ' + money(r.fee_tl) : 'Sipariş iptal edildi', 'success');
           refresh(true);
         }).catch(function (e) { UI.toast(e.message || 'İşlem başarısız', 'error'); });
@@ -1292,11 +1294,95 @@
         '<button class="d" id="rr-back" style="width:100%;margin-top:6px">Vazgeç</button>');
       s2.querySelector('#rr-back').onclick = function () { UI.closeSheet(); };
       s2.querySelector('#rr-ok').onclick = function () {
-        API.iptal(p.id, s2.querySelector('#rr').value).then(function () {
+        eylem('iptal', { id: p.id, reason: s2.querySelector('#rr').value }).then(function () {
           UI.closeSheet(); UI.toast('Paket iptal edildi', 'success'); loadRest();
         }).catch(function (e) { UI.toast(e.message || 'İptal edilemedi', 'error'); });
       };
     };
+  }
+
+
+  /* ---------------- Faz B2: istemci eylem kuyruğu (offline/5xx) ---------------- */
+  var KUYRUK_KEY = 'eylemKuyrugu';
+
+  function qList() {
+    try { return JSON.parse(localStorage.getItem(KUYRUK_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function qSave(list) {
+    try { localStorage.setItem(KUYRUK_KEY, JSON.stringify(list.slice(-100))); } catch (e) {}
+    qBadge();
+  }
+  function qPush(item) {
+    var list = qList().filter(function (x) { return x.id !== item.id; });
+    list.push(item);
+    qSave(list);
+  }
+  function qDel(id) {
+    qSave(qList().filter(function (x) { return x.id !== id; }));
+  }
+  function qBadge() {
+    var n = qList().length;
+    var el = document.getElementById('qbadge');
+    if (!el) return;
+    el.textContent = n ? ('⏳ ' + n) : '';
+    el.hidden = !n;
+  }
+  function yeniAnahtar() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'k' + Date.now() + Math.floor(Math.random() * 1e6);
+  }
+  function istekGonder(tur, veri, key) {
+    if (tur === 'km') return API.kmGir(veri.id, veri.km, veri.note, key);
+    if (tur === 'teslim') return API.teslim(veri.id, veri.paid, key);
+    if (tur === 'iptal') return API.iptal(veri.id, veri.reason, key);
+    if (tur === 'not') return API.notEkle(veri.id, veri.note, key);
+    if (tur === 'odeme') return API.odeme(veri.ids, veri.all, key);
+    if (tur === 'kabul') return API.kabul(veri.ids, key);
+    return Promise.reject(new Error('Bilinmeyen işlem: ' + tur));
+  }
+  /** Kalıcı hata mı? (kuyrukta tutmanın anlamı yok) */
+  function kaliciHata(e) {
+    return !!e && !!e.status && e.status < 500 && e.status !== 408 && e.status !== 429;
+  }
+  /** İşlemi hemen dener; ağ/5xx ise kuyruğa alır. */
+  function eylem(tur, veri) {
+    var key = yeniAnahtar();
+    return istekGonder(tur, veri, key).catch(function (e) {
+      if (kaliciHata(e)) throw e;
+      qPush({ id: key, tur: tur, veri: veri, ts: Date.now(), tries: 0 });
+      UI.toast('Bağlantı sorunu — işlem kuyruğa alındı, otomatik gönderilecek', 'error');
+      return { queued: true };
+    });
+  }
+  /** Kuyruğu sırayla işler; başarılı/ kalıcı hatalı olanları çıkarır. */
+  var qCalisiyor = false;
+  function qRun() {
+    if (qCalisiyor) return Promise.resolve();
+    var list = qList();
+    if (!list.length) return Promise.resolve();
+    qCalisiyor = true;
+    var i = 0;
+    function sonraki() {
+      if (i >= list.length) { qCalisiyor = false; qBadge(); return Promise.resolve(); }
+      var it = list[i++];
+      return istekGonder(it.tur, it.veri, it.id).then(function () {
+        qDel(it.id);
+      }).catch(function (e) {
+        if (kaliciHata(e)) {
+          qDel(it.id);
+          UI.toast((e.message || 'İşlem reddedildi') + ' (kuyruktan çıkarıldı)', 'error');
+        } else {
+          it.tries = (it.tries || 0) + 1;
+          if (it.tries >= 5) {
+            qDel(it.id);
+            UI.toast('İşlem 5 denemede gönderilemedi; yöneticiye bildirin', 'error');
+          } else {
+            qSave(list.map(function (x) { return x.id === it.id ? it : x; }));
+          }
+        }
+      }).then(sonraki);
+    }
+    return sonraki().then(function () { qBadge(); });
   }
 
   function setKuryeDurum(st, reason) {
@@ -2073,6 +2159,8 @@
     });
   }
 
+  window.addEventListener('online', function () { qRun(); });
+  setInterval(function () { if (!document.hidden) qRun(); }, 30000);
   window.addEventListener('error', function (e) { if (window.API && API.log) API.log('JS hata: ' + (e.message || e.error)); });
   window.addEventListener('unhandledrejection', function (e) { if (window.API && API.log) API.log('Promise hata: ' + (e.reason && e.reason.message ? e.reason.message : e.reason)); });
   function bindPullToRefresh() {

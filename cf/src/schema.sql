@@ -70,3 +70,12 @@ CREATE TABLE IF NOT EXISTS app_logs (
   account INTEGER, message TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS app_logs_at ON app_logs(at);
+
+CREATE TABLE IF NOT EXISTS idempotency (
+  key TEXT PRIMARY KEY, account INTEGER NOT NULL, endpoint TEXT NOT NULL,
+  response TEXT NOT NULL, at REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idempotency_at ON idempotency(at);
+CREATE TABLE IF NOT EXISTS rate_limit (
+  account INTEGER PRIMARY KEY, window_start REAL NOT NULL, count INTEGER NOT NULL DEFAULT 0
+);

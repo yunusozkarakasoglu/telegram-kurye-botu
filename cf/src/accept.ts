@@ -77,15 +77,27 @@ export async function takePackages(bot: Bot, user: Account, ids: number[]): Prom
   const [account, error] = await eligible(bot, user.id);
   if (error) return error;
   const capacity = await bot.capacity(user.id);
-  const taken: number[] = [];
-  for (const id of ids) {
-    if (taken.length >= capacity) break;
-    const reservation = await bot.db.first<{ courier: number }>("SELECT courier FROM reservations WHERE package=? AND expires>?", id, bot.nowF());
-    if (reservation && reservation.courier !== user.id) continue;
-    const changed = await bot.db.run(`UPDATE packages SET courier=?,accepted_at=? WHERE id=? AND courier IS NULL
-      AND delivered_at IS NULL AND cancelled_at IS NULL`, user.id, bot.now(), id);
-    if (changed) taken.push(id);
+  // Faz B3: rezervasyonları tek sorguda al, güncellemeleri tek batch'te gönder
+  const rezerve = await bot.db.all<{ package: number; courier: number }>(
+    "SELECT package, courier FROM reservations WHERE expires>? AND package IN (" + ids.map(() => "?").join(",") + ")",
+    bot.nowF(), ...ids);
+  const rezerveMap = new Map(rezerve.map((r) => [r.package, r.courier]));
+  const adaylar = ids.filter((id) => {
+    const r = rezerveMap.get(id);
+    return !r || r === user.id;
+  }).slice(0, capacity);
+  if (adaylar.length) {
+    const now = bot.now();
+    await bot.db.batch(adaylar.map((id) =>
+      bot.db.d1.prepare(`UPDATE packages SET courier=?,accepted_at=? WHERE id=? AND courier IS NULL
+        AND delivered_at IS NULL AND cancelled_at IS NULL`).bind(user.id, now, id)));
   }
+  const alinan = adaylar.length
+    ? await bot.db.all<{ id: number }>(
+        "SELECT id FROM packages WHERE courier=? AND id IN (" + adaylar.map(() => "?").join(",") + ")",
+        user.id, ...adaylar)
+    : [];
+  const taken = alinan.map((r) => r.id);
   if (!taken.length) return "Alınabilecek paket yok; havuza bakın.";
   await bot.db.run("DELETE FROM pool_select WHERE courier=?", user.id);
   if ((await bot.activeCount(user.id)) >= (await bot.activeLimit())) await bot.lockCourier(user.id, await bot.activeLimit());

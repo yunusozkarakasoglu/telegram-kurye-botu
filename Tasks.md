@@ -49,7 +49,7 @@
 
 ## Son tamamlananlar
 - [x] **Faz A (performans)**: D1 retry+backoff, istemci 15 sn±jitter + 5xx tekrarı, overload alarmı (`23b47dc4`, v135). 30 paralel → 0 hata.
-- [ ] **Faz B**: idempotency + istemci eylem kuyruğu + batch yazma + hız sınırı.
+- [x] **Faz B (v136)**: idempotency + istemci eylem kuyruğu + batch kabul + hız sınırı — test edildi.
 - [ ] **Faz C**: `/api/durum?since=` delta yoklama, `package_events`, 304.
 - [ ] **Faz D**: Telegram `outbox` kuyruğu + dead-letter.
 - [ ] **Faz E**: 30/60/100 paralel yük testi + kaos + kapasite raporu.

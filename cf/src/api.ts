@@ -25,6 +25,38 @@ async function readBody(request: Request): Promise<any> {
   }
 }
 
+
+/** Faz B1: aynı Idempotency-Key ile gelen ikinci istek aynı yanıtı döner (çift kayıt olmaz). */
+async function idemJson(bot: Bot, account: number, endpoint: string, key: string, fn: () => Promise<any>): Promise<any> {
+  if (!key) return fn();
+  try {
+    const row = await bot.db.first<{ response: string }>(
+      "SELECT response FROM idempotency WHERE key=? AND account=? AND endpoint=? AND at>?",
+      key, account, endpoint, bot.nowF() - 86400);
+    if (row) return JSON.parse(row.response);
+  } catch {}
+  const payload = await fn();
+  try {
+    await bot.db.run("INSERT OR REPLACE INTO idempotency(key,account,endpoint,response,at) VALUES (?,?,?,?,?)",
+      key, account, endpoint, JSON.stringify(payload ?? {}), bot.nowF());
+  } catch {}
+  return payload;
+}
+
+/** Faz B4: kurye/restoran başına dakikada en fazla N yazma. */
+async function hizAsildi(bot: Bot, account: number, limit = 30): Promise<boolean> {
+  const now = bot.nowF();
+  const row = await bot.db.first<{ window_start: number; count: number }>(
+    "SELECT window_start, count FROM rate_limit WHERE account=?", account);
+  if (!row || now - row.window_start > 60) {
+    await bot.db.run("INSERT OR REPLACE INTO rate_limit(account,window_start,count) VALUES (?,?,1)", account, now);
+    return false;
+  }
+  if (row.count >= limit) return true;
+  await bot.db.run("UPDATE rate_limit SET count=count+1 WHERE account=?", account);
+  return false;
+}
+
 export async function handleApi(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const bot = new Bot(env);
@@ -234,8 +266,10 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const body = await readBody(request);
       const ids = (Array.isArray(body.ids) ? body.ids : []).map(Number).filter((n: number) => Number.isInteger(n) && n > 0);
       if (!ids.length) return fail("Paket seçilmedi.", 422, "invalid");
-      const result = await apiCourier.acceptPackages(bot, user, ids);
-      return json(result);
+      if (await hizAsildi(bot, user.id)) return fail("Çok hızlı işlem. Birkaç saniye sonra tekrar deneyin.", 429, "rate_limited");
+      const idemKey = request.headers.get("idempotency-key") || "";
+      const out = await idemJson(bot, user.id, "kabul", idemKey, () => apiCourier.acceptPackages(bot, user, ids));
+      return json(out);
     }
 
     // Atama onayı (yönetici/aktarım kaynaklı claim teklifi): kurye uygulamadan kabul/red eder.
@@ -255,7 +289,10 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         const value = String(body.km ?? "").trim();
         if (!value) return fail("Kilometre girin.", 422, "invalid");
         const not_ = String(body.note ?? "").trim().slice(0, 500);
-        const result = await apiCourier.setDistance(bot, user, packageId, value, not_ || null);
+        if (await hizAsildi(bot, user.id)) return fail("Çok hızlı işlem. Birkaç saniye sonra tekrar deneyin.", 429, "rate_limited");
+        const idemKey = request.headers.get("idempotency-key") || "";
+        const result = await idemJson(bot, user.id, `km:${packageId}`, idemKey,
+          () => apiCourier.setDistance(bot, user, packageId, value, not_ || null));
         return result.ok ? json(result) : fail(result.error || "Kilometre kaydedilemedi.", 422, "invalid");
       }
       if (action === "not") {
@@ -266,13 +303,18 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         return json({ ok: true, courier_note: note || null });
       }
       if (action === "teslim") {
-        const result = await apiCourier.deliver(bot, user, packageId, body.paid == null ? null : !!body.paid);
+        if (await hizAsildi(bot, user.id)) return fail("Çok hızlı işlem. Birkaç saniye sonra tekrar deneyin.", 429, "rate_limited");
+        const idemKey = request.headers.get("idempotency-key") || "";
+        const result = await idemJson(bot, user.id, `teslim:${packageId}`, idemKey,
+          () => apiCourier.deliver(bot, user, packageId, body.paid == null ? null : !!body.paid));
         return result.ok ? json(result) : fail(result.error || "İşlem tamamlanamadı.", 409, "conflict");
       }
       if (action === "iptal") {
         const reason = String(body.reason ?? "").trim();
         if (!CANCEL_REASONS.includes(reason)) return fail("Geçersiz iptal gerekçesi.", 422, "invalid");
-        const result = await apiCourier.cancel(bot, user, packageId, reason);
+        const idemKey = request.headers.get("idempotency-key") || "";
+        const result = await idemJson(bot, user.id, `iptal:${packageId}`, idemKey,
+          () => apiCourier.cancel(bot, user, packageId, reason));
         return result.ok ? json(result) : fail(result.error || "İşlem tamamlanamadı.", 409, "conflict");
       }
       if (String(body.hedef || "") === "kurye") {
@@ -313,7 +355,8 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const ids = Array.isArray(body.ids) ? body.ids.map(Number) : [];
       const all = body.all === true;
       if (!all && !ids.length) return fail("Paket seçilmedi.", 422, "invalid");
-      const r = await apiCourier.markPaid(bot, user, ids, all);
+      const idemKey = request.headers.get("idempotency-key") || "";
+      const r = await idemJson(bot, user.id, "odeme", idemKey, () => apiCourier.markPaid(bot, user, ids, all));
       return r.ok ? json(r) : fail(r.error || "Kaydedilemedi", 422, "invalid");
     }
 

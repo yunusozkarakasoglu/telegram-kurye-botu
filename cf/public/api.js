@@ -369,12 +369,15 @@
       if (window.__kuryeLogs.length > 100) window.__kuryeLogs.shift();
     } catch (e) {}
   }
-  function req(method, path, body, _deneme) {
-    var deneme = _deneme || 0;
+  function req(method, path, body, _idem) {
+    var idem = (body && body.__idem) || _idem || '';
+    var veri = body ? JSON.stringify(body) : undefined;
+    var h = headers();
+    if (idem) h['Idempotency-Key'] = idem;
     return fetch(path, {
       method: method,
-      headers: headers(),
-      body: body ? JSON.stringify(body) : undefined,
+      headers: h,
+      body: veri,
       credentials: 'same-origin'
     }).then(function (r) {
       if (!r.ok) logLine('HTTP ' + r.status + ' ' + method + ' ' + path);
@@ -399,11 +402,11 @@
       return req('GET', '/api/oturum' + (sp ? '?tgWebAppStartParam=' + encodeURIComponent(sp) : ''));
     },
     havuz: function () { return req('GET', '/api/havuz'); },
-    kabul: function (ids) { return req('POST', '/api/kabul', { ids: ids }); },
-    notEkle: function (id, note) { return req('POST', '/api/paket/' + id + '/not', { note: note }); },
-    kmGir: function (id, km, note) { return req('POST', '/api/paket/' + id + '/km', { km: km, note: note || '' }); },
-    teslim: function (id, paid) { return req('POST', '/api/paket/' + id + '/teslim', paid == null ? {} : { paid: !!paid }); },
-    iptal: function (id, reason) { return req('POST', '/api/paket/' + id + '/iptal', { reason: reason }); },
+    kabul: function (ids, key) { return req('POST', '/api/kabul', { ids: ids }, key); },
+    notEkle: function (id, note, key) { return req('POST', '/api/paket/' + id + '/not', { note: note }, key); },
+    kmGir: function (id, km, note, key) { return req('POST', '/api/paket/' + id + '/km', { km: km, note: note || '' }, key); },
+    teslim: function (id, paid, key) { return req('POST', '/api/paket/' + id + '/teslim', paid == null ? {} : { paid: !!paid }, key); },
+    iptal: function (id, reason, key) { return req('POST', '/api/paket/' + id + '/iptal', { reason: reason }, key); },
     atamaKarar: function (id, kabul) { return req('POST', '/api/atama/' + id + (kabul ? '/kabul' : '/reddet')); },
     aktar: function (id, payload) { return req('POST', '/api/paket/' + id + '/aktar', payload || {}); },
     paketlerim: function () { return req('GET', '/api/paketlerim'); },
@@ -420,7 +423,7 @@
     bildirimler: function () { return req('GET', '/api/bildirimler'); },
     bildirimOkundu: function (upto) { return req('POST', '/api/bildirimler/okundu', { upto: upto }); },
     bildirimTemizle: function () { return req('POST', '/api/bildirimler/temizle'); },
-    odeme: function (ids, all) { return req('POST', '/api/odeme', { ids: ids || [], all: !!all }); },
+    odeme: function (ids, all, key) { return req('POST', '/api/odeme', { ids: ids || [], all: !!all }, key); },
     giris: function (phone, pin) { return req('POST', '/api/giris', { phone: phone, pin: pin }); },
     girisKullanicilar: function () { return req('GET', '/api/giris/kullanicilar'); },
     pinDurum: function () { return req('GET', '/api/pin/durum'); },

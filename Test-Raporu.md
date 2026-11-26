@@ -316,3 +316,13 @@ python3 tools/verify_package.py
 | 600 istek / 60 paralel (burst) | 161×500 → D1 10 sn penceresi; Faz B/C gerekli |
 | İstemci yoklama | 5 sn → **15 sn ± %20 jitter**, sekme gizliyken durur |
 | e2e | **80/80** · deploy `23b47dc4` (v135) |
+
+### Faz B doğrulaması (2026-11-26)
+
+| Test | Sonuç |
+|---|---|
+| Aynı `Idempotency-Key` ile 2× km | İkisi de aynı yanıt (`150 TL`, `3.5 km`), `idempotency` tablosunda **1 kayıt** |
+| Hız sınırı: 35 hızlı km isteği | **25 normal + 10×429** (`rate_limit`) |
+| Ağ kesikken not kaydı | `eylemKuyrugu`'na düştü (`tries` arttı) |
+| Ağ gelince (`online`) | Kuyruk boşaldı, not **tek kez** DB'ye yazıldı |
+| e2e | **80/80** · deploy `611454e3` (v136) |
