@@ -527,8 +527,9 @@ header h1{display:inline}
   background:transparent;color:var(--t2);font-size:13px;line-height:1;flex:none}
 .sheetx:active{background:var(--erb)}
 
-.notebox.cnote{border-color:#e6a817;background:rgba(230,168,23,.10)}
+.notebox.cnote{border:2px solid #f5c542;background:rgba(245,197,66,.12)}
 .notebox.cnote small{color:#b07d00}
+.notebox.cnote textarea{border-color:#f5c542;background:var(--card)}
 
 .notebox textarea{margin-top:4px;border-color:#e6a817;background:var(--card)}
 

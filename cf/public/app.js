@@ -242,7 +242,11 @@
         if (r.accepted && r.accepted.length) UI.toast(r.accepted.length + ' paket kabul edildi', 'success');
         if (r.missed && r.missed.length) {
           var bos = !(r.accepted && r.accepted.length);
-          UI.toast(bos && r.message ? r.message : r.missed.length + ' paket alınamadı', 'error');
+          if (bos && r.message) {
+            bilgiSheet('Paket alınamadı', r.message);
+          } else {
+            UI.toast(r.missed.length + ' paket alınamadı', 'error');
+          }
         }
         TG.haptic('success');
         S.tab = 'paketlerim';
@@ -313,7 +317,7 @@
         if (a === 'harita') {
           if (p && p.map_url) TG.openLink(p.map_url);
           else if (p) TG.map((p.restaurant || '') + ' ' + (p.region || ''));
-        } else if (a === 'not') kuryeNotSheet(p);
+        } else if (a === 'not') kuryeNotSheet(p, function () { openPkg(p.id); });
         else if (a === 'km') kmSheet(findPkg(id));
         else if (a === 'teslim') deliverConfirm(p);
         else if (a === 'odeme') {
@@ -701,18 +705,30 @@
   }
 
   /* ---------------- KM / İPTAL / AKTAR ---------------- */
-  function kuryeNotSheet(p) {
+  function kuryeNotSheet(p, geriDon) {
     if (!p) return;
     var sh = UI.openSheet(
       '<h2>Kurye notu · #' + p.batch + '-' + p.number + '</h2>' +
       '<p>Ambalaj, gecikme, adres gibi durumları yazın. Restoran ve yönetici görür.</p>' +
-      '<textarea id="cn" rows="3" placeholder="Ör. ambalaj zayıf, geç teslim olabilir…">' + esc(p.courier_note || '') + '</textarea>' +
+      '<div class="notebox cnote"><textarea id="cn" rows="3" placeholder="Ör. ambalaj zayıf, geç teslim olabilir…">' + esc(p.courier_note || '') + '</textarea></div>' +
       '<div class="err" id="cn-err"></div>' +
-      '<button class="p" id="cn-save" style="width:100%">Kaydet</button>');
+      '<button class="p" id="cn-save" style="width:100%">Kaydet</button>' +
+      '<button class="d" id="cn-back" style="width:100%;margin-top:6px">Vazgeç</button>');
+    sh.querySelector('#cn-back').onclick = function () {
+      UI.closeSheet();
+      if (geriDon) setTimeout(geriDon, 120); else render();
+    };
     sh.querySelector('#cn-save').onclick = function () {
       var v = (sh.querySelector('#cn').value || '').trim();
       API.notEkle(p.id, v).then(function () {
-        UI.closeSheet(); UI.toast('Not kaydedildi', 'success'); refresh(true);
+        var yeni = v || null;
+        p.courier_note = yeni;
+        [S.mine && S.mine.packages, S.pool && S.pool.packages, S.history && S.history.items].forEach(function (liste) {
+          (liste || []).forEach(function (x) { if (x.id === p.id) x.courier_note = yeni; });
+        });
+        UI.closeSheet();
+        UI.toast('Not kaydedildi', 'success');
+        if (geriDon) setTimeout(geriDon, 120); else refresh(true);
       }).catch(function (e) { sh.querySelector('#cn-err').textContent = e.message || 'Kaydedilemedi'; });
     };
   }
