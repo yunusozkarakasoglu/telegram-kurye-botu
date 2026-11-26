@@ -1261,6 +1261,32 @@
     };
   }
 
+  /** Kurye durum değişimi (drawer + kartlar ortak). */
+  function setKuryeDurum(st, reason) {
+    if (!S.session || !S.session.user) return;
+    API.durum(st, reason).then(function (r) {
+      S.session.user.online = st === 'online';
+      S.session.user.busy = !!r.busy;
+      S.session.user.busy_reason = r.reason || null;
+      UI.toast(st === 'online' ? 'Çevrimiçi oldunuz' : st === 'busy' ? 'Meşgul olarak işaretlendiniz' : 'Çevrimdışı oldunuz', 'success');
+      closeDrawer();
+      render();
+    }).catch(function (e) { UI.toast(e.message || 'Durum değişmedi', 'error'); });
+  }
+
+  function mesgulSebepSheet() {
+    var sh = UI.openSheet('<h2>Meşgul sebebi</h2>' +
+      '<p>Bu süre boyunca yeni paket almazsınız.</p>' +
+      '<div class="seg two">' + ['Mola', 'Arıza', 'Kaza', 'İhtiyaç'].map(function (r) {
+        return '<button data-br2="' + r + '">' + r + '</button>';
+      }).join('') + '</div>' +
+      '<button class="d" id="br-cancel" style="width:100%;margin-top:10px">Vazgeç</button>');
+    sh.querySelector('#br-cancel').onclick = function () { UI.closeSheet(); };
+    Array.prototype.forEach.call(sh.querySelectorAll('[data-br2]'), function (b) {
+      b.onclick = function () { UI.closeSheet(); setKuryeDurum('busy', b.getAttribute('data-br2')); };
+    });
+  }
+
   function renderProfil() {
     var u = (S.session && S.session.user) || {};
     var isRest = curRole() === 'restoran';
@@ -1286,20 +1312,11 @@
           '<div class="acts"><button class="p sm" id="pin-save">Kaydet</button><button class="sm" id="pin-cancel">İptal</button></div>'
         : '<div class="pinrow"><span>PIN: ••••</span><button class="sm" id="pin-edit">Düzenle</button></div>') +
       '</div>';
-    var status = u.busy ? 'busy' : (u.online ? 'online' : 'offline');
-    var statusRow = !isRest ? '<div class="statusrow">' +
-      [['online', 'Online'], ['busy', 'Meşgul'], ['offline', 'Offline']].map(function (x) {
-        return '<button data-st2="' + x[0] + '" class="' + (status === x[0] ? 'on ' + x[0] : '') + '">' + x[1] + '</button>';
-      }).join('') + '</div>' +
-      (u.busy ? '<div class="busybox"><div class="ameta">Meşgul sebebi: <b>' + esc(u.busy_reason || 'Mola') + '</b></div>' +
-        '<div class="seg four" style="margin-top:6px">' + ['Mola', 'Arıza', 'Kaza', 'İhtiyaç'].map(function (r) {
-          return '<button data-br="' + r + '" class="' + ((u.busy_reason || 'Mola') === r ? 'on' : '') + '">' + r + '</button>';
-        }).join('') + '</div></div>' : '') : '';
     var actionRow = '<div class="acts" style="margin-top:12px;align-items:center">' +
       (editing
         ? '<button class="p sm" id="p-save">Kaydet</button><button class="sm" id="p-cancel">İptal</button>'
         : '<button class="sm" id="p-edit">Düzenle</button>') + '</div>';
-    main.innerHTML = '<div class="card oc" style="padding:12px">' + fields + statusRow + pinSection + actionRow + '</div>' +
+    main.innerHTML = '<div class="card oc" style="padding:12px">' + fields + pinSection + actionRow + '</div>' +
       (!isRest ? '<p class="note" style="padding:10px 4px">Kurye paket sınırı: <b>' + (((S.session || {}).settings || {}).limit || '—') +
         '</b> paket · Yönetici tarafından belirlenir.</p>' : '');
 
@@ -1340,21 +1357,6 @@
     } else {
       $('p-edit').onclick = function () { S.profEdit = true; render(); };
     }
-    function setStatus(st, reason) {
-      API.durum(st, reason).then(function (r) {
-        S.session.user.online = st === 'online';
-        S.session.user.busy = !!r.busy;
-        S.session.user.busy_reason = r.reason || null;
-        UI.toast(st === 'online' ? 'Çevrimiçi oldunuz' : st === 'busy' ? 'Meşgul olarak işaretlendiniz' : 'Çevrimdışı oldunuz', 'success');
-        render();
-      }).catch(function (e) { UI.toast(e.message || 'Durum değişmedi', 'error'); });
-    }
-    Array.prototype.forEach.call(document.querySelectorAll('[data-st2]'), function (b) {
-      b.onclick = function () { setStatus(b.getAttribute('data-st2'), S.session.user.busy_reason); };
-    });
-    Array.prototype.forEach.call(document.querySelectorAll('[data-br]'), function (b) {
-      b.onclick = function () { setStatus('busy', b.getAttribute('data-br')); };
-    });
     $('cta').innerHTML = '';
     nav(isRest ? restaurantTabs() : courierTabs(), {});
   }
@@ -1657,9 +1659,24 @@
     h += '<button data-dt="sistem" class="' + (S.tab === 'sistem' ? 'on' : '') + '"><i>⚙</i>Sistem</button>';
     h += '<button data-dt="profil" class="' + (S.tab === 'profil' ? 'on' : '') + '"><i>👤</i>Profil</button>';
     h += '<button data-da="logout"><i>⏻</i>Çıkış</button>';
+    if (role !== 'restoran' && S.session && S.session.user) {
+      var u = S.session.user;
+      var cur = u.busy ? 'busy' : (u.online ? 'online' : 'offline');
+      h += '<div class="drawer-status">' +
+        [['online', 'Online'], ['busy', 'Meşgul'], ['offline', 'Offline']].map(function (x) {
+          return '<button data-dst="' + x[0] + '" class="' + (cur === x[0] ? 'on ' + x[0] : '') + '">' + x[1] + '</button>';
+        }).join('') + '</div>';
+    }
     d.innerHTML = h;
     Array.prototype.forEach.call(d.querySelectorAll('[data-dt]'), function (b) {
       b.onclick = function () { S.tab = b.getAttribute('data-dt'); closeDrawer(); render(); refresh(false); };
+    });
+    Array.prototype.forEach.call(d.querySelectorAll('[data-dst]'), function (b) {
+      b.onclick = function () {
+        var st = b.getAttribute('data-dst');
+        if (st === 'busy') mesgulSebepSheet();
+        else setKuryeDurum(st, null);
+      };
     });
     Array.prototype.forEach.call(d.querySelectorAll('[data-da]'), function (b) {
       b.onclick = function () {
