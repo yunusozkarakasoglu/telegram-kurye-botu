@@ -1249,37 +1249,39 @@
 
   function restPkgSheet(p) {
     var roleName = function (r) { return r === 'restoran' ? 'Restoran' : r === 'kurye' ? 'Kurye' : 'Yönetici'; };
-    var ts = function (v) { return v ? dt(new Date(v * 1000).toISOString()) : '—'; };
-    var mins = p.created_at ? Math.max(0, Math.floor((Date.now() / 1000 - p.created_at) / 60)) : null;
-    var cancelInfo = p.cancelled_at
-      ? '<p class="note">İptal: ' + esc(p.cancel_reason || '—') + ' · İptal eden: ' + esc(roleName(p.cancelled_by_role)) + ' · ' + esc(p.cancelled_by_name || '—') + '</p>'
-      : '';
+    var kapali = !!p.cancelled_at || !!p.delivered_at;
     var sh = UI.openSheet(
-      '<div class="sheethead"><h2>Talep #' + p.batch + '-' + p.number + '</h2>' +
-        '<span class="ago">' + (mins == null ? '—' : mins + ' dk') + '</span></div>' +
-      '<div class="sheet-st"><span class="tag ' + (UI.STATUS[p.status] || '') + '">' + esc(p.status || '—') + '</span></div>' +
-      '<dl class="pk-fields" style="margin:10px 0">' +
-        '<dt>Oluşturma</dt><dd>' + ts(p.created_at) + '</dd>' +
-        '<dt>Kabul</dt><dd>' + ts(p.accepted_at) + '</dd>' +
-        '<dt>Alım</dt><dd>' + ts(p.picked_up_at) + '</dd>' +
-        '<dt>Teslim</dt><dd>' + ts(p.delivered_at) + '</dd>' +
-        '<dt>İptal</dt><dd>' + ts(p.cancelled_at) + '</dd>' +
-        '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
-        '<dt>Bölge</dt><dd>' + esc(p.region || '—') + '</dd>' +
-        '<dt>Ödeme</dt><dd>' + esc(p.payment || '—') + '</dd>' +
-        '<dt>Mesafe</dt><dd>' + (picked && duzenlenebilir
-          ? '<span class="pk-edit"><span>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</span>' +
-            '<button class="mini-edit" data-a="km" data-i="' + p.id + '">Düzenle</button></span>'
-          : (p.distance_km == null ? '—' : kmf(p.distance_km))) + '</dd>' +
-        '<dt>Ücret</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +
-        '<dt>Hakediş</dt><dd>' + (p.payment_received === true ? 'Alındı' : p.payment_received === false ? 'Alınmadı' : '—') + '</dd>' +
-      '</dl>' +
-      '<div class="notebox"><small>Restoran notu</small><div>' + esc(p.note || '') + '</div></div>' +
-      '<div class="notebox cnote"><small>Kurye notu' +
-        (!cancelled && opts.own ? '<button class="notedit" data-a="not" data-i="' + p.id + '">' + (p.courier_note ? 'Düzenle' : '＋ Not ekle') + '</button>' : '') +
-        '</small><div>' + esc(p.courier_note || '') + '</div></div>' + cancelInfo +
-      (p.cancelled_at || p.delivered_at ? '' : '<button class="d" id="rp-cancel" style="width:100%">İptal Et</button>') +
-      '<button class="d" id="rp-close" style="width:100%;margin-top:6px">Kapat</button>');
+      '<div class="pk">' +
+        '<div class="pk-title">SİPARİŞ KARTI</div>' +
+        '<div class="pk-hd"><b>' + esc(p.restaurant || '') + '</b><em class="lb r">' + esc(p.region || '—') + '</em>' +
+          UI.statusTag(p.status) + '</div>' +
+        '<div class="pk-bd"><dl class="pk-fields">' +
+          '<dt>Sipariş no</dt><dd>Talep #' + p.batch + '-' + p.number + '</dd>' +
+          '<dt>Restoran</dt><dd>' + esc(p.restaurant || '—') + '</dd>' +
+          '<dt>Bölge</dt><dd>' + esc(p.region || '—') + '</dd>' +
+          '<dt>Ödeme</dt><dd>' + esc(p.payment || '—') + '</dd>' +
+          '<dt>Yetkili</dt><dd>' + esc(p.restaurant_contact || '—') + '</dd>' +
+          '<dt>Oluşturma</dt><dd>' + dt(p.created_at) + '</dd>' +
+          '<dt>Kabul</dt><dd>' + dt(p.accepted_at) + '</dd>' +
+          '<dt>Alım</dt><dd>' + dt(p.picked_up_at) + '</dd>' +
+          '<dt>Teslim</dt><dd>' + dt(p.delivered_at) + '</dd>' +
+          '<dt>İptal</dt><dd>' + dt(p.cancelled_at) + '</dd>' +
+          '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
+          '<dt>Mesafe</dt><dd>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</dd>' +
+          '<dt>Ücret</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +
+          '<dt>Hakediş</dt><dd>' + (p.payment_received === true ? 'Alındı' : p.payment_received === false ? 'Alınmadı' : '—') + '</dd>' +
+          '<dt>Restoran notu</dt><dd>' + esc(p.note || '—') + '</dd>' +
+          '<dt>Kurye notu</dt><dd>' + esc(p.courier_note || '—') + '</dd>' +
+        '</dl>' +
+        (p.cancelled_at ? '<p class="note">İptal: ' + esc(p.cancel_reason || '—') + ' · İptal eden: ' +
+          esc(roleName(p.cancelled_by_role)) + ' · ' + esc(p.cancelled_by_name || '—') + '</p>' : '') +
+        '</div>' +
+        '<div class="pk-ft">' +
+          (kapali ? '' : '<button class="d w" id="rp-cancel">İptal Et</button>') +
+          '<button class="w pkexit" id="rp-close">Çıkış</button>' +
+        '</div>' +
+      '</div>',
+      { full: true, onClose: function () { loadRest(); } });
     sh.querySelector('#rp-close').onclick = function () { UI.closeSheet(); };
     var cb = sh.querySelector('#rp-cancel');
     if (cb) cb.onclick = function () {
@@ -1291,15 +1293,12 @@
       s2.querySelector('#rr-back').onclick = function () { UI.closeSheet(); };
       s2.querySelector('#rr-ok').onclick = function () {
         API.iptal(p.id, s2.querySelector('#rr').value).then(function () {
-          UI.closeSheet();
-          UI.toast('Paket iptal edildi', 'success');
-          loadRest();
+          UI.closeSheet(); UI.toast('Paket iptal edildi', 'success'); loadRest();
         }).catch(function (e) { UI.toast(e.message || 'İptal edilemedi', 'error'); });
       };
     };
   }
 
-  /** Kurye durum değişimi (drawer + kartlar ortak). */
   function setKuryeDurum(st, reason) {
     if (!S.session || !S.session.user) return;
     API.durum(st, reason).then(function (r) {

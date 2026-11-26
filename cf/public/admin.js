@@ -236,46 +236,62 @@
   function kpi(l, v) { return '<div class="kpi"><div class="v">' + esc(v) + '</div><div class="l">' + esc(l) + '</div></div>'; }
 
   function siparisSheet(p) {
+    var kapali = !!p.cancelled_at || !!p.delivered_at;
     var ts = function (v) { return v ? new Date(v * 1000).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; };
-    var kapali = !!p.delivered_at || !!p.cancelled_at;
-    var sh = UI.openSheet('<h2>#' + p.batch + '-' + p.number + '</h2>' +
-      '<div class="sheet-st"><span class="tag ' + (UI.STATUS[p.status] || '') + '">' + esc(p.status || '—') + '</span>' +
-        '<span class="note" style="margin-left:8px">' + (p.minutes == null ? '—' : p.minutes + ' dk') + '</span></div>' +
-      '<dl class="pk-fields" style="margin:10px 0">' +
-        '<dt>Restoran</dt><dd>' + esc(p.restaurant) + '</dd>' +
-        '<dt>Bölge</dt><dd>' + esc(p.region || '—') + '</dd>' +
-        '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
-        '<dt>Oluşturma</dt><dd>' + ts(p.created_at) + '</dd>' +
-        '<dt>Kabul</dt><dd>' + ts(p.accepted_at) + '</dd>' +
-        '<dt>Teslim</dt><dd>' + ts(p.delivered_at) + '</dd>' +
-        '<dt>Mesafe</dt><dd>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</dd>' +
-        '<dt>Tutar</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +
-        '<dt>Ödeme</dt><dd>' + (p.payment_received === true ? 'Alındı' : p.payment_received === false ? 'Alınmadı' : '—') + '</dd>' +
-      '</dl>' +
-      (p.note ? '<div class="notebox"><small>Not</small><div>' + esc(p.note) + '</div></div>' : '') +
-      (p.courier_note ? '<div class="notebox cnote"><small>Kurye notu</small><div>' + esc(p.courier_note) + '</div></div>' : '') +
-      (kapali ? '' : '<div id="sp-ata"></div>') +
-      '<button class="d" id="sp-close" style="width:100%;margin-top:8px">Kapat</button>');
+    var rol = function (r) { return r === 'restoran' ? 'Restoran' : r === 'kurye' ? 'Kurye' : 'Yönetici'; };
+    var sh = UI.openSheet(
+      '<div class="pk">' +
+        '<div class="pk-title">SİPARİŞ KARTI</div>' +
+        '<div class="pk-hd"><b>' + esc(p.restaurant || '') + '</b><em class="lb r">' + esc(p.region || '—') + '</em>' +
+          UI.statusTag(p.status) + '</div>' +
+        '<div class="pk-bd"><dl class="pk-fields">' +
+          '<dt>Sipariş no</dt><dd>Talep #' + p.batch + '-' + p.number + '</dd>' +
+          '<dt>Restoran</dt><dd>' + esc(p.restaurant || '—') + '</dd>' +
+          '<dt>Bölge</dt><dd>' + esc(p.region || '—') + '</dd>' +
+          '<dt>Ödeme</dt><dd>' + esc(p.payment || '—') + '</dd>' +
+          '<dt>Yetkili</dt><dd>' + esc(p.restaurant_contact || '—') + '</dd>' +
+          '<dt>Oluşturma</dt><dd>' + ts(p.created_at) + '</dd>' +
+          '<dt>Kabul</dt><dd>' + ts(p.accepted_at) + '</dd>' +
+          '<dt>Alım</dt><dd>' + ts(p.picked_up_at) + '</dd>' +
+          '<dt>Teslim</dt><dd>' + ts(p.delivered_at) + '</dd>' +
+          '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
+          '<dt>Mesafe</dt><dd>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</dd>' +
+          '<dt>Paket ücreti</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +
+          '<dt>Ödeme (hakediş)</dt><dd>' + (p.payment_received === true ? 'Alındı' : p.payment_received === false ? 'Alınmadı' : '—') + '</dd>' +
+          '<dt>Restoran notu</dt><dd>' + esc(p.note || '—') + '</dd>' +
+          '<dt>Kurye notu</dt><dd>' + esc(p.courier_note || '—') + '</dd>' +
+          (p.cancelled_at ? '<dt>İptal</dt><dd>' + ts(p.cancelled_at) + '</dd>' +
+            '<dt>İptal eden</dt><dd>' + esc(rol(p.cancelled_by_role) + ' · ' + (p.cancelled_by_name || '—')) + '</dd>' : '') +
+        '</dl></div>' +
+        '<div class="pk-ft">' +
+          (kapali ? '' : '<button class="p w" id="sp-ata">Kuryeye Ata</button>') +
+          '<button class="w pkexit" id="sp-close">Çıkış</button>' +
+        '</div>' +
+      '</div>',
+      { full: true });
     sh.querySelector('#sp-close').onclick = function () { UI.closeSheet(); };
-    if (kapali) return;
-    API.yonetim('kuryeler').then(function (d) {
-      var free = (d.couriers || []).filter(function (c) { return c.online && c.active && !c.locked && (c.active_packages || 0) === 0; });
-      if (!free.length) {
-        sh.querySelector('#sp-ata').innerHTML = '<p class="note">Boşta kurye yok.</p>';
-        return;
-      }
-      sh.querySelector('#sp-ata').innerHTML =
-        '<div class="fld"><label>Boştaki kurye</label><select id="sp-sel">' +
-          '<option value="">Kurye seçin…</option>' + free.map(function (c) { return '<option value="' + c.id + '">' + esc(c.name) + '</option>'; }).join('') +
-        '</select></div><button class="p" id="sp-ata-btn" style="width:100%">Kuryeye Ata</button>';
-      sh.querySelector('#sp-ata-btn').onclick = function () {
-        var cid = sh.querySelector('#sp-sel').value;
-        if (!cid) { UI.toast('Kurye seçin', 'error'); return; }
-        API.yonetim('kuryeAta', { pkgId: p.id, courierId: Number(cid) }).then(function () {
-          UI.closeSheet(); UI.toast('Kurye atandı', 'success'); viewOzet();
-        }).catch(function (e) { UI.toast(e.message || 'Atanamadı', 'error'); });
-      };
-    }).catch(function () {});
+    var ata = sh.querySelector('#sp-ata');
+    if (!ata) return;
+    ata.onclick = function () {
+      API.yonetim('kuryeler').then(function (d) {
+        var free = (d.couriers || []).filter(function (c) { return c.online && c.active && !c.locked && (c.active_packages || 0) === 0; });
+        if (!free.length) { UI.toast('Boşta kurye yok', 'error'); return; }
+        var s2 = UI.openSheet('<h2>Kuryeye Ata</h2>' +
+          '<div class="fld"><label>Boştaki kurye</label><select id="sp-sel">' +
+            '<option value="">Kurye seçin…</option>' + free.map(function (c) { return '<option value="' + c.id + '">' + esc(c.name) + '</option>'; }).join('') +
+          '</select></div>' +
+          '<button class="p" id="sp-ok" style="width:100%">Ata</button>' +
+          '<button class="d" id="sp-vaz" style="width:100%;margin-top:6px">Vazgeç</button>');
+        s2.querySelector('#sp-vaz').onclick = function () { UI.closeSheet(); };
+        s2.querySelector('#sp-ok').onclick = function () {
+          var cid = s2.querySelector('#sp-sel').value;
+          if (!cid) { UI.toast('Kurye seçin', 'error'); return; }
+          API.yonetim('kuryeAta', { pkgId: p.id, courierId: Number(cid) }).then(function () {
+            UI.closeSheet(); UI.toast('Kurye atandı', 'success'); viewOzet();
+          }).catch(function (e) { UI.toast(e.message || 'Atanamadı', 'error'); });
+        };
+      }).catch(function (e) { UI.toast(e.message || 'Kurye listesi alınamadı', 'error'); });
+    };
   }
 
   function waitingSheet(id, waiting) {
