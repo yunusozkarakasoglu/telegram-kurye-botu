@@ -236,3 +236,9 @@ python3 tools/verify_package.py
 - Filtre paneli başlığı: `Filtrele 🧹 ✕` (37px ikonlar); geniş “Filtreyi temizle” butonu kaldırıldı, 🧹 sıfırlıyor.
 - Kurye Geçmiş: hızlı filtre segleri yok; `⚙ Filtre` + zaman/durum/ödeme/grupla panelde.
 - e2e **75/75** · `tsc` ✅ · deploy `290ec9d0` (v96).
+
+### Son doğrulama (2026-11-26, kurye notu alanı görünürlüğü)
+
+- Km penceresinde alan mevcut ve görünür: etiket **📝 Kurye notu (opsiyonel)**, alan 384×62 px, amber çerçeve + açıklama.
+- Kayıt: “Ambalaj zayıf” → `packages.courier_note` dolu; kart yeniden açıldığında **Kurye notu** amber kutuda.
+- Asset **v100** (önbellek kırma).
