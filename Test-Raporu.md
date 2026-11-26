@@ -299,3 +299,10 @@ python3 tools/verify_package.py
 - UI: panelde “UI SENKRON 777” yazıldı → kurye **Sistem → Kurallar** ekranında saatler `09:15/20:45` ve metin “UI SENKRON 777”.
 - Boş metin gönderilince **varsayılana** döndü (`RULE_DEFAULTS`), saatler 07:00/22:00.
 - Canlı: `v131`, `/api/yonetim/tarife` → `open 08:00`, mesafeler varsayılan metin.
+
+### Son doğrulama (2026-11-26, Sistem sekmesi + anlık limit)
+
+- Menüde **⚙ Sistem** (eski “Ayarlar”), başlık **Sistem**.
+- Sekmeler tek satır: `Fiyatlandırma · Kurallar · Tanılama · Logs` (4 × 182 px, top=98).
+- Kurallar → paket limiti: **“Limiti Kaydet” butonu yok**; değer 4 yapılınca “Limit kaydedildi: 4” → kurye `/api/sistem` `limit=4`; 3'e geri alındı.
+- deploy `c7d286dd`/`e7c499e` (v134).

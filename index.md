@@ -4,7 +4,7 @@
 
 | Konu | Durum |
 |---|---|
-| Canlı | `7d0aa3de` · asset **v131** · 30/30 giriş 200 |
+| Canlı | `c7d286dd`/`e7c499e` · asset **v134** · 30/30 giriş 200 |
 | Plan | **Workers Paid ($5/ay)** — CPU 503'leri bitti, deploy açık |
 | Yedek | yerel (systemd 03:00) + CI artifact (90 gün) + GitHub Release (son 30) — üçü de çalışıyor |
 | İzleme | `izleme.yml` 10 dk'da bir `/saglik` → Telegram uyarısı |

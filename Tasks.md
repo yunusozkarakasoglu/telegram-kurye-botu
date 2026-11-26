@@ -48,6 +48,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] Yönetici menüsünde **Ayarlar → Sistem**; sekmeler tek satır (4); kurye paket limiti Kurallar'da ve **anlık kaydediyor** (`e7c499e`, v134).
 - [x] Kurallar senkronu: yönetici paneli boş görünme hatası düzeltildi (`d.settings || d`), varsayılanlar D1'e seed edildi; panelden düzenleme kurye+restoran Sistem ekranına anında yansıyor (`7d0aa3de`, v131).
 - [x] Sistem verileri dinamik: yönetici Ayarlar 4 sekme (fiyatlandırma/kurallar/tanılama/logs), kurallar+h saatler düzenlenebilir, `app_logs` tablosu ve log listesi; kurye/restoran Sistem'de yalnız fiyat+kurallar (`d478d7c4`, v130).
 - [x] Sipariş kartı tam sayfa + “SİPARİŞ KARTI” başlığı + tek satır butonlar (kurye/restoran/yönetici) — v127-129.

@@ -36,7 +36,7 @@
       }).join('') +
       '<button class="nav-wide' + (S.tab === 'profil' ? ' on' : '') + '" data-t="profil" style="grid-column:1/-1">👤 Profil</button>' +
       '<div class="nav-foot">' +
-        '<button class="' + (S.tab === 'ayarlar' ? 'on' : '') + '" data-t="ayarlar">⚙ Ayarlar</button>' +
+        '<button class="' + (S.tab === 'ayarlar' ? 'on' : '') + '" data-t="ayarlar">⚙ Sistem</button>' +
         '<button id="adm-logout">⏻ Çıkış</button>' +
       '</div>';
     Array.prototype.forEach.call($('adm-nav').querySelectorAll('[data-t]'), function (b) {
@@ -645,7 +645,7 @@
 
   function viewAyarlar() {
     if (!S.ayarTab) S.ayarTab = 'fiyat';
-    head('Ayarlar', 'Fiyatlandırma · Kurallar · Tanılama · Logs');
+    head('Sistem', 'Fiyatlandırma · Kurallar · Tanılama · Logs');
     panel('<div class="seg four ayar-seg" id="ay-seg">' + AYARLAR.map(function (a) {
       return '<button data-ay="' + a[0] + '" class="' + (S.ayarTab === a[0] ? 'on' : '') + '">' + a[1] + '</button>';
     }).join('') + '</div><div id="ay-body"></div>');
@@ -700,7 +700,6 @@
       panelAy('<h3 style="font-size:15px;margin:0 0 8px">Kurye paket limiti</h3>' +
         '<div class="fld" style="max-width:220px"><label>Aynı anda taşınabilecek paket (1–99)</label>' +
         '<input id="lim" type="number" min="1" max="99" value="' + (st.limit || 3) + '"></div>' +
-        '<button class="p" id="lsave" style="margin-bottom:18px">Limiti Kaydet</button>' +
         '<h3 style="font-size:15px;margin:0 0 8px">Çalışma saatleri</h3>' +
         '<div class="acts" style="gap:8px;max-width:420px">' +
           '<div class="fld" style="flex:1;margin:0"><label>Açılış</label><input id="open" type="time" value="' + esc(st.open_time || '07:00') + '"></div>' +
@@ -713,10 +712,17 @@
         alan('r-cihaz', 'Cihaz (POS–Telefon)', r.cihaz) +
         alan('r-sabit', 'Sabit kurye', r.sabit) +
         '<button class="p" id="ksave" style="margin-top:6px">Kaydet</button>');
-      $('lsave').onclick = function () {
-        API.yonetim('limit', { limit: Number($('lim').value) }).then(function () {
-          UI.toast('Limit kaydedildi', 'success');
-        }).catch(function (e) { UI.toast(e.message || 'Kaydedilemedi', 'error'); });
+      var limZaman = null, limSon = Number($('lim').value) || 0;
+      $('lim').oninput = function () {
+        clearTimeout(limZaman);
+        limZaman = setTimeout(function () {
+          var v = Number($('lim').value);
+          if (!v || v === limSon) return;
+          API.yonetim('limit', { limit: v }).then(function () {
+            limSon = v;
+            UI.toast('Limit kaydedildi: ' + v, 'success');
+          }).catch(function (e) { UI.toast(e.message || 'Kaydedilemedi', 'error'); });
+        }, 600);
       };
       $('ksave').onclick = function () {
         var body = {
