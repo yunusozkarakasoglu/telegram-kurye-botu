@@ -242,3 +242,10 @@ python3 tools/verify_package.py
 - Km penceresinde alan mevcut ve görünür: etiket **📝 Kurye notu (opsiyonel)**, alan 384×62 px, amber çerçeve + açıklama.
 - Kayıt: “Ambalaj zayıf” → `packages.courier_note` dolu; kart yeniden açıldığında **Kurye notu** amber kutuda.
 - Asset **v100** (önbellek kırma).
+
+### Son doğrulama (2026-11-26, kurye kartı düzeni)
+
+- Kart: **Restoran notu** = “Kapıda bekle”, **Kurye notu** = “Ambalaj zayıf, geç teslim” (ikisi de her zaman görünür).
+- Butonlar: `Restoran Konumu (180px) | Restoranı Ara (180px)` → `Km gir · teslim aldım (367px)` → `Aktar | İptal et`.
+- Km penceresinde `#knote` görünür (384×62), etiket **📝 Kurye notu (opsiyonel)**; kaydetti (150 TL, not DB'de).
+- deploy `15bb6915` (v104).
