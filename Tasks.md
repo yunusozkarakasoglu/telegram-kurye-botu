@@ -2,6 +2,10 @@
 
 ## Açık
 
+- [ ] **Cloudflare Workers API kesintisi** (26.11): deploy blokajda (`10001` / 504). Düzelince `commit b399385` yayınlanacak (v118): oturum 401 → giriş ekranı, CPU optimizasyonu.
+- [ ] **CPU/CPU limiti**: `Worker exceeded resource limits` (503) aralıklı görüldü. v118 sonrası ölç; sürerse ikinci tur (settings/tariff/regions tek sorgu, bildirimde ek sorguyu kaldırma, PIN hash maliyeti).
+- [ ] **Kota görünümü**: Workers/D1 kullanımı (istek, CPU, satır okuma) panelden haftalık kontrol; 5 sn'lik yoklamayı 15 sn'ye çekme planı.
+
 ### Yarın (2026-11-26): performans + kota
 - [ ] **GET isteklerinde optimizasyon**: Mini App 5 sn'lik yoklama (3 istek) → 10-15 sn + tek toplu uç (`/api/durum` benzeri); ekran kapalıyken durdur.
 - [ ] Rapor/Canlı Saha sorgularına tarih zorunluluğu + indeks kontrolü.

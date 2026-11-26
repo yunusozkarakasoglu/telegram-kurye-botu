@@ -5,6 +5,7 @@
 > Burada yalnız acil düzeltmeler yapılır.
 >
 > **Sıradaki odak (26.11):** GET optimizasyonu + kota verimliliği, ardından arayüz düzenlemeleri.
+> **Aktif olay:** Cloudflare Workers API 504/10001 → deploy blokajı; runtime sağlıklı (20/20 200).
 
 1. **Tamamlandı — Yerel v2 çekirdek:** kabul/öncelik, aktarım + bildirim + onay, profil/harita/arama, medya yok sayma, durum etiketleri, komut menüleri, bölge/telefon/tarife yönetimi, kendi kendine kayıt, hesap aktif/pasif/sil, iptal akışı, havuz bölge gruplama. Kanıt: `Test-Raporu.md`.
 2. **Sürüyor — Canlı pilot (phase-5):** phase-1/2 tamam; phase-3 sipariş→kabul→km→teslim→kilit doğrulandı; phase-5'te yönetici ekranları ve 10 paketlik bölge grubu hazır. Ayrıntı: `Canli-Pilot-Raporu.md`.

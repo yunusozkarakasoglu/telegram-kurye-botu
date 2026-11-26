@@ -249,3 +249,11 @@ python3 tools/verify_package.py
 - Butonlar: `Restoran Konumu (180px) | Restoranı Ara (180px)` → `Km gir · teslim aldım (367px)` → `Aktar | İptal et`.
 - Km penceresinde `#knote` görünür (384×62), etiket **📝 Kurye notu (opsiyonel)**; kaydetti (150 TL, not DB'de).
 - deploy `15bb6915` (v104).
+
+### Olay kaydı (2026-11-26, Cloudflare kesintisi)
+
+- `wrangler deploy` → `Unable to authenticate request [code: 10001]`; Workers API bazı çağrılarda 504 HTML döndü.
+- Token `user/tokens/verify` → **active**; `zones` API → 200 ⇒ sorun bizim yetkide değil.
+- Runtime: `/saglik` 20/20 → 200; `/api/giris` 19/20 → 200. Hata gövdesi: “Worker exceeded resource limits” (CPU).
+- Tarayıcıda (Telegram dışı) `Yetkilendirme başlığı yok` beklenen davranış; v118 ile giriş ekranına düşecek.
+- Yerel doğrulama yapılamadı (dev sunucu kapalı); kod `tsc` temiz, commit `b399385`.
