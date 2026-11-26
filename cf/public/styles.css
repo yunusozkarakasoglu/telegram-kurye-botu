@@ -449,7 +449,8 @@ textarea{width:100%;font:inherit;font-size:15px;padding:10px 12px;border:1px sol
 .kpi b{display:block;font-size:17px;line-height:1.2}
 .kpi small{display:block;color:var(--t2);font-size:10px;margin-top:2px}
 
-.pk-hd .pkx{margin-left:6px;width:28px;height:28px;min-height:28px;padding:0;border-radius:8px;border:1px solid var(--ln);background:transparent;font-size:14px;line-height:1}
+.pk-hd .pkx{margin-left:6px;width:28px;height:28px;min-height:28px;padding:0;border-radius:8px;border:1px solid var(--er);background:transparent;color:var(--er);font-size:14px;font-weight:700;line-height:1}
+.pk-hd .pkx:active{background:var(--erb)}
 .pk-ft .two{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .pk-ft .two button{min-height:42px}
 

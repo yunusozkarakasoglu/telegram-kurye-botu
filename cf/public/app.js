@@ -81,8 +81,13 @@
 
   function nav(items, counts) {
     var nv = $('nv');
+    var otomatik = {
+      havuz: (S.pool && S.pool.packages) ? S.pool.packages.length : 0,
+      paketlerim: (S.mine && S.mine.packages) ? S.mine.packages.length : 0,
+    };
     nv.innerHTML = items.map(function (x) {
-      var c = counts && counts[x[0]];
+      var c = (counts && counts[x[0]] != null) ? counts[x[0]] : otomatik[x[0]];
+      if (!c) c = 0;
       return '<button class="' + (S.tab === x[0] ? 'on' : '') + '" data-p="' + x[0] + '"><i>' + x[1] + '</i>' + x[2] +
         (c ? '<em>' + c + '</em>' : '') + '</button>';
     }).join('') + '<button class="nv-menu" id="nv-menu"><i>☰</i>Menü</button>';
