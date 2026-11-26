@@ -10,11 +10,13 @@ Global kurallar (`~/.pi/agent/AGENTS.md`) geçerlidir; burada yalnız bu projeye
 
 ## Kaynak ve mimari
 
+- **Canlı ürün `cf/` (Cloudflare Workers + D1, Mini App)**; `bot.py` + `kurye/` **dondurulmuş legacy** (davranış referansı, yeni iş gelmez). Kural çelişirse `cf/` geçerlidir.
 - Çalışan kaynak `bot.py` + `kurye/`; eski `Telegram-Kurye-Botu.zip` yalnız göç/test fikstürüdür, **değiştirilmez**.
 - Python 3.11+, **ek çalışma zamanı bağımlılığı yok** (standart kütüphane + SQLite). Global React/ESLint/JWT standartları bu projede uygulanmaz; karşılığı `ruff` + `unittest`'tir.
 - Modül ≤300 satır; her sorumluluk ayrı mixin dosyası (`forms`, `acceptance`, `transfer`, `profile`, `regions`, `contacts`, `orders`, `pricing`, `views`, `outbox`, `runner`). Sabitler `kurye/constants.py`.
 - Atama, rezervasyon, aktarım ve km düzeltme **yalnız kısa `BEGIN IMMEDIATE` işlemi** içinde; Telegram ağı bu işlemin dışında (ayrı gönderim işçisi).
 - Şema değişikliği `kurye/database.py` içinde geriye uyumlu göç olarak eklenir; canlı veritabanı asla silinip yeniden kurulmaz.
+- **D1 (cf/) yeni kolon:** yalnız `cf/src/db.ts → NEW_COLUMNS`'a ekle + `wrangler deploy`. Şema önbelleği (Cache API) anahtarı kolon tanımlarından **otomatik** türetilir; elle sürüm artırma yok, ilk istekte kolon eklenir. ALTER'ı istek işleyicisine (api.ts) **yazma**.
 
 ## Onaylı iş kuralları (sormadan değiştirme)
 
@@ -26,6 +28,8 @@ Global kurallar (`~/.pi/agent/AGENTS.md`) geçerlidir; burada yalnız bu projeye
 - İptal: havuza/teslim alınmadan ücretsiz; alımdan 10 dk altı taban, üstü tam ücret; tüm iptaller yöneticiye gider. Aktif/uygun kurye sorguları `active=1 AND deleted=0`, aktif paket sorguları `cancelled_at IS NULL` içerir.
 
 ## Kalite kapısı (commit öncesi)
+
+Cloudflare tarafı (canlı): `cd cf && ./node_modules/.bin/tsc --noEmit && npx wrangler deploy` + `python3 tests-e2e/akis.py` (80/80 beklenir).
 
 ```bash
 ruff check bot.py kurye tests tools
