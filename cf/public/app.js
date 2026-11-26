@@ -148,9 +148,10 @@
     function row(p) {
       var checked = S.sel[p.id] ? ' checked' : '';
       return '<label class="row"><input type="checkbox" data-i="' + p.id + '"' + checked + '>' +
-        '<div><b>Paket ' + p.number + ' · ' + esc(p.restaurant) + '</b>' +
+        '<div><b>' + esc(p.restaurant) + '</b>' +
         '<small>Talep #' + p.batch + '-' + p.number + ' · ' + esc(p.region || '') + '</small></div>' +
-        '<span class="tag' + (p.payment === 'Kart' ? ' ac' : '') + '">' + esc(p.payment || '') + '</span></label>';
+        '<span class="rowr"><span class="tag' + (p.payment === 'Kart' ? ' ac' : '') + '">' + esc(p.payment || '') + '</span>' +
+        sureEtiket(p.created_at) + '</span></label>';
     }
 
     if (S.view === 'tumu') {
@@ -370,7 +371,7 @@
           return '<button class="prow" data-open="' + p.id + '">' +
             '<span><b>' + esc(p.region || 'Bölge yok') + ' · ' + esc(p.restaurant) + '</b>' +
             '<small>#' + p.batch + '-' + p.number + ' · ' + esc(p.payment || 'Ödeme yok') + ' · ' + kmTxt + '</small></span>' +
-            '<em>' + (p.fee_tl == null ? '' : money(p.fee_tl)) + '</em></button>';
+            '<span class="rr"><em>' + (p.fee_tl == null ? '' : money(p.fee_tl)) + '</em>' + sureEtiket(p.created_at) + '</span></button>';
         }).join('') + '</div>';
     }
     Array.prototype.forEach.call(main.querySelectorAll('button[data-ofs]'), function (b) { b.onclick = offersSheet; });
@@ -388,6 +389,27 @@
     var cx = sh.querySelector('[data-close]');
     if (cx) cx.onclick = function () { UI.closeSheet(); };
     bindPkgActions(sh, [p]);
+  }
+
+  /** Havuza atıldığından beri geçen dakika — tamamen istemcide, API çağrısı yok. */
+  function gecenDk(createdAt) {
+    if (!createdAt) return null;
+    return Math.max(0, Math.floor((Date.now() / 1000 - createdAt) / 60));
+  }
+  function sureEtiket(createdAt) {
+    var dk = gecenDk(createdAt);
+    if (dk == null) return '';
+    return '<em class="ela' + (dk >= 10 ? ' late' : '') + '" data-elapsed="' + createdAt + '">' + dk + ' dk</em>';
+  }
+  /** Sadece metin güncelle: yeniden çizim/istek yok. */
+  function tickElapsed() {
+    var nodes = document.querySelectorAll('[data-elapsed]');
+    for (var i = 0; i < nodes.length; i++) {
+      var dk = gecenDk(Number(nodes[i].getAttribute('data-elapsed')));
+      if (dk == null) continue;
+      nodes[i].textContent = dk + ' dk';
+      nodes[i].className = 'ela' + (dk >= 10 ? ' late' : '');
+    }
   }
 
   function dayBounds(offset) {
@@ -1050,7 +1072,7 @@
       return '<button class="rrow ' + cls + '" data-pkg="' + p.id + '">' +
         '<span class="rl"><b>Talep #' + p.batch + '-' + p.number + '</b>' +
           '<small>' + esc(p.region || 'Bölge yok') + ' · ' + esc(p.payment || 'Ödeme yok') + '</small></span>' +
-        '<span class="rr"><em class="stg">' + esc(st || '—') + '</em><i>' + (mins == null ? '—' : mins + ' dk') + '</i></span></button>';
+        '<span class="rr"><em class="stg">' + esc(st || '—') + '</em>' + sureEtiket(p.created_at) + '</span></button>';
       }).join('') : '<div class="empty"><b>Kayıt yok</b>Bu filtrede paket bulunmuyor.</div>';
     })();
     Array.prototype.forEach.call(main.querySelectorAll('button[data-f]'), function (b) {
@@ -1915,6 +1937,7 @@
       }
       refresh(true);
       setInterval(function () { refresh(false); }, 5000);
+      setInterval(tickElapsed, 30000);
       setInterval(tick, 1000);
       document.addEventListener('visibilitychange', function () {
         if (!document.hidden) refresh(false);

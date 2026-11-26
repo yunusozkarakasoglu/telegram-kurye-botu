@@ -538,3 +538,11 @@ header h1{display:inline}
   border-radius:12px;font-size:13px;line-height:1.3}
 .poolinfo .pill{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;
   background:#e6a817;color:#1b1b1b;font-weight:700;font-size:13px}
+
+.rowr{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none}
+.ela{font-style:normal;font-size:11px;color:var(--t2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ela.late{color:var(--er);font-weight:700}
+.rrow .rr .ela{margin-top:2px}
+
+.prow .rr{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none}
+.prow .rr em{white-space:nowrap}
