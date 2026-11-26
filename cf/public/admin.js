@@ -67,7 +67,7 @@
     var bit = f.to ? new Date((f.to - 1) * 1000) : gun(0);
     var sec = { preset: f.preset || 'today', status: f.status || '', pay: f.pay || '', grup: f.grup || '' };
     var sh = UI.openSheet(
-      '<h2>Filtrele</h2>' +
+      '<div class="sheethead"><h2>Filtrele</h2><button class="sheetx" id="of-x" title="Kapat">✕</button></div>' +
       '<div class="fld"><label>Zaman</label><div class="seg four">' +
         [['today', 'Bugün'], ['yesterday', 'Dün'], ['range', 'Tarih aralığı'], ['all', 'Tümü']].map(function (x) {
           return '<button data-t="' + x[0] + '" class="' + (sec.preset === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
@@ -114,6 +114,7 @@
         }
       };
     });
+    sh.querySelector('#of-x').onclick = function () { UI.closeSheet(); };
     sh.querySelector('#of-clear').onclick = function () {
       S.ozetFilter = { preset: 'today', from: null, to: null, status: '', pay: '', grup: '' };
       UI.closeSheet(); viewOzet();

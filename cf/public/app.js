@@ -406,11 +406,20 @@
 
   function renderGecmis() {
     var all = (S.history && S.history.items) || [];
+    var adv = S.histAdv || {};
     var bounds = null;
-    if (S.histDate) {
-      bounds = [Math.floor(Date.parse(S.histDate + 'T00:00:00+03:00') / 1000), Math.floor(Date.parse(S.histDate + 'T00:00:00+03:00') / 1000) + 86400];
-    } else if (S.histRange !== 'all') {
-      bounds = dayBounds(S.histRange === 'today' ? 0 : 1);
+    if (adv.when === 'today') bounds = dayBounds(0);
+    else if (adv.when === 'yesterday') bounds = dayBounds(1);
+    else if (adv.when === 'date' && adv.date) {
+      var t0 = Math.floor(Date.parse(adv.date + 'T00:00:00+03:00') / 1000);
+      bounds = [t0, t0 + 86400];
+    } else if (!adv.when) {
+      if (S.histDate) {
+        var h0 = Math.floor(Date.parse(S.histDate + 'T00:00:00+03:00') / 1000);
+        bounds = [h0, h0 + 86400];
+      } else if (S.histRange !== 'all') {
+        bounds = dayBounds(S.histRange === 'today' ? 0 : 1);
+      }
     }
     var items = all.filter(function (p) {
       if (!bounds) return true;
@@ -431,7 +440,7 @@
     });
     setHeader('Geçmiş', items.length + ' kayıt');
     var main = $('mn');
-    var advCount = (f.status ? 1 : 0) + (f.pay ? 1 : 0) + (f.grup ? 1 : 0);
+    var advCount = (f.when ? 1 : 0) + (f.status ? 1 : 0) + (f.pay ? 1 : 0) + (f.grup ? 1 : 0);
     var bar = '<div class="filterbar"><button id="hf-open">⚙ Filtre' + (advCount ? ' (' + advCount + ')' : '') + '</button>' +
       (advCount ? '<button id="hf-clear">✕ Temizle</button>' : '') + '</div>';
     var quick = '<div class="seg four">' +
@@ -488,9 +497,17 @@
 
   function histFiltreSheet() {
     var f = S.histAdv || {};
-    var sec = { status: f.status || '', pay: f.pay || '', grup: f.grup || '' };
+    var bugun = new Date();
+    var sec = { when: f.when || '', date: f.date || bugun.toISOString().slice(0, 10), status: f.status || '', pay: f.pay || '', grup: f.grup || '' };
     var sh = UI.openSheet(
-      '<h2>Filtrele</h2>' +
+      '<div class="sheethead"><h2>Filtrele</h2><button class="sheetx" id="hf-x" title="Kapat">✕</button></div>' +
+      '<div class="fld"><label>Zaman</label><div class="seg four">' +
+        [['', 'Tümü'], ['today', 'Bugün'], ['yesterday', 'Dün'], ['date', 'Tarih seç']].map(function (x) {
+          return '<button data-when="' + x[0] + '" class="' + (sec.when === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
+        }).join('') + '</div></div>' +
+      '<div id="hf-date" style="display:' + (sec.when === 'date' ? 'block' : 'none') + '">' +
+        '<div class="fld"><label>Tarih</label><input id="hf-date-in" type="date" value="' + esc(sec.date) + '"></div>' +
+      '</div>' +
       '<div class="fld"><label>Durum</label><div class="seg two">' +
         [['', 'Tümü'], ['teslim', 'Teslim edildi'], ['iptal', 'İptal edildi']].map(function (x) {
           return '<button data-st="' + x[0] + '" class="' + (sec.status === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
@@ -505,12 +522,17 @@
         }).join('') + '</div></div>' +
       '<button class="p" id="hf-apply" style="width:100%">Filtrele</button>' +
       '<button class="d" id="hf-reset" style="width:100%;margin-top:6px">Filtreyi temizle</button>');
-    Array.prototype.forEach.call(sh.querySelectorAll('[data-st],[data-pay],[data-grup]'), function (b) {
+    sh.querySelector('#hf-x').onclick = function () { UI.closeSheet(); };
+    Array.prototype.forEach.call(sh.querySelectorAll('[data-when],[data-st],[data-pay],[data-grup]'), function (b) {
       b.onclick = function () {
         var grup = b.parentElement;
-        var attr = b.hasAttribute('data-st') ? 'data-st' : b.hasAttribute('data-pay') ? 'data-pay' : 'data-grup';
+        var attr = b.hasAttribute('data-when') ? 'data-when' : b.hasAttribute('data-st') ? 'data-st'
+          : b.hasAttribute('data-pay') ? 'data-pay' : 'data-grup';
         var v = b.getAttribute(attr);
-        if (attr === 'data-st') sec.status = v;
+        if (attr === 'data-when') {
+          sec.when = v;
+          sh.querySelector('#hf-date').style.display = v === 'date' ? 'block' : 'none';
+        } else if (attr === 'data-st') sec.status = v;
         else if (attr === 'data-pay') sec.pay = v;
         else sec.grup = v;
         Array.prototype.forEach.call(grup.children, function (x) { x.classList.remove('on'); });
@@ -519,7 +541,10 @@
     });
     sh.querySelector('#hf-reset').onclick = function () { S.histAdv = null; UI.closeSheet(); render(); };
     sh.querySelector('#hf-apply').onclick = function () {
-      S.histAdv = { status: sec.status, pay: sec.pay, grup: sec.grup };
+      var d = sh.querySelector('#hf-date-in');
+      var tarih = d ? d.value : '';
+      if (sec.when === 'date' && !tarih) { UI.toast('Tarih seçin', 'error'); return; }
+      S.histAdv = { when: sec.when, date: sec.when === 'date' ? tarih : '', status: sec.status, pay: sec.pay, grup: sec.grup };
       UI.closeSheet(); render();
     };
   }
@@ -1014,7 +1039,7 @@
     var end = f.to ? new Date(f.to * 1000) : day(0);
     var preset = f.preset || '';
     var sh = UI.openSheet(
-      '<h2>Filtrele</h2>' +
+      '<div class="sheethead"><h2>Filtrele</h2><button class="sheetx" id="rf-x" title="Kapat">✕</button></div>' +
       '<div class="fld"><label>Zaman</label><div class="seg four">' +
         '<button data-t="" class="' + (preset === '' ? 'on' : '') + '">Tümü</button>' +
         '<button data-t="today" class="' + (preset === 'today' ? 'on' : '') + '">Bugün</button>' +
@@ -1058,6 +1083,7 @@
         }
       };
     });
+    sh.querySelector('#rf-x').onclick = function () { UI.closeSheet(); };
     sh.querySelector('#rf-clear').onclick = function () {
       S.restAdv = null; UI.closeSheet(); loadRest();
     };
