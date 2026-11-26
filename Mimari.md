@@ -12,6 +12,15 @@
 - `PAYMENTS`: Nakit, Kart, Ödendi, **Cihaz hatası (ödemesiz)**.
 - `CANCEL_REASONS`: + **Ambalaj yetersiz/patladı**, + **30 dk teslim süresi aşıldı**.
 
+## Yedekleme ve izleme (26.11)
+
+- **Yedek:** `tools/yedek.sh` (D1 export, `CREATE TABLE` kontrolü, son 30 dosya) → `backups/`.
+  - Yerel: systemd user timer `kurye-yedek.timer` (03:00, persistent).
+  - CI: `.github/workflows/yedek.yml` → artifact (90 gün) + **GitHub Release** `yedek-<zaman>` (son 30); `permissions: contents: write` gerekir.
+  - Token: Packonexpress hesabı **D1 Write + Workers Scripts Write**.
+- **İzleme:** `.github/workflows/izleme.yml` → 10 dk'da bir `/saglik`; başarısızsa Telegram uyarısı.
+- **Geri yükleme:** `npx wrangler d1 execute kurye-db --remote --file=yedek.sql` (önce test D1). Yerel `sqlite3` tatbikatı geçti.
+
 ## Yönetici paneli (2026-11-25)
 
 - Menü: 2 sütun; en altta Profil (tam satır) + Ayarlar|Çıkış (yan yana).

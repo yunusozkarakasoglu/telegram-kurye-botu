@@ -265,3 +265,12 @@ python3 tools/verify_package.py
 - Tarayıcıda (Telegram dışı): 401 → **giriş ekranı** + test kullanıcı listesi (6); `undefined.apply` promise hatası giderildi.
 - Yerel yedek: `backups/kurye-20261126-1931.sql` (48 KB, 40 tablo), geri yükleme doğrulandı (9 hesap/40 paket). Günlük 03:00 systemd timer aktif.
 - İzleme workflow: 10 dk'da bir, başarılı (`kod=200`).
+
+### Kapanış doğrulaması (2026-11-26 akşam)
+
+- Deploy: `d07391bf` (v119) — Workers Paid sonrası blokaj bitti.
+- 30 ardışık `/api/giris` → **30/30 200** (CPU 503 yok).
+- Yedek: yerel `backups/kurye-*.sql` (48 KB, 40 tablo) + CI artifact + Release `yedek-20261126-1708` (48.406 bayt).
+- Geri yükleme: `sqlite3` → 9 hesap / 40 paket / 25 batch doğrulandı.
+- İzleme workflow: `success`, `kod=200`.
+- `tsc --noEmit` ✅ · `ruff` ✅ · e2e **78/78** (son çalıştırma) · asset v119.

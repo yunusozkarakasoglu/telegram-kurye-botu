@@ -255,3 +255,9 @@ Kullanıcının **Bölgeler** ekranında tanımladığı listeden 4 bölge seçi
 - Bu proje **legacy**: yalnız acil düzeltme; yeni özellik PackOn Express'te.
 - Açık risk: `GET /api/giris/kullanicilar` geçici test ucu (tüm PIN'leri 1234 yapar) ve
   `pin_plain` (düz metin PIN) canlıda duruyor → yeni projeye geçişte kaldırılacak.
+
+### 26.11.2026 — saha durumu
+
+- Canlı sürüm **v119** (`d07391bf`), Workers Paid aktif; saha kullanımı devam ediyor.
+- 401 alan oturumlar artık **giriş ekranına** düşüyor (mock veri görünmüyor).
+- Yedek/izleme devrede; geri yükleme testi geçti.
