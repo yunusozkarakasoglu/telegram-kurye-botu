@@ -645,8 +645,8 @@
 
   function viewAyarlar() {
     if (!S.ayarTab) S.ayarTab = 'fiyat';
-    head('Ayarlar', 'Paket limiti · Ücret tarifesi · Çalışma saatleri');
-    panel('<div class="seg three" id="ay-seg">' + AYARLAR.map(function (a) {
+    head('Ayarlar', 'Fiyatlandırma · Kurallar · Tanılama · Logs');
+    panel('<div class="seg four ayar-seg" id="ay-seg">' + AYARLAR.map(function (a) {
       return '<button data-ay="' + a[0] + '" class="' + (S.ayarTab === a[0] ? 'on' : '') + '">' + a[1] + '</button>';
     }).join('') + '</div><div id="ay-body"></div>');
     Array.prototype.forEach.call($('ay-seg').children, function (b) {
