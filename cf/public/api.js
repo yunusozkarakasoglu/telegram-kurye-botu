@@ -482,6 +482,7 @@
         if (e && (e.status === 401 || e.status === 403 || e.code === 'login_required' || e.code === 'unauthorized')) {
           localStorage.removeItem('loginToken');
           localStorage.removeItem('loginTokenUser');
+          mode = 'real';   // sunucu ayakta, kimlik yok → gerçek modda giriş ekranı
           throw e;
         }
         Api.lastError = (e && e.message) || 'kimlik doğrulanamadı';
@@ -496,7 +497,9 @@
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);
         var target = mode === 'real' ? real : mock;
-        return target[m].apply(target, a);
+        var fn = target[m] || real[m];
+        if (typeof fn !== 'function') return Promise.reject(new Error('Bu işlem bu modda yok: ' + m));
+        return fn.apply(target, a);
       };
     });
 

@@ -257,3 +257,11 @@ python3 tools/verify_package.py
 - Runtime: `/saglik` 20/20 → 200; `/api/giris` 19/20 → 200. Hata gövdesi: “Worker exceeded resource limits” (CPU).
 - Tarayıcıda (Telegram dışı) `Yetkilendirme başlığı yok` beklenen davranış; v118 ile giriş ekranına düşecek.
 - Yerel doğrulama yapılamadı (dev sunucu kapalı); kod `tsc` temiz, commit `b399385`.
+
+### Son doğrulama (2026-11-26, Workers Paid sonrası)
+
+- Deploy: `49f48e91` → `d07391bf` (v119), blokaj bitti.
+- 30 ardışık `/api/giris` → **30/30 200**; “Worker exceeded resource limits” yok.
+- Tarayıcıda (Telegram dışı): 401 → **giriş ekranı** + test kullanıcı listesi (6); `undefined.apply` promise hatası giderildi.
+- Yerel yedek: `backups/kurye-20261126-1931.sql` (48 KB, 40 tablo), geri yükleme doğrulandı (9 hesap/40 paket). Günlük 03:00 systemd timer aktif.
+- İzleme workflow: 10 dk'da bir, başarılı (`kod=200`).
