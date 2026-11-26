@@ -515,6 +515,12 @@ textarea{width:100%;font:inherit;font-size:15px;padding:10px 12px;border:1px sol
   border:1px solid var(--ln);margin-bottom:2px}
 header h1{display:inline}
 
-.sheetx{width:34px;height:34px;min-height:34px;padding:0;border-radius:8px;border:1px solid var(--er);
-  background:transparent;color:var(--er);font-size:15px;font-weight:700;line-height:1;flex:none}
+.shead-acts{display:flex;align-items:center;gap:6px;flex:none}
+.sheetx{width:28px;height:28px;min-height:28px;padding:0;border-radius:7px;border:1px solid var(--er);
+  background:transparent;color:var(--er);font-size:13px;font-weight:700;line-height:1;flex:none}
+.sheetc{width:28px;height:28px;min-height:28px;padding:0;border-radius:7px;border:1px solid var(--ln);
+  background:transparent;color:var(--t2);font-size:13px;line-height:1;flex:none}
 .sheetx:active{background:var(--erb)}
+
+.notebox.cnote{border-color:#e6a817;background:rgba(230,168,23,.10)}
+.notebox.cnote small{color:#b07d00}

@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS drafts (
 CREATE TABLE IF NOT EXISTS batches (id INTEGER PRIMARY KEY, owner INTEGER NOT NULL REFERENCES accounts, created_at INTEGER, priority_used INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS packages (
   id INTEGER PRIMARY KEY, batch INTEGER NOT NULL REFERENCES batches, number INTEGER NOT NULL,
-  region TEXT NOT NULL, courier INTEGER REFERENCES accounts, payment TEXT, note TEXT,
+  region TEXT NOT NULL, courier INTEGER REFERENCES accounts, payment TEXT, note TEXT, courier_note TEXT,
   accepted_at INTEGER, picked_up_at INTEGER, delivered_at INTEGER,
   distance_km TEXT, courier_fee INTEGER, incoming INTEGER NOT NULL DEFAULT 0, payment_received INTEGER,
   incoming_from INTEGER, incoming_at REAL, cancelled_at INTEGER,

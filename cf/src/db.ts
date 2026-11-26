@@ -7,6 +7,7 @@ let columnsReady = false;
 const NEW_COLUMNS = [
   "ALTER TABLE accounts ADD COLUMN tg_chat_id INTEGER",
   "ALTER TABLE accounts ADD COLUMN pin_must_change INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE packages ADD COLUMN courier_note TEXT",
 ];
 
 export class Db {

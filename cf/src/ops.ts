@@ -39,7 +39,7 @@ export async function startKm(bot: Bot, user: Account, packageId: number): Promi
   return "Kilometre bekleniyor.";
 }
 
-export async function recordDistance(bot: Bot, courier: number, value: string): Promise<any> {
+export async function recordDistance(bot: Bot, courier: number, value: string, courierNote: string | null = null): Promise<any> {
   const pending = await bot.db.first<{ package: number }>("SELECT package FROM pending_distance WHERE courier=?", courier);
   if (!pending) { await kmChoices(bot, courier); return null; }
   const m = value.trim().match(KM_RE);
@@ -47,9 +47,9 @@ export async function recordDistance(bot: Bot, courier: number, value: string): 
   const distance = Number(m[1].replace(",", "."));
   const tariff = await bot.tariff();
   const fee = feeFor(tariff, distance, await bot.extraPerKm());
-  const changed = await bot.db.run(`UPDATE packages SET picked_up_at=?,distance_km=?,courier_fee=?
+  const changed = await bot.db.run(`UPDATE packages SET picked_up_at=?,distance_km=?,courier_fee=?,courier_note=coalesce(?,courier_note)
     WHERE id=? AND courier=? AND picked_up_at IS NULL AND delivered_at IS NULL AND cancelled_at IS NULL`,
-    bot.now(), String(distance), fee, pending.package, courier);
+    bot.now(), String(distance), fee, courierNote || null, pending.package, courier);
   await bot.db.run("DELETE FROM pending_distance WHERE courier=?", courier);
   if (!changed) { await bot.send(courier, "Bu paketin kilometre girişi artık açık değil."); return null; }
   await bot.db.run("UPDATE packages SET incoming=0,incoming_from=NULL,incoming_at=NULL WHERE id=?", pending.package);

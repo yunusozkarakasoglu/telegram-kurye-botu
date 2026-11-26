@@ -270,14 +270,18 @@ def senaryo_restoran_kurye(api: Api, o: dict[str, Oturum]) -> dict:
                       token=k1.token, bekle_hata=True)
     T.esit("km girmeden teslim engellendi", 409, erken.get("_status"))
 
-    km = api.cagir("POST", f"/api/paket/{hedef['id']}/km", {"km": "4,5"}, token=k1.token)
+    km = api.cagir("POST", f"/api/paket/{hedef['id']}/km",
+                   {"km": "4,5", "note": "Zayıf ambalaj, geç teslim olabilir"}, token=k1.token)
     T.esit("4,5 km → 190 TL", 190, km.get("fee_tl"))
+    notlu = paket_bul(paketlerim(api, k1), hedef["id"]) or {}
+    T.esit("kurye notu kaydedildi", "Zayıf ambalaj, geç teslim olabilir", notlu.get("courier_note"))
 
     teslim = api.cagir("POST", f"/api/paket/{hedef['id']}/teslim", {"paid": True}, token=k1.token)
     T.ok("teslim edildi", bool(teslim.get("ok")))
 
     rapor = paket_bul(restoran_paketleri(api, rest), hedef["id"])
     T.esit("restoran raporunda durum", "Teslim edildi", rapor["status"])
+    T.esit("restoran kartında kurye notu", "Zayıf ambalaj, geç teslim olabilir", rapor.get("courier_note"))
     T.ok("raporda km/tutar/ödeme var",
          float(rapor["distance_km"]) == 4.5 and rapor["fee_tl"] == 190 and rapor["payment_received"] is True,
          f"km={rapor['distance_km']} tutar={rapor['fee_tl']} odeme={rapor['payment_received']}")

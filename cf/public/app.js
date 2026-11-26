@@ -299,6 +299,7 @@
         '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
       '</dl>' +
       '<div class="notebox"><small>Not</small><div>' + esc(p.note || '') + '</div></div>' +
+      (p.courier_note ? '<div class="notebox cnote"><small>Kurye notu</small><div>' + esc(p.courier_note) + '</div></div>' : '') +
       (p.transfer_from ? '<p class="note">Aktarma bilgisi: önceki kurye ' + esc(p.transfer_from) + '</p>' : '') + warn + '</div>' +
       (actions ? '<div class="pk-ft">' + actions + '</div>' : '') +
     '</div>';
@@ -443,11 +444,6 @@
     var advCount = (f.when ? 1 : 0) + (f.status ? 1 : 0) + (f.pay ? 1 : 0) + (f.grup ? 1 : 0);
     var bar = '<div class="filterbar"><button id="hf-open">⚙ Filtre' + (advCount ? ' (' + advCount + ')' : '') + '</button>' +
       (advCount ? '<button id="hf-clear">✕ Temizle</button>' : '') + '</div>';
-    var quick = '<div class="seg four">' +
-      [['all', 'Tümü'], ['today', 'Bugün'], ['yesterday', 'Dün']].map(function (r) {
-        return '<button data-r="' + r[0] + '" class="' + (!S.histDate && S.histRange === r[0] ? 'on' : '') + '">' + r[1] + '</button>';
-      }).join('') +
-      '<label class="cal' + (S.histDate ? ' on' : '') + '" title="Tarih seç">📅<input type="date" id="hdate" value="' + esc(S.histDate) + '"></label></div>';
 
     function satir(p) {
       return '<button class="prow" data-hopen="' + p.id + '"><span><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) + '</b>' +
@@ -472,11 +468,7 @@
       }).join('');
     }
 
-    main.innerHTML = quick + bar + body;
-    Array.prototype.forEach.call(main.querySelectorAll('[data-r]'), function (b) {
-      b.onclick = function () { S.histRange = b.getAttribute('data-r'); S.histDate = ''; render(); };
-    });
-    $('hdate').onchange = function () { S.histDate = $('hdate').value; render(); };
+    main.innerHTML = bar + body;
     var hf = $('hf-open');
     if (hf) hf.onclick = histFiltreSheet;
     var hc = $('hf-clear');
@@ -500,7 +492,9 @@
     var bugun = new Date();
     var sec = { when: f.when || '', date: f.date || bugun.toISOString().slice(0, 10), status: f.status || '', pay: f.pay || '', grup: f.grup || '' };
     var sh = UI.openSheet(
-      '<div class="sheethead"><h2>Filtrele</h2><button class="sheetx" id="hf-x" title="Kapat">✕</button></div>' +
+      '<div class="sheethead"><h2>Filtrele</h2><div class="shead-acts">' +
+        '<button class="sheetc" id="hf-reset" title="Filtreyi temizle">🧹</button>' +
+        '<button class="sheetx" id="hf-x" title="Kapat">✕</button></div></div>' +
       '<div class="fld"><label>Zaman</label><div class="seg four">' +
         [['', 'Tümü'], ['today', 'Bugün'], ['yesterday', 'Dün'], ['date', 'Tarih seç']].map(function (x) {
           return '<button data-when="' + x[0] + '" class="' + (sec.when === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
@@ -520,8 +514,7 @@
         [['', 'Yok'], ['region', 'Bölgeye'], ['restaurant', 'Restorana']].map(function (x) {
           return '<button data-grup="' + x[0] + '" class="' + (sec.grup === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
         }).join('') + '</div></div>' +
-      '<button class="p" id="hf-apply" style="width:100%">Filtrele</button>' +
-      '<button class="d" id="hf-reset" style="width:100%;margin-top:6px">Filtreyi temizle</button>');
+      '<button class="p" id="hf-apply" style="width:100%">Filtrele</button>');
     sh.querySelector('#hf-x').onclick = function () { UI.closeSheet(); };
     Array.prototype.forEach.call(sh.querySelectorAll('[data-when],[data-st],[data-pay],[data-grup]'), function (b) {
       b.onclick = function () {
@@ -613,6 +606,8 @@
       '<h2>Teslim aldım · #' + p.batch + '-' + p.number + '</h2>' +
       '<p>Teslimat mesafesini kilometre olarak girin.</p>' +
       '<input id="kmin" type="number" inputmode="decimal" step="0.1" min="0" placeholder="Örn. 3,5">' +
+      '<div class="fld" style="margin-top:10px"><label>Kurye notu (opsiyonel)</label>' +
+        '<textarea id="knote" rows="2" placeholder="Ör. ambalaj zayıf, geç teslim riski…"></textarea></div>' +
       '<div class="err" id="kerr"></div><div id="kpv"></div>' +
       '<button class="p" id="kok">Onayla</button>' +
       '<button class="d" id="kback">Vazgeç</button>',
@@ -635,7 +630,8 @@
     sh.querySelector('#kok').onclick = function () {
       var v = parseFloat(String(input.value).replace(',', '.'));
       if (!(v > 0)) { err.textContent = 'Geçerli bir kilometre girin'; return; }
-      API.kmGir(p.id, v).then(function (r) {
+      var knote = ($('knote') && $('knote').value ? $('knote').value : '').trim();
+      API.kmGir(p.id, v, knote).then(function (r) {
         UI.closeSheet();
         UI.toast('Kazanç hesaplandı: ' + money(r.fee_tl), 'success');
         refresh(true);
@@ -1039,7 +1035,9 @@
     var end = f.to ? new Date(f.to * 1000) : day(0);
     var preset = f.preset || '';
     var sh = UI.openSheet(
-      '<div class="sheethead"><h2>Filtrele</h2><button class="sheetx" id="rf-x" title="Kapat">✕</button></div>' +
+      '<div class="sheethead"><h2>Filtrele</h2><div class="shead-acts">' +
+        '<button class="sheetc" id="rf-clear" title="Filtreyi temizle">🧹</button>' +
+        '<button class="sheetx" id="rf-x" title="Kapat">✕</button></div></div>' +
       '<div class="fld"><label>Zaman</label><div class="seg four">' +
         '<button data-t="" class="' + (preset === '' ? 'on' : '') + '">Tümü</button>' +
         '<button data-t="today" class="' + (preset === 'today' ? 'on' : '') + '">Bugün</button>' +
@@ -1059,8 +1057,7 @@
         [['', 'Tümü'], ['var', 'Ödeme yapıldı'], ['yok', 'Ödeme yapılmadı']]
           .map(function (x) { return '<button data-pay="' + x[0] + '" class="' + ((f.pay || '') === x[0] ? 'on' : '') + '">' + x[1] + '</button>'; }).join('') +
       '</div></div>' +
-      '<button class="p" id="rf-apply" style="width:100%">Filtrele</button>' +
-      '<button class="d" id="rf-clear" style="width:100%;margin-top:6px">Filtreyi temizle</button>');
+      '<button class="p" id="rf-apply" style="width:100%">Filtrele</button>');
     var pick = { preset: preset, status: f.status || '', pay: f.pay || '' };
     Array.prototype.forEach.call(sh.querySelectorAll('[data-t],[data-st],[data-pay]'), function (b) {
       b.onclick = function () {
@@ -1123,7 +1120,8 @@
         '<dt>Ücret</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +
         '<dt>Hakediş</dt><dd>' + (p.payment_received === true ? 'Alındı' : p.payment_received === false ? 'Alınmadı' : '—') + '</dd>' +
       '</dl>' +
-      '<div class="notebox"><small>Not</small><div>' + esc(p.note || '') + '</div></div>' + cancelInfo +
+      '<div class="notebox"><small>Not</small><div>' + esc(p.note || '') + '</div></div>' +
+      (p.courier_note ? '<div class="notebox cnote"><small>Kurye notu</small><div>' + esc(p.courier_note) + '</div></div>' : '') + cancelInfo +
       (p.cancelled_at || p.delivered_at ? '' : '<button class="d" id="rp-cancel" style="width:100%">İptal Et</button>') +
       '<button class="d" id="rp-close" style="width:100%;margin-top:6px">Kapat</button>');
     sh.querySelector('#rp-close').onclick = function () { UI.closeSheet(); };

@@ -67,7 +67,9 @@
     var bit = f.to ? new Date((f.to - 1) * 1000) : gun(0);
     var sec = { preset: f.preset || 'today', status: f.status || '', pay: f.pay || '', grup: f.grup || '' };
     var sh = UI.openSheet(
-      '<div class="sheethead"><h2>Filtrele</h2><button class="sheetx" id="of-x" title="Kapat">✕</button></div>' +
+      '<div class="sheethead"><h2>Filtrele</h2><div class="shead-acts">' +
+        '<button class="sheetc" id="of-clear" title="Filtreyi temizle">🧹</button>' +
+        '<button class="sheetx" id="of-x" title="Kapat">✕</button></div></div>' +
       '<div class="fld"><label>Zaman</label><div class="seg four">' +
         [['today', 'Bugün'], ['yesterday', 'Dün'], ['range', 'Tarih aralığı'], ['all', 'Tümü']].map(function (x) {
           return '<button data-t="' + x[0] + '" class="' + (sec.preset === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
@@ -89,8 +91,7 @@
         [['', 'Yok'], ['region', 'Bölgeye'], ['restaurant', 'Restorana']].map(function (x) {
           return '<button data-grup="' + x[0] + '" class="' + (sec.grup === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
         }).join('') + '</div></div>' +
-      '<button class="p" id="of-apply" style="width:100%">Filtrele</button>' +
-      '<button class="d" id="of-clear" style="width:100%;margin-top:6px">Filtreyi temizle</button>');
+      '<button class="p" id="of-apply" style="width:100%">Filtrele</button>');
 
     Array.prototype.forEach.call(sh.querySelectorAll('[data-t],[data-st],[data-pay],[data-grup]'), function (b) {
       b.onclick = function () {
@@ -170,7 +171,8 @@
             '<div class="srow-l"><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) +
               (p.region ? ' · ' + esc(p.region) : '') + '</b>' +
               '<small>' + esc(p.courier_name ? 'Kurye: ' + p.courier_name : 'Kurye bekliyor') +
-              (p.payment ? ' · ' + esc(p.payment) : '') + '</small></div>' +
+              (p.payment ? ' · ' + esc(p.payment) : '') +
+              (p.courier_note ? ' · 📝 ' + esc(p.courier_note) : '') + '</small></div>' +
             '<div class="srow-r"><span class="stg">' + esc(p.status || '—') + '</span>' +
               '<em class="' + (p.late ? 'late' : '') + '">' + dk + '</em></div>' +
           '</div>';
@@ -251,6 +253,7 @@
         '<dt>Ödeme</dt><dd>' + (p.payment_received === true ? 'Alındı' : p.payment_received === false ? 'Alınmadı' : '—') + '</dd>' +
       '</dl>' +
       (p.note ? '<div class="notebox"><small>Not</small><div>' + esc(p.note) + '</div></div>' : '') +
+      (p.courier_note ? '<div class="notebox cnote"><small>Kurye notu</small><div>' + esc(p.courier_note) + '</div></div>' : '') +
       (kapali ? '' : '<div id="sp-ata"></div>') +
       '<button class="d" id="sp-close" style="width:100%;margin-top:8px">Kapat</button>');
     sh.querySelector('#sp-close').onclick = function () { UI.closeSheet(); };

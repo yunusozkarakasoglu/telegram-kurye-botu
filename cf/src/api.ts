@@ -248,7 +248,8 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       if (action === "km") {
         const value = String(body.km ?? "").trim();
         if (!value) return fail("Kilometre girin.", 422, "invalid");
-        const result = await apiCourier.setDistance(bot, user, packageId, value);
+        const not_ = String(body.note ?? "").trim().slice(0, 500);
+        const result = await apiCourier.setDistance(bot, user, packageId, value, not_ || null);
         return result.ok ? json(result) : fail(result.error || "Kilometre kaydedilemedi.", 422, "invalid");
       }
       if (action === "teslim") {

@@ -386,7 +386,7 @@
     },
     havuz: function () { return req('GET', '/api/havuz'); },
     kabul: function (ids) { return req('POST', '/api/kabul', { ids: ids }); },
-    kmGir: function (id, km) { return req('POST', '/api/paket/' + id + '/km', { km: km }); },
+    kmGir: function (id, km, note) { return req('POST', '/api/paket/' + id + '/km', { km: km, note: note || '' }); },
     teslim: function (id, paid) { return req('POST', '/api/paket/' + id + '/teslim', paid == null ? {} : { paid: !!paid }); },
     iptal: function (id, reason) { return req('POST', '/api/paket/' + id + '/iptal', { reason: reason }); },
     atamaKarar: function (id, kabul) { return req('POST', '/api/atama/' + id + (kabul ? '/kabul' : '/reddet')); },

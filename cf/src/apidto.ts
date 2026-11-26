@@ -25,6 +25,7 @@ export function pkgDto(pkg: PackageRow, state: string) {
     region: pkg.region || UNSPECIFIED,
     payment: pkg.payment || UNSPECIFIED,
     note: pkg.note || null,
+    courier_note: pkg.courier_note || null,
     restaurant_contact: pkg.restaurant_contact || null,
     restaurant_phone: pkg.restaurant_phone || null,
     map_url: pkg.restaurant_lat != null && pkg.restaurant_lng != null
