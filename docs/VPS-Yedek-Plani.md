@@ -126,7 +126,7 @@ app.packonexpress-vps.com {
 
 ## 9. Yapılacaklar (sıra)
 
-1. [ ] GitHub secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_ID`
+1. [x] GitHub secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_ID`
 2. [ ] VPS kirala + yukarıdaki kurulum
 3. [ ] `Db` SQLite adaptörü + Node sarmalayıcı (`vps/`)
 4. [ ] Senkron timer + geri dönüş scripti
