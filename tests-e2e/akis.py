@@ -549,6 +549,17 @@ def senaryo_durum_yetki(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
     yasak = api.cagir("GET", "/api/yonetim/ozet", token=k1.token, bekle_hata=True)
     T.esit("kurye yönetici ucuna erişemiyor", 403, yasak.get("_status"))
 
+    # REGRESYON (v141): yoklama ucu (GET /api/durum) kuryenin durumunu DEĞİŞTİRMEMELİ.
+    # Eskiden istemci yoklamayı POST /api/durum'a gönderiyordu → kurye sessizce çevrimdışı oluyordu.
+    for _ in range(2):
+        yoklama = api.cagir("GET", "/api/durum?mine=1", token=k1.token)
+        T.ok("yoklama (GET /api/durum) havuz döndürüyor", isinstance(yoklama.get("pool"), dict))
+    T.ok("yoklama damga (v) döndürüyor", isinstance(yoklama.get("v"), str) and "." in str(yoklama.get("v")))
+    ayni = api.cagir("GET", f"/api/durum?mine=1&v={yoklama.get('v')}", token=k1.token)
+    T.ok("aynı damgada 'unchanged' yanıtı", ayni.get("unchanged") is True)
+    kurye_durum = api.cagir("GET", "/api/oturum", token=k1.token)
+    T.esit("yoklama kuryeyi çevrimdışı yapmıyor", True, bool((kurye_durum.get("user") or {}).get("online")))
+
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Legacy kurye operasyonu uçtan uca test")

@@ -259,6 +259,12 @@
   };
 
   Mock.prototype.kayit = function () { return this.delay(function () { return { ok: true }; }); };
+  Mock.prototype.durumOzet = function () {
+    var self = this;
+    return this.delay(function () {
+      return { v: 'mock', pool: null, offers: [], notifs: { items: [], unread: 0, last_read: 0 } };
+    });
+  };
   Mock.prototype.durum = function (online) {
     this.me.online = !!online;
     return this.delay(function () { return { ok: true, online: !!online }; });
@@ -401,7 +407,7 @@
       var sp = new URLSearchParams(location.search).get('tgWebAppStartParam') || '';
       return req('GET', '/api/oturum' + (sp ? '?tgWebAppStartParam=' + encodeURIComponent(sp) : ''));
     },
-    durum: function (v, mine) {
+    durumOzet: function (v, mine) {
       var q = '/api/durum?mine=' + (mine ? 1 : 0) + (v ? ('&v=' + encodeURIComponent(v)) : '');
       return req('GET', q);
     },
@@ -518,7 +524,7 @@
     }
   };
   ['oturum', 'havuz', 'kabul', 'atamaKarar', 'notEkle', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
-    'kazanc', 'talepVer', 'kuryeTalep', 'restoranKuryeler', 'paketlerimRestoran', 'profil', 'durum', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'girisKullanicilar', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
+    'kazanc', 'talepVer', 'kuryeTalep', 'restoranKuryeler', 'paketlerimRestoran', 'profil', 'durum', 'durumOzet', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'girisKullanicilar', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);
         var target = mode === 'real' ? real : mock;

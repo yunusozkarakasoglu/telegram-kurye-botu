@@ -10,13 +10,13 @@ Kullanım:
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
+import ssl
 import statistics
 import sys
-import time
-import http.client
-import ssl
 import threading
+import time
 import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
@@ -157,7 +157,9 @@ def yuk(kurye: str, pin: str, n: int, sure: int, taban: str) -> Sonuc:
 def rapor(s: Sonuc, n: int) -> dict:
     toplam = len(s.sureler)
     hatalar = sum(v for k, v in s.kodlar.items() if k == 0 or k >= 400)
-    yuzde = lambda p: round(statistics.quantiles(s.sureler, n=100)[p - 1] * 1000) if toplam > 1 else 0
+    def yuzde(p: int) -> int:
+        return round(statistics.quantiles(s.sureler, n=100)[p - 1] * 1000) if toplam > 1 else 0
+
     return {
         "eszamanli": n,
         "istek": toplam,

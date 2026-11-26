@@ -1862,7 +1862,7 @@
     }
     // Faz C: tek uç — havuz + teklifler + bildirimler (+ gerekiyorsa kendi paketlerim)
     var kendi = !!(full || S.tab === 'paketlerim');
-    var jobs = [API.durum(S.damga || '', kendi).then(function (r) {
+    var jobs = [API.durumOzet(S.damga || '', kendi).then(function (r) {
       if (r && r.unchanged) return;
       S.damga = r.v || '';
       if (r.pool) S.pool = r.pool;
@@ -1877,7 +1877,15 @@
       if (curRole() === 'kurye' && (S.offers || []).length && !UI.sheetOpen()) offersPopup();
       var assigns = ((S.notifs && S.notifs.items) || []).filter(function (n) { return n.kind === 'assign' && n.id > ((S.notifs && S.notifs.last_read) || 0); });
       if (curRole() === 'kurye' && assigns.length && !UI.sheetOpen()) assignmentPopup(assigns);
-    }).catch(function () {});
+    }).catch(function (e) {
+      // Sessiz yutma ekranı "Bağlanıyor…"da bırakıyordu → artık loglanır ve ekrana yazılır.
+      try { API.log('REFRESH HATA: ' + ((e && e.message) || e)); } catch (x) {}
+      var m = $('mn');
+      if (m && /Bağlanıyor/.test(m.textContent || '')) {
+        m.innerHTML = '<div class="empty"><b>Bağlantı kurulamadı</b>' + esc((e && e.message) || 'Bilinmeyen hata') +
+          '<br><small>Tekrar denemek için menüden çıkıp yeniden girin.</small></div>';
+      }
+    });
   }
 
   /* geri sayım (öncelik penceresi) */

@@ -386,3 +386,13 @@ python3 tools/verify_package.py
 | Kapalı sekme | Teslim: `✓ 48 dk` **yeşil sabit**; iptal: süre yok; canlı sayaç 0 |
 | Açık sekme | Teslim edilmemiş tüm paketler + canlı süre |
 | e2e | **80/80** · deploy `78994777` |
+
+### Kritik düzeltme (2026-11-27, v141)
+
+| Bulgu | Etki | Çözüm |
+|---|---|---|
+| `api.js → real` nesnesinde `durum` iki kez (GET yoklama + POST durum) | Sonuncusu kazandı → yoklama **POST /api/durum** oldu | GET yeniden adlandırıldı: **`durumOzet`** |
+| Paketi olan kurye | 409 `has_active` → ekran **"Bağlanıyor…"**da kaldı | Hata artık görünür + yoklama POST değil |
+| Paketi olmayan kurye | yoklama her 15 sn'de onu **çevrimdışı** yapıyordu | Yoklama durum değiştirmiyor |
+
+Doğrulama: 5× `GET /api/durum` → hepsi 200, `online` korunuyor; e2e **85/85** (3 yeni regresyon testi: havuz döndürme, `v` damgası, `unchanged`, çevrimiçi kalma). Deploy `ef1a90cd` (v141).
