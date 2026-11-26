@@ -2,6 +2,8 @@
 
 ## Açık
 
+- **Kural:** her faz sonunda hafıza + **commit + push**.
+
 - [x] **CI yedeği için token**: Packonexpress hesabı D1+Workers Scripts Write → secret eklendi, `yedek.yml` yeşil, Release'e yükleniyor (26.11).
 
 
@@ -115,7 +117,9 @@
 - [x] **Hata bildirimi**: yedek işi başarısız olursa Telegram'a uyarı.
 - [x] **Yedek yolu dışı**: `backups/` git dışı (`.gitignore`), sadece Release asset olarak uzakta.
 
-### Açık (yapılacak)
+### Açık
+
+- **Kural:** her faz sonunda hafıza + **commit + push**. (yapılacak)
 - [ ] `tools/geri-yukle.sh`: yedeği **test D1**'e yükleyip tablo/satır sayılarını karşılaştıran otomatik geri yükleme tatbikatı.
 - [ ] **Tam tatbikat (test D1)**: Release'teki yedeği test veritabanına yükle → uygulamayı test ortamında ayağa kaldır → giriş + sipariş akışı duman testi.
 - [ ] **Yedek tazeliği izleme**: son yedek 36 saatten eskiyse Telegram uyarısı (`backups/` + Release kontrolü).

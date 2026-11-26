@@ -6,12 +6,14 @@
 |---|---|
 | Canlı | `611454e3` · asset **v136** · 30/30 giriş 200 |
 | Plan | **Workers Paid ($5/ay)** — CPU 503'leri bitti, deploy açık |
+| Performans | **Faz A+B bitti** (retry, 15 sn jitter, idempotency, kuyruk, batch, hız sınırı) · sırada C (delta), D (outbox), E (yük testi) |
 | Yedek | yerel (systemd 03:00) + CI artifact (90 gün) + GitHub Release (son 30) — üçü de çalışıyor |
 | İzleme | `izleme.yml` 10 dk'da bir `/saglik` → Telegram uyarısı |
 | Geri yükleme | yerel `sqlite3` testi geçti; otomatik tatbikat **açık** (`Tasks.md → Yedekleme ve Geri Yükleme`) |
 | VPS soğuk yedek | plan hazır (`docs/VPS-Yedek-Plani.md`), kurulum **ertelendi** |
 | CI token | Packonexpress hesabı D1+Workers Scripts Write (`~/.pi/packone-d1-token`) |
 
+- **Çalışma kuralı (26.11):** Faz bitimlerinde **commit + push zorunlu**; hafıza (index/Tasks/Roadmaps/Project_info/Test-Raporu) aynı commit'te güncellenir.
 - Hedef: restoran → kurye Telegram operasyon botu; Python 3.11+ / SQLite, ek Python paketi yok.
 - Durum ve açık işler: `Tasks.md` → `Roadmaps.md`; kararlar `Mimari.md`; canlı pilot `Canli-Pilot-Raporu.md`.
 - Çalıştırma: `python3 bot.py --ayarlar ayarlar.json --veritabani kurye.sqlite3`.
