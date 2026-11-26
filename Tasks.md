@@ -2,6 +2,10 @@
 
 ## Açık
 
+- [ ] **CI yedeği için token**: 6d2d… hesabına D1 Edit yetkili yeni API token → `gh secret set CLOUDFLARE_API_TOKEN` (panel açılınca).
+- [ ] Yedek/izleme sağlık kontrolü: haftada bir `backups/` boyutu + `yedek.log` gözden geçir.
+- [ ] VPS tatbikatı (plan hazır: `docs/VPS-Yedek-Plani.md`).
+
 - [ ] GitHub secrets ekle (yedek + izleme workflow'ları için) — 4 secret.
 - [ ] VPS soğuk yedek: sunucu kurulumu → `Db` SQLite adaptörü → senkron timer → tatbikat (`docs/VPS-Yedek-Plani.md`).
 - [ ] Workers Paid'e geçiş (CPU 503'lerini bitirir) — Cloudflare paneli düzelince.
