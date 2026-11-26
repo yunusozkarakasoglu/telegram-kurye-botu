@@ -395,6 +395,8 @@
     gecmis: function () { return req('GET', '/api/gecmis'); },
     kazanc: function (range, date) { return req('GET', '/api/kazanc' + (date ? '?date=' + encodeURIComponent(date) : (range ? '?range=' + encodeURIComponent(range) : ''))); },
     talepVer: function (items) { return req('POST', '/api/restoran/talep', { packages: items }); },
+    kuryeTalep: function (data) { return req('POST', '/api/restoran/kurye-talep', data || {}); },
+    restoranKuryeler: function () { return req('GET', '/api/restoran/kuryeler'); },
     paketlerimRestoran: function (filter) { return req('GET', '/api/restoran/paketlerim?filter=' + encodeURIComponent(filter || 'all')); },
     profil: function (data) { return req('PATCH', '/api/profil', data); },
     durum: function (status, reason) { return req('POST', '/api/durum', { status: status, reason: reason || null }); },
@@ -478,7 +480,7 @@
     }
   };
   ['oturum', 'havuz', 'kabul', 'atamaKarar', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
-    'kazanc', 'talepVer', 'paketlerimRestoran', 'profil', 'durum', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'girisKullanicilar', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
+    'kazanc', 'talepVer', 'kuryeTalep', 'restoranKuryeler', 'paketlerimRestoran', 'profil', 'durum', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'girisKullanicilar', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);
         var target = mode === 'real' ? real : mock;

@@ -213,3 +213,11 @@ python3 tools/verify_package.py
 - Filtreler: Gecikenler → 4 satır; Ödeme alındı → 1; Ödeme alınmadı → 1; ✕ → 7 satır.
 - Satır detayı açıldı, kurye atama alanı geldi. Ayarlar sekmeleri (3) çalıştı; Profil ad/telefon kaydı doğrulandı.
 - `tsc --noEmit` ✅ · e2e **64/64** · deploy `210e9bfb` (v84).
+
+### Son doğrulama (2026-11-26, kuryeye doğrudan gönderim)
+
+- Restoran → Sipariş Ekle → **Kurye Ekle**: Bölge/Ödeme/Kurye/Not dolduruldu → “Kuryeye gönderildi · Talep #910012”.
+- D1: `courier=910004`, `accepted_at` dolu, `note` taşındı; havuzda görünmüyor.
+- Kurye tarafında durum **Kabul edildi**.
+- Negatif: olmayan kurye reddedildi, kurye rolü ucu kullanamıyor (403), kurye kurye listesini göremiyor (403).
+- e2e **73/73** · `tsc` ✅ · deploy `1c9c3503` (v85).

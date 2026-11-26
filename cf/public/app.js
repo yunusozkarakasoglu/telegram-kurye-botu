@@ -17,6 +17,7 @@
     earnings: null,
     reqItems: [],
     reqQty: 1,
+    reqMode: 'siparis',
     restFilter: 'all',
     kmPending: false,
     mineView: (localStorage.getItem('mineView') === 'card' ? 'card' : 'list'),
@@ -677,6 +678,11 @@
   function renderTalep() {
     setHeader('Sipariş Ekle', '');
     var main = $('mn');
+    var mod = S.reqMode || 'siparis';
+    var modSeg = '<div class="seg two" style="margin-bottom:10px">' +
+      '<button data-rm="siparis" class="' + (mod === 'siparis' ? 'on' : '') + '">Sipariş Ekle</button>' +
+      '<button data-rm="kurye" class="' + (mod === 'kurye' ? 'on' : '') + '">Kurye Ekle</button></div>';
+    if (mod === 'kurye') { renderKuryeTalep(modSeg); return; }
     var st = (S.session && S.session.settings) || {};
     var regions = st.regions || [];
     var payments = st.payments || ['Nakit', 'Kart', 'Ödendi'];
@@ -688,7 +694,7 @@
         '<button class="ic" data-edit="' + i + '" title="Düzenle">✎</button>' +
         '<button class="ic" data-del="' + i + '" title="Sil">✕</button></div>';
     }).join('');
-    main.innerHTML =
+    main.innerHTML = modSeg +
       '<div class="card addcard">' +
         '<div style="display:flex;flex-wrap:nowrap;align-items:center;gap:10px;margin-bottom:10px;width:100%"><label style="flex:0 0 84px;font-size:13px;color:#888;white-space:nowrap">Bölge</label><select id="ar" style="flex:1;min-width:0;width:auto;font:inherit;font-size:15px;padding:11px 10px;border:1px solid #ccc;border-radius:10px;background:transparent;color:inherit">' +
           '<option value="">— seçin —</option>' +
@@ -704,6 +710,9 @@
       '<div class="reqlist">' + (rows || '<p class="note" style="margin:4px 0">Listeniz boş. Bölge ve ödeme seçip “Paket Ekle”ye basın.</p>') + '</div>' +
       '<p class="hint" style="margin:6px 0 10px">✎ satırı düzenler, ✕ listeden çıkarır. En fazla 10 paket.</p>';
 
+    Array.prototype.forEach.call(main.querySelectorAll('[data-rm]'), function (b) {
+      b.onclick = function () { S.reqMode = b.getAttribute('data-rm'); render(); };
+    });
     main.querySelector('#ar').onchange = function (e) { S.reqDraft.region = e.target.value; };
     main.querySelector('#ap').onchange = function (e) { S.reqDraft.payment = e.target.value; };
     main.querySelector('#an').oninput = function (e) { S.reqDraft.note = e.target.value; };
@@ -732,6 +741,73 @@
         S.mineView = 'list';
         refresh(true);
       }).catch(function (e) { UI.toast(e.message || 'Gönderilemedi', 'error'); });
+    };
+    nav(restaurantTabs(), {});
+  }
+
+  function renderKuryeTalep(modSeg) {
+    var main = $('mn');
+    var st = (S.session && S.session.settings) || {};
+    var regions = st.regions || [];
+    var payments = st.payments || ['Nakit', 'Kart', 'Ödendi'];
+    if (!S.kuryeDraft) S.kuryeDraft = { region: '', payment: '', courier: '', note: '' };
+    var d = S.kuryeDraft;
+    main.innerHTML = modSeg +
+      '<div class="card addcard">' +
+        '<div class="frow"><label>Bölge</label><select id="kr-region">' +
+          '<option value="">— seçin —</option>' +
+          regions.map(function (r) { return '<option' + (d.region === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
+        '</select></div>' +
+        '<div class="frow"><label>Ödeme tipi</label><select id="kr-payment">' +
+          '<option value="">— seçin —</option>' +
+          payments.map(function (r) { return '<option' + (d.payment === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
+        '</select></div>' +
+        '<div class="frow"><label>Kurye</label><select id="kr-courier"><option value="">Yükleniyor…</option></select></div>' +
+        '<div class="fld" style="margin-top:10px"><label>Not (opsiyonel)</label>' +
+          '<textarea id="kr-note" rows="2" placeholder="Siparişe özel not (kurye görür)">' + esc(d.note || '') + '</textarea></div>' +
+      '</div>' +
+      '<p class="hint" style="margin:6px 0 10px">Kurye seçilirse paket havuza düşmez, doğrudan kuryeye “kabul edildi” olarak işlenir.</p>';
+
+    $('cta').innerHTML = '<button class="p" id="kr-send"' + (d.courier ? '' : ' disabled') + '>Kuryeye Gönder</button>';
+
+    Array.prototype.forEach.call(main.querySelectorAll('[data-rm]'), function (b) {
+      b.onclick = function () { S.reqMode = b.getAttribute('data-rm'); render(); };
+    });
+    $('kr-region').onchange = function (e) { S.kuryeDraft.region = e.target.value; };
+    $('kr-payment').onchange = function (e) { S.kuryeDraft.payment = e.target.value; };
+    $('kr-note').oninput = function (e) { S.kuryeDraft.note = e.target.value; };
+
+    API.restoranKuryeler().then(function (r) {
+      var sel = $('kr-courier');
+      if (!sel) return;
+      var list = r.couriers || [];
+      sel.innerHTML = '<option value="">— seçin —</option>' + list.map(function (c) {
+        var ek = c.online ? '' : ' (çevrimdışı)';
+        return '<option value="' + c.id + '"' + (String(d.courier) === String(c.id) ? ' selected' : '') + '>' + esc(c.name) + ek + '</option>';
+      }).join('');
+      sel.onchange = function () {
+        S.kuryeDraft.courier = sel.value;
+        var btn = $('kr-send');
+        if (btn) btn.disabled = !sel.value;
+      };
+      var btn = $('kr-send');
+      if (btn) btn.disabled = !sel.value;
+    }).catch(function (e) { UI.toast(e.message || 'Kurye listesi alınamadı', 'error'); });
+
+    var gonder = $('kr-send');
+    if (gonder) gonder.onclick = function () {
+      var cid = S.kuryeDraft.courier;
+      if (!cid) { UI.toast('Kurye seçin', 'error'); return; }
+      gonder.disabled = true;
+      API.kuryeTalep({
+        courier_id: Number(cid), region: S.kuryeDraft.region || '',
+        payment: S.kuryeDraft.payment || '', note: (S.kuryeDraft.note || '').trim(),
+      }).then(function (r) {
+        S.kuryeDraft = { region: '', payment: '', courier: '', note: '' };
+        UI.toast('Kuryeye gönderildi · Talep #' + r.req_no, 'success');
+        S.tab = 'paketlerim';
+        refresh(true);
+      }).catch(function (e) { gonder.disabled = false; UI.toast(e.message || 'Gönderilemedi', 'error'); });
     };
     nav(restaurantTabs(), {});
   }

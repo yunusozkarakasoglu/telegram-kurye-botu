@@ -157,7 +157,9 @@ def sql(calistir: str) -> None:
 
 def temizle() -> None:
     sql(f"""
-DELETE FROM packages WHERE batch IN (SELECT id FROM batches WHERE owner IN ({REST},{REST2}));
+DELETE FROM transfer_log WHERE package IN (SELECT id FROM packages WHERE courier IN ({K1},{K2},{NOPIN}) OR batch IN (SELECT id FROM batches WHERE owner IN ({REST},{REST2})));
+DELETE FROM reservations WHERE package IN (SELECT id FROM packages WHERE courier IN ({K1},{K2},{NOPIN}) OR batch IN (SELECT id FROM batches WHERE owner IN ({REST},{REST2})));
+DELETE FROM packages WHERE courier IN ({K1},{K2},{NOPIN}) OR batch IN (SELECT id FROM batches WHERE owner IN ({REST},{REST2}));
 DELETE FROM batches WHERE owner IN ({REST},{REST2});
 DELETE FROM reservations WHERE courier IN ({K1},{K2});
 DELETE FROM auto_offers WHERE courier IN ({K1},{K2});
@@ -295,6 +297,44 @@ def senaryo_restoran_kurye(api: Api, o: dict[str, Oturum]) -> dict:
     kabul_iptal = api.cagir("POST", "/api/kabul", {"ids": [iptal_pk["id"]]}, token=k1.token)
     T.ok("iptal edilen paket kabul edilemiyor", iptal_pk["id"] in kabul_iptal.get("missed", []))
     return {"paket": hedef, "bolge": bolge}
+
+
+def senaryo_restoran_kuryeye_gonder(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
+    T.bolum("RESTORAN → KURYEYE DOĞRUDAN GÖNDERİM (havuza düşmez)")
+    rest, k1, k2 = o["rest"], o["k1"], o["k2"]
+
+    # kurye2'yi boşalt (önceki paketleri kapat)
+    for p in paketlerim(api, k2):
+        if not p.get("picked_up_at"):
+            api.cagir("POST", f"/api/paket/{p['id']}/km", {"km": "2"}, token=k2.token)
+            api.cagir("POST", f"/api/paket/{p['id']}/teslim", {"paid": False}, token=k2.token)
+
+    liste = api.cagir("GET", "/api/restoran/kuryeler", token=rest.token)["couriers"]
+    T.ok("restoran kurye listesini görebiliyor", any(c["id"] == K2 for c in liste), f"{len(liste)} kurye")
+
+    gonder = api.cagir("POST", "/api/restoran/kurye-talep",
+                       {"courier_id": K2, "region": baglam["bolge"], "payment": "Nakit",
+                        "note": "Kuryeye özel"}, token=rest.token)
+    T.ok("kuryeye gönderildi", bool(gonder.get("ok")), f"talep #{gonder.get('req_no')}")
+    pk_id = gonder.get("package_id")
+    T.ok("paket havuza düşmedi", not havuzda_var(api, k1, pk_id))
+
+    k2_list = paketlerim(api, k2)
+    T.ok("kurye2'nin paketlerinde", any(p["id"] == pk_id for p in k2_list))
+    kayit = next((p for p in k2_list if p["id"] == pk_id), {})
+    T.esit("doğrudan kabul edildi", "Kabul edildi", kayit.get("status"))
+    T.esit("not taşındı", "Kuryeye özel", kayit.get("note"))
+
+    yok = api.cagir("POST", "/api/restoran/kurye-talep",
+                    {"courier_id": 999999, "region": baglam["bolge"]}, token=rest.token, bekle_hata=True)
+    T.ok("olmayan kurye reddedildi", yok.get("_status") in (403, 404, 409), f"status={yok.get('_status')}")
+
+    yasak = api.cagir("POST", "/api/restoran/kurye-talep",
+                      {"courier_id": K1, "region": baglam["bolge"]}, token=k1.token, bekle_hata=True)
+    T.esit("kurye bu ucu kullanamıyor", 403, yasak.get("_status"))
+
+    restor_kurye = api.cagir("GET", "/api/restoran/kuryeler", token=k1.token, bekle_hata=True)
+    T.esit("kurye kurye listesini göremiyor", 403, restor_kurye.get("_status"))
 
 
 def senaryo_restoran_admin(api: Api, o: dict[str, Oturum]) -> None:
@@ -508,6 +548,7 @@ def main() -> int:
     senaryo_restoran_admin(api, oturumlar)
     senaryo_admin_kurye(api, oturumlar, baglam)
     senaryo_kurye_kurye(api, oturumlar, baglam)
+    senaryo_restoran_kuryeye_gonder(api, oturumlar, baglam)
     senaryo_admin_kullanici_ekleme(api, oturumlar)
     senaryo_durum_yetki(api, oturumlar, baglam)
     return T.ozet()

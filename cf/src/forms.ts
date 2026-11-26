@@ -137,6 +137,27 @@ export async function submit(bot: Bot, chat: number, selected: (string | null)[]
   await closeForm(bot, { owner: chat, message: null }, `Talep #${batchId} oluşturuldu. ${selected.length} paket bekliyor.`);
 }
 
+/** Restoran, paketi havuza düşürmeden doğrudan bir kuryeye gönderir (kabul edildi sayılır). */
+export async function submitToCourier(
+  bot: Bot, owner: number, courierId: number,
+  region: string | null, payment: string | null, note: string | null,
+): Promise<{ ok: boolean; error?: string; req_no?: number; package_id?: number }> {
+  const courier = await bot.db.first<Account>("SELECT * FROM accounts WHERE id=? AND role='kurye' AND active=1 AND deleted=0", courierId);
+  if (!courier) return { ok: false, error: "Kurye bulunamadı veya pasif." };
+  const [batchId] = await nextIds(bot, "batches", 1);
+  const [pkgId] = await nextIds(bot, "packages", 1);
+  await bot.db.run("INSERT INTO batches(id,owner,created_at) VALUES (?,?,?)", batchId, owner, bot.now());
+  await bot.db.run("INSERT INTO packages(id,batch,number,region,payment,note,courier,accepted_at) VALUES (?,?,?,?,?,?,?,?)",
+    pkgId, batchId, 1, region || "Belirtilmedi", payment || null, note || null, courierId, bot.now());
+  await bot.db.run("DELETE FROM reservations WHERE package=?", pkgId);
+  await bot.db.run("DELETE FROM claim_offers WHERE package=?", pkgId);
+  if ((await bot.activeCount(courierId)) >= (await bot.activeLimit())) {
+    await bot.lockCourier(courierId, await bot.activeLimit());
+  }
+  await bot.finishAssignment([pkgId], courierId, courier, true, batchId);
+  return { ok: true, req_no: batchId, package_id: pkgId };
+}
+
 export async function showPaketlerim(bot: Bot, user: Account) {
   if (user.role === "kurye") {
     return bot.send(user.id, "Paket listenizi seçin.", keyboard([[["Aktif Paketler", "page:active:0"], ["Teslim Geçmişi", "page:delivered:0"]]]));

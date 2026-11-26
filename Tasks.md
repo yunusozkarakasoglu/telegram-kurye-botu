@@ -35,6 +35,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] Restoran → kuryeye doğrudan gönderim: Sipariş Ekle içinde **Kurye Ekle** sekmesi (Bölge/Ödeme/Kurye/Not → Kuryeye Gönder); paket havuza düşmeden kuryeye "Kabul edildi" işlenir (`1c9c3503`, v85). E2E **73/73**.
 - [x] Yönetici paneli yeniden düzenlendi: 2 sütun menü, **Ayarlar** sekme sayfası, **Profil** (ad/telefon/PIN), Canlı Saha (4 KPI + bugünün siparişleri + Filtreler/✕ Temizle + Durum/Ödeme/Grupla), iç sekmeler kaldırıldı (`210e9bfb`, v84).
 - [x] Canlı Saha sipariş satırı detayı + boştaki kuryeye atama; `/api/yonetim/siparisler` ucu.
 - [x] Ad alanı denetimi kaldırıldı: yönetici kurye/restoran eklerken ad serbest metin (2–80 karakter). Tek kelime, 3+ isim kabul; boş/aşırı uzun reddedilir. E2E **64/64** (`d2a08efd`).

@@ -495,6 +495,30 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       return json({ ok: true, req_no: batch?.id ?? 0, count: items.length });
     }
 
+
+    // Restoran → kuryeye doğrudan gönderim (havuza düşmez)
+    if (path === "/restoran/kuryeler" && method === "GET") {
+      if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const rows = await bot.db.all<Account>(
+        "SELECT id, name, online, busy FROM accounts WHERE role='kurye' AND active=1 AND deleted=0 ORDER BY online DESC, name");
+      return json({ couriers: rows.map((c) => ({ id: c.id, name: c.name, online: !!c.online, busy: !!c.busy })) });
+    }
+
+    if (path === "/restoran/kurye-talep" && method === "POST") {
+      if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const body = await readBody(request);
+      const courierId = Number(body.courier_id);
+      if (!courierId) return fail("Kurye seçilmedi.", 422, "invalid");
+      const region = String(body.region ?? "").trim();
+      const payment = String(body.payment ?? "").trim();
+      const note = String(body.note ?? "").trim().slice(0, 200);
+      const regions = await bot.regionList();
+      if (region && !regions.includes(region)) return fail(`Bilinmeyen bölge: ${region}`, 422, "invalid");
+      if (payment && !PAYMENTS.includes(payment as any)) return fail(`Geçersiz ödeme tipi: ${payment}`, 422, "invalid");
+      const r = await forms.submitToCourier(bot, user.id, courierId, region || null, payment || null, note || null);
+      return r.ok ? json({ ok: true, req_no: r.req_no, package_id: r.package_id }) : fail(r.error || "Gönderilemedi.", 409, "conflict");
+    }
+
     if (path === "/restoran/paketlerim" && method === "GET") {
       if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
       const filter = url.searchParams.get("filter") || "all";
