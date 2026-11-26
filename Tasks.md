@@ -3,8 +3,8 @@
 ## Açık
 
 - [x] **CI yedeği için token**: Packonexpress hesabı D1+Workers Scripts Write → secret eklendi, `yedek.yml` yeşil, Release'e yükleniyor (26.11).
-- [ ] Yedek/izleme sağlık kontrolü: haftada bir `backups/` boyutu + `yedek.log` gözden geçir.
-- [ ] VPS tatbikatı (plan hazır: `docs/VPS-Yedek-Plani.md`).
+
+
 
 - [ ] GitHub secrets ekle (yedek + izleme workflow'ları için) — 4 secret.
 - [ ] VPS soğuk yedek: sunucu kurulumu → `Db` SQLite adaptörü → senkron timer → tatbikat (`docs/VPS-Yedek-Plani.md`).
@@ -87,3 +87,30 @@
 - [x] Hesap yönetimi: Kuryeler/Restoranlar filtre+arama, aktif/pasif, soft delete, Ara. 17 test.
 - [x] Restoran profili (yetkili/telefon/konum), Restoranı Ara/Kuryeyi Ara/Yöneticiyi Ara, tarife editörü, bölge/telefon yönetimi, rol komutları.
 - [x] Uçtan uca testler (yönetici/restoran/kurye/roller arası) + 382 test, ZIP doğrulama, sürekli canlı servis.
+
+---
+
+## Yedekleme ve Geri Yükleme
+
+> Kural: yedek **alındı** demek yetmez; **geri yükleme denenmiş** olmalı. Her yeni şema değişikliğinden sonra tatbikat tekrarlanır.
+> Kanıtlar: `Test-Raporu.md` · Plan: `docs/VPS-Yedek-Plani.md` · Yedekler: `backups/`, GitHub Actions artifact (90 gün), GitHub Releases (son 30).
+
+### Yapıldı
+- [x] **Yerel günlük yedek**: `tools/yedek.sh` + systemd user timer `kurye-yedek.timer` (her gün 03:00, kaçırılırsa telafi). Son 30 dosya, `backups/`.
+- [x] **Yedek doğrulama**: dosyada `CREATE TABLE` kontrolü; boş/bozuk yedek hata verir.
+- [x] **Yerel geri yükleme testi**: `sqlite3 /tmp/geri-yukleme.db < yedek.sql` → 40 tablo, 9 hesap, 40 paket doğrulandı.
+- [x] **CI yedeği**: `yedek.yml` (her gün 03:00 TR) → artifact 90 gün + **GitHub Release** (`yedek-YYYYmmdd-HHMM`), son 30 sürüm. Token: Packonexpress hesabı **D1 Write + Workers Scripts Write**.
+- [x] **CI izleme**: `izleme.yml` (10 dk'da bir `/saglik`), düşerse Telegram uyarısı.
+- [x] **Hata bildirimi**: yedek işi başarısız olursa Telegram'a uyarı.
+- [x] **Yedek yolu dışı**: `backups/` git dışı (`.gitignore`), sadece Release asset olarak uzakta.
+
+### Açık (yapılacak)
+- [ ] `tools/geri-yukle.sh`: yedeği **test D1**'e yükleyip tablo/satır sayılarını karşılaştıran otomatik geri yükleme tatbikatı.
+- [ ] **Tam tatbikat (test D1)**: Release'teki yedeği test veritabanına yükle → uygulamayı test ortamında ayağa kaldır → giriş + sipariş akışı duman testi.
+- [ ] **Yedek tazeliği izleme**: son yedek 36 saatten eskiyse Telegram uyarısı (`backups/` + Release kontrolü).
+- [ ] **Şifreleme**: yedek dosyalarını `age`/`gpg` ile şifrele (Release asset erişimi repo iznine bağlı; şifreleme savunma derinliği).
+- [ ] **R2 uzak kopya**: `R2_UZAK=1 RCLONE_HEDEF=r2:kurye-yedek` ile ikinci bulut (şu an GitHub Releases kullanılıyor).
+- [ ] **VPS soğuk yedek**: Hetzner kurulumu → `Db` SQLite adaptörü → 15 dk senkron timer → DNS geçiş tatbikatı (RTO ≤ 15 dk).
+- [ ] **Geri dönüş (VPS→Cloudflare)**: VPS'te biriken kayıtları D1'e taşıyan script + tatbikat.
+- [ ] **Aylık yedek raporu**: son 30 günün yedek boyutu/başarı oranı; `yedek.log` özeti.
+- [ ] **Yedek saklama politikası**: 30 gün yerel + 90 gün artifact + süresiz Release arşivi kararını yazılı hale getir (KVKK: kişisel veri saklama süresi).
