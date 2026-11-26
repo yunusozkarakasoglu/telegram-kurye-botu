@@ -1,0 +1,38 @@
+name: Gunluk D1 yedegi
+
+on:
+  schedule:
+    - cron: '0 0 * * *'   # her gün 03:00 TR (00:00 UTC)
+  workflow_dispatch:
+
+jobs:
+  yedek:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Bagimliliklar
+        run: cd cf && npm ci --legacy-peer-deps
+      - name: Yedek al
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: tools/yedek.sh
+      - name: Yedegi sakla (90 gun)
+        uses: actions/upload-artifact@v4
+        with:
+          name: d1-yedek-${{ github.run_id }}
+          path: backups/*.sql
+          retention-days: 90
+      - name: Basarisizsa haber ver
+        if: failure()
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          ADMIN_ID: ${{ secrets.TELEGRAM_ADMIN_ID }}
+        run: |
+          [ -z "$BOT_TOKEN" ] && exit 0
+          curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+            -d chat_id="$ADMIN_ID" \
+            -d text="⚠️ Günlük D1 yedeği BAŞARISIZ. Kontrol: GitHub Actions → Gunluk D1 yedegi" >/dev/null

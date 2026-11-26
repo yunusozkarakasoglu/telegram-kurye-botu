@@ -1,0 +1,30 @@
+name: Sistem izleme
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # 10 dakikada bir
+  workflow_dispatch:
+
+jobs:
+  kontrol:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Saglik kontrolu
+        id: saglik
+        run: |
+          KOD=$(curl -s -o /tmp/saglik.json -w '%{http_code}' --max-time 15 https://kurye.packonexpress.com/saglik || echo 000)
+          echo "kod=$KOD"
+          cat /tmp/saglik.json || true
+          if [ "$KOD" != "200" ]; then
+            echo "basarisiz=1" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Uyari gonder
+        if: steps.saglik.outputs.basarisiz == '1'
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          ADMIN_ID: ${{ secrets.TELEGRAM_ADMIN_ID }}
+        run: |
+          [ -z "$BOT_TOKEN" ] && echo "BOT_TOKEN yok, uyari atlandi" && exit 0
+          curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+            -d chat_id="$ADMIN_ID" \
+            -d text="🔴 Kurye Paket sistemi erişilemiyor (saglik != 200). Zaman: $(date -u '+%d.%m %H:%M UTC')" >/dev/null

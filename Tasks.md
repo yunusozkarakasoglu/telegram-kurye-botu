@@ -2,6 +2,11 @@
 
 ## Açık
 
+- [ ] GitHub secrets ekle (yedek + izleme workflow'ları için) — 4 secret.
+- [ ] VPS soğuk yedek: sunucu kurulumu → `Db` SQLite adaptörü → senkron timer → tatbikat (`docs/VPS-Yedek-Plani.md`).
+- [ ] Workers Paid'e geçiş (CPU 503'lerini bitirir) — Cloudflare paneli düzelince.
+- [ ] Yoklama 5 sn → 15 sn + tek toplu uç (istek ~%66 azalır).
+
 - [ ] **Cloudflare Workers API kesintisi** (26.11): deploy blokajda (`10001` / 504). Düzelince `commit b399385` yayınlanacak (v118): oturum 401 → giriş ekranı, CPU optimizasyonu.
 - [ ] **CPU/CPU limiti**: `Worker exceeded resource limits` (503) aralıklı görüldü. v118 sonrası ölç; sürerse ikinci tur (settings/tariff/regions tek sorgu, bildirimde ek sorguyu kaldırma, PIN hash maliyeti).
 - [ ] **Kota görünümü**: Workers/D1 kullanımı (istek, CPU, satır okuma) panelden haftalık kontrol; 5 sn'lik yoklamayı 15 sn'ye çekme planı.
