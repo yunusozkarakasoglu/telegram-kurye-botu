@@ -346,3 +346,17 @@ python3 tools/verify_package.py
 | Yönetici `/api/yonetim/kuyruk` | `{yeni:0, olu:2, toplam:2}` + `last_error` görünür |
 | Panel Tanılama | Kuyruk sayacı + “Ölüleri tekrar dene” düğmesi |
 | e2e | **80/80** · deploy `0e3e369f` (v138) |
+
+### Faz E — yük, kaos ve kapasite (2026-11-27)
+
+| Test | Sonuç |
+|---|---|
+| 30 eşzamanlı · 20 sn | 1.726 istek, **0 hata**, p50 137 ms / p95 167 ms |
+| 60 eşzamanlı · 20 sn | 3.382 istek, **0 hata**, p50 140 ms / p95 172 ms |
+| 100 eşzamanlı · 20 sn | 4.628 istek, 326 × 500 (%7) → D1 10 sn penceresi |
+| `/api/durum` yanıt süresi | 1,13 s → 0,59 s → **0,14 s** (ensureSeeds + DDL temizliği) |
+| Kaos: 5× aynı anahtar km | tek sonuç, tek kayıt |
+| Kaos: 2× eşzamanlı teslim | 1 × 200 + 1 × 409 |
+| Kaos: 2 kurye aynı paket | tam 1 kazanan |
+| Kapasite (15 sn yoklama) | **≈ 1.290 kurye** hatasız (hedef 200+) |
+| e2e | **80/80** · deploy `d8d23243` |

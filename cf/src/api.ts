@@ -8,7 +8,7 @@ import * as apiCourier from "./apicourier";
 import * as forms from "./forms";
 import * as acceptFlow from "./accept";
 import { dialNumber, validFullName, validPhone } from "./util";
-import { checkPinHash, loginToken, makePinHash, pinToken, pinSql, validLoginToken, validPin, validPinToken } from "./pin";
+import { checkPinHash, loginToken, makePinHash, pinToken, validLoginToken, validPin, validPinToken } from "./pin";
 import { CANCEL_REASONS, PAYMENTS, MAX_PACKAGES, UNSPECIFIED } from "./constants";
 
 /**
@@ -29,9 +29,6 @@ async function readBody(request: Request): Promise<any> {
 
 /** Bildirim listesi (ortak): /bildirimler ve /durum aynı biçimi döner. */
 async function apiNotif(bot: Bot, account: number) {
-  await bot.db.run("CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, created_at REAL NOT NULL)");
-  await bot.db.run("CREATE TABLE IF NOT EXISTS notif_targets(notif INTEGER NOT NULL, account INTEGER NOT NULL, PRIMARY KEY(notif,account))");
-  await bot.db.run("CREATE TABLE IF NOT EXISTS notif_read(account INTEGER PRIMARY KEY, last_id INTEGER NOT NULL)");
   const rows = await bot.db.all<{ id: number; text: string; created_at: number; kind: string | null; ref: number | null }>(
     `SELECT n.id, n.text, n.created_at, n.kind, n.ref FROM notifications n JOIN notif_targets t ON t.notif=n.id
      WHERE t.account=? ORDER BY n.id DESC LIMIT 50`, account);
@@ -132,6 +129,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     });
   }
   let user: Account;
+  // (Faz E) isolate içi tek seferlik şema hazırlığı
   let ident: { id: number; name: string; startParam: string };
   const loginTok = request.headers.get("x-login-token") || "";
   let loginId: number | null = null;
@@ -167,9 +165,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
 
   // PIN kurulumu/doğrulaması (kurye ve restoran için zorunlu ikinci adım)
   if (path !== "/oturum" && (path.startsWith("/pin/") || originalRole !== "yonetici" || actAsCourier)) {
-    for (const sql of pinSql()) { try { await env.DB.prepare(sql).run(); } catch {} }
-    const fresh = (await env.DB.prepare("SELECT * FROM accounts WHERE id=?").bind(user.id).first<Account>()) || user;
-    user = actAsCourier ? { ...fresh, role: "kurye" } : fresh;
+    // Faz E: PIN kolonları ensureColumns (versiyonlu, Cache API) tarafından hazırlanır — istek yolunda DDL yok.
     if (path === "/pin/durum" && method === "GET") {
       return json({ has_pin: !!user.pin_hash, phone: user.phone || null });
     }
@@ -228,8 +224,8 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     }
   }
 
-  // Tarife/limit/bölge tohumları yoksa eklenir (webhook ile aynı davranış).
-  await bot.db.ensureSeeds((env.REGIONS || "Kadıköy,Üsküdar,Ataşehir").split(",").map((s) => s.trim()).filter(Boolean));
+  // Faz E: tohumlar (tarife/limit/bölge) istek yolunda DEĞİL, cron'da yazılır.
+  // Her istekte ~20 INSERT OR IGNORE çalıştırmak D1'i boğuyordu.
 
   try {
     // ---------- oturum ----------
@@ -282,18 +278,15 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const url = new URL(request.url);
       const v = url.searchParams.get("v") || "";
       const mine = url.searchParams.get("mine") === "1";
-      const [sayac, notifMax, teklifMax] = await Promise.all([
-        bot.db.first<{ pool: number; mine: number; son: number }>(
-          `SELECT (SELECT count(*) FROM packages WHERE courier IS NULL AND delivered_at IS NULL AND cancelled_at IS NULL) AS pool,
-                  (SELECT count(*) FROM packages WHERE courier=? AND delivered_at IS NULL AND cancelled_at IS NULL) AS mine,
-                  (SELECT COALESCE(max(COALESCE(accepted_at,0)+COALESCE(picked_up_at,0)*2+COALESCE(delivered_at,0)*3+COALESCE(cancelled_at,0)*4),0) FROM packages) AS son`,
-          user.id),
-        bot.db.first<{ n: number }>(
-          `SELECT COALESCE(max(n.id),0) AS n FROM notifications n JOIN notif_targets t ON t.notif=n.id WHERE t.account=?`, user.id).catch(() => null),
-        bot.db.first<{ n: number }>(
-          "SELECT COALESCE(max(id),0) AS n FROM claim_offers WHERE courier=?", user.id).catch(() => null),
-      ]);
-      const damga = [sayac?.pool ?? 0, sayac?.mine ?? 0, sayac?.son ?? 0, notifMax?.n ?? 0, teklifMax?.n ?? 0, mine ? 1 : 0].join(".");
+      // Tek sorguda damga: havuz + kendi paketlerim + son hareket + bildirim + teklif
+      const sayac = await bot.db.first<{ pool: number; mine: number; son: number; notif: number; teklif: number }>(
+        `SELECT (SELECT count(*) FROM packages WHERE courier IS NULL AND delivered_at IS NULL AND cancelled_at IS NULL) AS pool,
+                (SELECT count(*) FROM packages WHERE courier=? AND delivered_at IS NULL AND cancelled_at IS NULL) AS mine,
+                (SELECT COALESCE(max(COALESCE(accepted_at,0)+COALESCE(picked_up_at,0)*2+COALESCE(delivered_at,0)*3+COALESCE(cancelled_at,0)*4),0) FROM packages) AS son,
+                (SELECT COALESCE(max(n.id),0) FROM notifications n JOIN notif_targets t ON t.notif=n.id WHERE t.account=?) AS notif,
+                (SELECT COALESCE(max(expires),0) FROM claim_offers WHERE courier=?) AS teklif`,
+        user.id, user.id, user.id);
+      const damga = [sayac?.pool ?? 0, sayac?.mine ?? 0, sayac?.son ?? 0, sayac?.notif ?? 0, sayac?.teklif ?? 0, mine ? 1 : 0].join(".");
       if (v && v === damga) return json({ unchanged: true, v: damga });
       const pkgs = await bot.packages("p.courier IS NULL AND p.delivered_at IS NULL AND p.cancelled_at IS NULL");
       const durumlar = await statesFor(bot, pkgs);

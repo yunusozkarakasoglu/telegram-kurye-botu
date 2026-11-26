@@ -16,7 +16,7 @@
    - ✅ **Faz B** (v136): idempotency, istemci eylem kuyruğu, batch kabul, kurye başına 30 yazma/dk hız sınırı.
    - ✅ **Faz C** (v137): tek uç `/api/durum?v=` (delta + `unchanged`), `package_events` denetim izi. Ölçüm: 3 uç 13,4 s → 1 uç 6,7 s → delta 3,7 s.
    - ✅ **Faz D** (v138): `notify_outbox` kuyruğu, 8 denemede `dead` + yönetici uyarısı, Tanılama'dan elle tekrar.
-   - ⏳ **Faz E**: 30/60/100 paralel yük + kaos + kapasite raporu.
+   - ✅ **Faz E**: `tools/yuk-testi.py`; 30/60 eşzamanlı %0 hata p95 ~170 ms; 100'de %7 (D1 penceresi); kaos testleri geçti; `docs/Kapasite-Raporu.md`.
    - Eski not: `docs/Optimizasyon-ve-Kuyruk-Plani.md`. Faz A tamam (D1 retry, 15 sn jitter, overload alarmı); sırada Faz B (idempotency + istemci kuyruğu + batch), Faz C (delta yoklama), Faz D (outbox), Faz E (yük/kaos testi).
 6. **Sürüyor — Yedekleme ve geri yükleme:** yerel (systemd) + CI artifact + GitHub Release yedekleri **çalışıyor**; ilk geri yükleme testi geçti. Sırada: `tools/geri-yukle.sh` ile otomatik tatbikat (test D1), yedek tazeliği uyarısı, şifreleme (age/gpg), VPS soğuk yedek (RTO ≤ 15 dk). Ayrıntı: `Tasks.md → Yedekleme ve Geri Yükleme`.
 6. **Planlanacak — Cloudflare tam parite:** gönderim kuyruğu/429, tek kart görünümü, transfer bildirimi düzeltmesi. webhook + D1, yedek/rollback, eklemeli migrasyon; medya ve kuyruk sözleşmesi korunarak taşıma.

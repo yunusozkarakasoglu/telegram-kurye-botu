@@ -6,6 +6,10 @@ let columnsReady = false;
 /** Yeni kolonlar: idempotent, isolate başına bir kez denenir. */
 const NEW_COLUMNS: Record<string, [string, string][]> = {
   accounts: [
+    ["pin_hash", "TEXT"],
+    ["pin_fail", "INTEGER NOT NULL DEFAULT 0"],
+    ["pin_lock", "REAL NOT NULL DEFAULT 0"],
+    ["pin_ok_until", "REAL NOT NULL DEFAULT 0"],
     ["tenant_id", "INTEGER NOT NULL DEFAULT 1"],
     ["tg_chat_id", "INTEGER"],
     ["pin_must_change", "INTEGER NOT NULL DEFAULT 0"],
@@ -27,6 +31,14 @@ export class Db {
   async ensureColumns(): Promise<void> {
     if (columnsReady) return;
     columnsReady = true;
+    // Faz E: stateless modda her istek yeni isolate → şema kontrolü Cache API ile 5 dk önbelleklenir.
+    const anahtar = "https://sema.local/v1";
+    try {
+      const vur = await caches.default.match(anahtar);
+      if (vur) return;
+    } catch {
+      /* Cache API yoksa normal akışa devam */
+    }
     for (const [tablo, kolonlar] of Object.entries(NEW_COLUMNS)) {
       let mevcut: Set<string>;
       try {
@@ -41,6 +53,11 @@ export class Db {
       }
     }
     try { await this.d1.prepare("UPDATE accounts SET tg_chat_id=id WHERE tg_chat_id IS NULL AND id > 1000").run(); } catch {}
+    try {
+      await caches.default.put(anahtar, new Response("ok", { headers: { "cache-control": "max-age=300" } }));
+    } catch {
+      /* önbelleğe yazamıyorsak sorun değil */
+    }
   }
   async all<T = Record<string, unknown>>(sql: string, ...params: unknown[]): Promise<T[]> {
     const res = await this.d1.prepare(sql).bind(...params).all<T>();

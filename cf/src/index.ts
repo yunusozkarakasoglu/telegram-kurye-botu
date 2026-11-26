@@ -29,9 +29,16 @@ export default {
 async function handle(request: Request, env: Env, db: Db, url: URL): Promise<Response> {
   if (url.pathname === "/saglik") {
     const row = await db.first<{ n: number }>("SELECT count(*) AS n FROM accounts");
+    // Boş veritabanı koruması: tohumlar yoksa burada (seyrek uç) bir kez yazılır.
+    const tohum = await db.first<{ x: number }>("SELECT 1 AS x FROM settings WHERE key='active_limit'");
+    if (!tohum) await db.ensureSeeds((env.REGIONS || "Kadıköy,Üsküdar,Ataşehir").split(",").map((s) => s.trim()).filter(Boolean));
     return Response.json({ ok: true, accounts: row?.n ?? 0 });
   }
-  if (url.pathname.startsWith("/api/")) return handleApi(request, env);
+  if (url.pathname.startsWith("/api/")) {
+    // Faz E: tek istekte birden çok sorgu → oturum birincil kopyaya sabitlenir (replica beklemesi yok)
+    const d1 = (env.DB as any).withSession ? (env.DB as any).withSession("first-primary") : env.DB;
+    return handleApi(request, { ...env, DB: d1 });
+  }
   if (["/app", "/app/"].includes(url.pathname) && env.ASSETS) {
     const asset = await env.ASSETS.fetch(new Request(new URL("/?v=9", url), request));
     const headers = new Headers(asset.headers);

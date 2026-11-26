@@ -10,6 +10,8 @@ import * as ops from "./ops";
 import * as adminops from "./adminops";
 import * as profileFlow from "./profile";
 
+let limitCache: { deger: number; at: number } | null = null;
+
 export class Bot {
   db: Db;
   tg: Telegram;
@@ -135,8 +137,13 @@ export class Bot {
     return rows.map((r) => r.amount);
   }
   async activeLimit() {
+    // Faz E: ayar okuması isolate içinde 30 sn önbelleklenir (yoklama maliyeti düşer)
+    const simdi = Date.now();
+    if (limitCache && simdi - limitCache.at < 30_000) return limitCache.deger;
     const row = await this.db.first<{ value: number }>("SELECT value FROM settings WHERE key='active_limit'");
-    return row?.value ?? DEFAULT_ACTIVE_LIMIT;
+    const deger = row?.value ?? DEFAULT_ACTIVE_LIMIT;
+    limitCache = { deger, at: simdi };
+    return deger;
   }
   async activeCount(courier: number) {
     const row = await this.db.first<{ n: number }>(

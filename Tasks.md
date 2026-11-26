@@ -54,7 +54,8 @@
 - [x] **Faz B (v136)**: idempotency + istemci eylem kuyruğu + batch kabul + hız sınırı — test edildi.
 - [x] **Faz C (v137)**: tek uç `/api/durum?v=` + `unchanged` yanıtı + `package_events` denetim izi.
 - [x] **Faz D (v138)**: `notify_outbox` + cron tekrar (üstel geri çekilme) + `dead` + yönetici uyarısı/elle tekrar.
-- [ ] **Faz E**: 30/60/100 paralel yük testi + kaos + kapasite raporu.
+- [x] **Faz E**: `tools/yuk-testi.py` + 30/60/100 paralel ölçüm + kaos + `docs/Kapasite-Raporu.md` (≈1.290 kurye hatasız).
+- [x] **Performans serisi tamam (A–E)** — bkz. `docs/Optimizasyon-ve-Kuyruk-Plani.md`.
 - [x] Yönetici menüsünde **Ayarlar → Sistem**; sekmeler tek satır (4); kurye paket limiti Kurallar'da ve **anlık kaydediyor** (`e7c499e`, v134).
 - [x] Kurallar senkronu: yönetici paneli boş görünme hatası düzeltildi (`d.settings || d`), varsayılanlar D1'e seed edildi; panelden düzenleme kurye+restoran Sistem ekranına anında yansıyor (`7d0aa3de`, v131).
 - [x] Sistem verileri dinamik: yönetici Ayarlar 4 sekme (fiyatlandırma/kurallar/tanılama/logs), kurallar+h saatler düzenlenebilir, `app_logs` tablosu ve log listesi; kurye/restoran Sistem'de yalnız fiyat+kurallar (`d478d7c4`, v130).
