@@ -1253,7 +1253,11 @@
     setHeader('Sistem', 'Fiyatlandırma · Restoranlar · Kuryeler · Bölgeler · v10');
     var main = $('mn');
     var admin = S.session && S.session.role === 'yonetici';
-    var seg = '<div class="seg four">' + (admin ? [['fiyat', 'Fiyatlandırma'], ['restoran', 'Restoranlar'], ['kurye', 'Kuryeler'], ['bolge', 'Bölgeler'], ['log', 'Tanılama']] : [['fiyat', 'Fiyatlandırma'], ['log', 'Tanılama']]).map(function (x) {
+    var restoran = S.session && S.session.role === 'restoran';
+    var sekmeler = admin
+      ? [['fiyat', 'Fiyatlandırma'], ['restoran', 'Restoranlar'], ['kurye', 'Kuryeler'], ['bolge', 'Bölgeler'], ['log', 'Tanılama']]
+      : (restoran ? [['fiyat', 'Fiyatlandırma'], ['kurallar', 'Kurallar'], ['log', 'Tanılama']] : [['fiyat', 'Fiyatlandırma'], ['log', 'Tanılama']]);
+    var seg = '<div class="seg four">' + sekmeler.map(function (x) {
       return '<button data-st="' + x[0] + '" class="' + (S.sistemTab === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
     }).join('') + '</div>';
     function bindSeg() {
@@ -1261,7 +1265,14 @@
         b.onclick = function () { S.sistemTab = b.getAttribute('data-st'); render(); };
       });
     }
+    function kurallarHtml() {
+      return (window.KURALLAR || []).map(function (b) {
+        return '<div class="card rulecard"><b>' + esc(b.baslik) + '</b><ul>' +
+          b.maddeler.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>';
+      }).join('') || '<div class="empty">Kural tanımlı değil.</div>';
+    }
     function draw() {
+      if (S.sistemTab === 'kurallar') { main.innerHTML = seg + kurallarHtml(); bindSeg(); return; }
       var d = S.sistem;
       if (!d) { main.innerHTML = seg + '<div class="empty">Yükleniyor…</div>'; bindSeg(); return; }
       var body = '';
@@ -1456,7 +1467,7 @@
     h += '<h3>İşlemler</h3>';
     h += '<button data-da="refresh"><i>↻</i>Yenile</button>';
     h += '<button data-dt="sistem" class="' + (S.tab === 'sistem' ? 'on' : '') + '"><i>⚙</i>Sistem</button>';
-    h += '<button data-dt="kurallar" class="' + (S.tab === 'kurallar' ? 'on' : '') + '"><i>📋</i>Kurallar</button>';
+    if (curRole() !== 'restoran') h += '<button data-dt="kurallar" class="' + (S.tab === 'kurallar' ? 'on' : '') + '"><i>📋</i>Kurallar</button>';
     h += '<button data-dt="profil" class="' + (S.tab === 'profil' ? 'on' : '') + '"><i>👤</i>Profil</button>';
     h += '<button data-da="logout"><i>⏻</i>Çıkış</button>';
     d.innerHTML = h;
