@@ -238,7 +238,10 @@
       API.kabul(ids).then(function (r) {
         S.sel = {};
         if (r.accepted && r.accepted.length) UI.toast(r.accepted.length + ' paket kabul edildi', 'success');
-        if (r.missed && r.missed.length) UI.toast(r.missed.length + ' paket başka kuryeye alındı', 'error');
+        if (r.missed && r.missed.length) {
+          var bos = !(r.accepted && r.accepted.length);
+          UI.toast(bos && r.message ? r.message : r.missed.length + ' paket alınamadı', 'error');
+        }
         TG.haptic('success');
         S.tab = 'paketlerim';
         S.mineView = 'list';
