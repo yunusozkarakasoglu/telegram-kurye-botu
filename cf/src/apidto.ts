@@ -2,7 +2,7 @@ import type { Bot } from "./core";
 import type { PackageRow } from "./types";
 import { statusOf } from "./views";
 import {
-  CANCEL_REASONS, PAYMENTS, PRIORITY_SECONDS, MAX_PACKAGES, TARIFF_BOUNDS, TARIFF_INTERVALS, UNSPECIFIED,
+  CANCEL_REASONS, PAYMENTS, PRIORITY_SECONDS, MAX_PACKAGES, RULE_DEFAULTS, TARIFF_BOUNDS, TARIFF_INTERVALS, UNSPECIFIED,
 } from "./constants";
 
 /** Mini App API'sinin ortak taşıma katmanı: JSON yanıt, paket DTO'su, ayarlar, durum etiketi. */
@@ -70,7 +70,11 @@ export async function settings(bot: Bot) {
   const tariff = await bot.tariff();
   const hour = async (key: string, fallback: string) => {
     const row = await bot.db.first<{ value: string }>("SELECT value FROM settings WHERE key=?", key);
-    return row?.value || fallback;
+    return (row?.value != null ? String(row.value) : "") || fallback;
+  };
+  const kural = async (key: string) => {
+    const row = await bot.db.first<{ value: string }>("SELECT value FROM settings WHERE key=?", key);
+    return (row?.value != null ? String(row.value) : "") || RULE_DEFAULTS[key] || "";
   };
   return {
     base_tl: tariff[0] ?? 0,
@@ -86,5 +90,12 @@ export async function settings(bot: Bot) {
     extra_per_km: await bot.extraPerKm(),
     open_time: await hour("open_time", "07:00"),
     close_time: await hour("close_time", "22:00"),
+    rules: {
+      mesafeler: await kural("rule_mesafeler"),
+      teslimat: await kural("rule_teslimat"),
+      iptal: await kural("rule_iptal"),
+      cihaz: await kural("rule_cihaz"),
+      sabit: await kural("rule_sabit"),
+    },
   };
 }

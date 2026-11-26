@@ -31,8 +31,10 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
   if (url.pathname === "/api/log" && request.method === "POST") {
     try {
       const body = await readBody(request);
-      await bot.db.run("CREATE TABLE IF NOT EXISTS client_log (id INTEGER PRIMARY KEY AUTOINCREMENT, at REAL NOT NULL, msg TEXT)");
-      await bot.db.run("INSERT INTO client_log(at,msg) VALUES (?,?)", bot.nowF(), JSON.stringify(body).slice(0, 4000));
+      await bot.db.ensureColumns();
+      const rol = String(body.role || "istemci");
+      await bot.db.log("istemci", ["kurye", "restoran", "yonetici"].includes(rol) ? rol : "istemci", null,
+        String(body.extra || body.msg || JSON.stringify(body)).slice(0, 1000));
     } catch {}
     return json({ ok: true });
   }

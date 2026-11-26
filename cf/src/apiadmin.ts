@@ -2,6 +2,7 @@ import { Bot } from "./core";
 import type { Account } from "./types";
 import { json, fail, pkgDto, settings, statesFor } from "./apidto";
 import { makePinHash, validPin } from "./pin";
+import { RULE_DEFAULTS } from "./constants";
 import { validPhone } from "./util";
 import * as accept from "./accept";
 import * as apiCourier from "./apicourier";
@@ -145,6 +146,26 @@ export async function adminRoutes(
     return json({ ok: true, message: typeof message === "string" ? message : "Atandı." });
   }
 
+  if (path === "/yonetim/loglar" && method === "GET") {
+    await bot.db.ensureColumns();
+    const kaynak = url.searchParams.get("kaynak") || "";
+    const limit = Math.min(500, Math.max(20, Number(url.searchParams.get("limit") || 200)));
+    const rows = kaynak
+      ? await bot.db.all<any>("SELECT * FROM app_logs WHERE source=? ORDER BY id DESC LIMIT ?", kaynak, limit)
+      : await bot.db.all<any>("SELECT * FROM app_logs ORDER BY id DESC LIMIT ?", limit);
+    const sayi = await bot.db.first<{ n: number }>("SELECT count(*) AS n FROM app_logs");
+    return json({ items: rows, total: sayi?.n ?? 0, kaynaklar: ["sistem", "kurye", "restoran", "yonetici", "istemci"] });
+  }
+
+  if (path === "/yonetim/loglar/temizle" && method === "POST") {
+    const body = await readBody(request);
+    const kaynak = String(body.kaynak || "");
+    const silinen = kaynak
+      ? await bot.db.run("DELETE FROM app_logs WHERE source=?", kaynak)
+      : await bot.db.run("DELETE FROM app_logs");
+    return json({ ok: true, deleted: silinen });
+  }
+
   if (path === "/yonetim/sistem" && method === "PUT") {
     const body = await readBody(request);
     const ok = (v: unknown) => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v || ""));
@@ -153,6 +174,15 @@ export async function adminRoutes(
     if (!ok(open) || !ok(close)) return fail("Saat biçimi SS:DD olmalı (ör. 07:00).", 422, "invalid");
     await bot.db.run("INSERT OR REPLACE INTO settings(key,value) VALUES ('open_time',?)", open);
     await bot.db.run("INSERT OR REPLACE INTO settings(key,value) VALUES ('close_time',?)", close);
+    const rules = body.rules && typeof body.rules === "object" ? body.rules as Record<string, unknown> : null;
+    if (rules) {
+      for (const key of ["mesafeler", "teslimat", "iptal", "cihaz", "sabit"]) {
+        const val = String(rules[key] ?? "").trim();
+        if (val.length > 4000) return fail(`${key} metni çok uzun (en fazla 4000 karakter).`, 422, "invalid");
+        await bot.db.run("INSERT OR REPLACE INTO settings(key,value) VALUES (?,?)",
+          "rule_" + key, val || RULE_DEFAULTS["rule_" + key]);
+      }
+    }
     return json({ ok: true, open_time: open, close_time: close });
   }
 

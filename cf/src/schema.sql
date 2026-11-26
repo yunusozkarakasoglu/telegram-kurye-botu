@@ -63,3 +63,10 @@ CREATE INDEX IF NOT EXISTS cards_by_package ON cards(package);
 CREATE INDEX IF NOT EXISTS reservations_by_courier ON reservations(courier, expires);
 CREATE INDEX IF NOT EXISTS outbox_ready ON outbox(next_attempt, id);
 CREATE INDEX IF NOT EXISTS auto_offers_package ON auto_offers(package, state);
+
+CREATE TABLE IF NOT EXISTS app_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, at REAL NOT NULL,
+  level TEXT NOT NULL DEFAULT 'info', source TEXT NOT NULL DEFAULT 'sistem',
+  account INTEGER, message TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS app_logs_at ON app_logs(at);

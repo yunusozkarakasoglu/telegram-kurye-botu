@@ -39,3 +39,24 @@ export const MENUS: Record<string, string[]> = {
   kurye: ["Havuz", "Açık Paketler", "Paketlerim", "Profil", "Komutlar", "Yöneticiyi Ara"],
   yonetici: ["Havuz", "Son Talepler", "Kurye Paket Limiti", "Ücret Tarifesi", "Bölgeler", "Restoranlar", "Kuryeler", "İptal Siparişler", "Yönetici Numarası", "Komutlar", "Sipariş Verilerini Temizle", "Kurye Durumu"],
 };
+
+/** Kurallar sekmesinin varsayılan metinleri (yönetici panelinden düzenlenebilir). */
+export const RULE_DEFAULTS: Record<string, string> = {
+  rule_mesafeler: "Firmamız Pendik bölgesinde hizmet vermektedir. Bu bölge için belirlenen teslimat mesafesi 10 km’dir.\n" +
+    "10 km’yi aşan teslimatlar için operasyonun sağlıklı işlemesi amacıyla sipariş kabul edilmeyebilir.",
+  rule_teslimat: "Operasyon merkezi baz alınarak, kuryelerimizin teslimatı aldıktan sonra maksimum 30 dakikada (maksimum 10 km içinde) teslim etmesi hedefine göre bölge planlaması ve teslimat çapı belirlenmiştir.\n" +
+    "Olumsuz hava koşulları ve yoğun trafik saatlerinde bu süre maksimum 45 dakika olabilir.",
+  rule_iptal: "Sipariş ambalajları motorda taşınmaya uygun, muhafazalı ve sarsılmaya/patlamaya karşı dayanıklı olmalıdır.\n" +
+    "Yüklü siparişlerde ambalaj altında kalan, ezilmeye/patlamaya karşı hassas ürünler üste konulmalıdır.\n" +
+    "Yetersiz ve dayanıksız ambalajlar konusunda, patlama ve hasar hâllerinde iptal durumu karşılıklı değerlendirilir.\n" +
+    "Kuryelerimiz zayıf ambalaj konusunda bilgi verir; düzeltilmeyen ambalaj durumlarında sorumluluk kuryemize yüklenemez.\n" +
+    "30 dakika teslim süresini aşan siparişler için iptal ve iade, şartlara göre değerlendirilir.\n" +
+    "Restoranda bekleme süresi, hava koşulları ve arıza hâllerinde iptal/iade karşılıklı değerlendirilir.",
+  rule_cihaz: "a: Cihaz koruması — İşletme POS’u ve cihazları ile yapılan teslimatlarda, işletme cihazları koruma kabı ile verilmelidir. " +
+    "Koruma kabı olmayan cihazlarda oluşacak arızalar (su geçirme, kırılma vb.) hâlinde sorumluluk işletmeci firmadadır. " +
+    "Kuryemizden kaynaklı hatalar sonucu oluşan arızalar duruma göre karşılıklı kararlaştırılır.\n" +
+    "b: Cihaz bağlantı hatası — Alınan cihazlarda bağlantı hatası veya başka bir sebeple tahsilatın tekrarlara rağmen yapılamaması gibi durumlarda, " +
+    "ödemesiz teslim edilen siparişler teslim edilmiş sayılır. Ek ücret ödemesi alınması ayrı bir paket olarak değerlendirilir.",
+  rule_sabit: "Kuryemize ait yemek işletmeye aittir.\n" +
+    "Kuryemiz, kuryelik görevinin dışında başka görevlerde kendi isteği dışında sorumlu tutulmaz.",
+};

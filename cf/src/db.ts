@@ -53,6 +53,14 @@ export class Db {
     const res = await this.d1.prepare(sql).bind(...params).run();
     return res.meta?.changes ?? 0;
   }
+  /** Uygulama günlüğü (hata/olay). Sessiz: log yazımı isteği bozmaz. */
+  async log(level: string, source: string, account: number | null, message: string): Promise<void> {
+    try {
+      await this.d1.prepare("INSERT INTO app_logs(at,level,source,account,message) VALUES (?,?,?,?,?)")
+        .bind(Date.now() / 1000, level, source, account, String(message).slice(0, 1000)).run();
+    } catch {}
+  }
+
   async batch(statements: D1PreparedStatement[]): Promise<void> {
     if (statements.length) await this.d1.batch(statements);
   }

@@ -282,3 +282,12 @@ python3 tools/verify_package.py
 - **Kurye notu** kart içi sarı alan (border `rgb(245,197,66)`), blur'da “Not kaydedildi”, DB `courier_note="Ambalaj zayıf"`.
 - Butonlar: `Km gir · teslim aldım` → `Restoran Konumu | Restoranı Ara` → `Aktar | Paketi iptal et` → `Çıkış` (sheet kapandı).
 - e2e **78/78** · deploy `cd0e7ce5` (v120).
+
+### Son doğrulama (2026-11-26, dinamik sistem verileri)
+
+- Yönetici Ayarlar sekmeleri: **Fiyatlandırma · Kurallar · Tanılama · Logs** (4/4).
+- Kurallar: 5 metin alanı + saatler; kaydet → `PUT /api/yonetim/sistem` “Kurallar ve saatler kaydedildi”.
+- Dinamik akış: panelde “Panelden değişti” → kurye `/api/sistem` ve Kurallar sekmesinde aynı metin göründü.
+- Kurye Sistem sekmeleri: **Fiyatlandırma + Kurallar** (Tanılama yok).
+- Logs: `/api/log` → `app_logs` (kaynak kurye), liste 1 kayıt, `temizle` → `deleted:1`.
+- e2e **80/80** · deploy `d478d7c4` (v130).

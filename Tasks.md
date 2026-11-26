@@ -48,6 +48,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] Sistem verileri dinamik: yönetici Ayarlar 4 sekme (fiyatlandırma/kurallar/tanılama/logs), kurallar+h saatler düzenlenebilir, `app_logs` tablosu ve log listesi; kurye/restoran Sistem'de yalnız fiyat+kurallar (`d478d7c4`, v130).
 - [x] Sipariş kartı tam sayfa + “SİPARİŞ KARTI” başlığı + tek satır butonlar (kurye/restoran/yönetici) — v127-129.
 - [x] Km düzenleme: teslim edilene kadar serbest (ücret yeniden hesaplanır), teslim sonrası kilitli; kartta "Km düzenle (x km)". E2E **80/80**.
 - [x] Kurye sipariş kartı v2: ✕ kaldırıldı, Restoran notu satırı + kart içi Kurye notu (otomatik kayıt), buton düzeni ve **Çıkış** (`cd0e7ce5`, v120).

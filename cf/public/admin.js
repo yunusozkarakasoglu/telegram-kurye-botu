@@ -641,10 +641,10 @@
     });
   }
 
-  var AYARLAR = [['limit', 'Kurye Paket Limiti'], ['tarife', 'Ücret Tarifesi'], ['sistem', 'Sistem']];
+  var AYARLAR = [['fiyat', 'Fiyatlandırma'], ['kurallar', 'Kurallar'], ['tanilama', 'Tanılama'], ['logs', 'Logs']];
 
   function viewAyarlar() {
-    if (!S.ayarTab) S.ayarTab = 'limit';
+    if (!S.ayarTab) S.ayarTab = 'fiyat';
     head('Ayarlar', 'Paket limiti · Ücret tarifesi · Çalışma saatleri');
     panel('<div class="seg three" id="ay-seg">' + AYARLAR.map(function (a) {
       return '<button data-ay="' + a[0] + '" class="' + (S.ayarTab === a[0] ? 'on' : '') + '">' + a[1] + '</button>';
@@ -652,17 +652,20 @@
     Array.prototype.forEach.call($('ay-seg').children, function (b) {
       b.onclick = function () { S.ayarTab = b.getAttribute('data-ay'); viewAyarlar(); };
     });
-    if (S.ayarTab === 'tarife') drawTarife();
-    else if (S.ayarTab === 'sistem') drawSistem();
-    else drawLimit();
+    if (S.ayarTab === 'kurallar') drawKurallar();
+    else if (S.ayarTab === 'tanilama') drawTanilama();
+    else if (S.ayarTab === 'logs') drawLogs();
+    else { drawLimit(); drawTarife(true); }
   }
 
-  function drawTarife() {
+  function drawTarife(altBolum) {
+    var hedef = altBolum ? document.getElementById('ay-tarife') : null;
     API.yonetim('tarife').then(function (d) {
       var tariff = d.tariff || [];
       var bounds = d.tariff_bounds || [];
       var labels = d.tariff_intervals || [];
-      panelAy('<div class="fld" style="max-width:280px"><label>0–3 km sabit ücret (TL)</label>' +
+      var html = '<h3 style="font-size:15px;margin:0 0 8px">Ücret tarifesi</h3>' +
+        '<div class="fld" style="max-width:280px"><label>0–3 km sabit ücret (TL)</label>' +
         '<input id="t0" type="number" value="' + (tariff[0] || 0) + '"></div>' +
         '<h3 style="font-size:15px;margin:14px 0 8px">Sabit ücretler</h3>' +
         tariff.slice(1).map(function (v, i) {
@@ -673,7 +676,8 @@
         '<input id="textra" type="number" min="0" value="' + (d.extra_per_km != null ? d.extra_per_km : 100) + '"></div>' +
         '<p class="sub" style="max-width:420px">Not: 10 km üzerindeki her tam/km dilimi için bu tutar taban ücrete eklenir. ' +
         'Örnek: 12,1 km → 640 TL + 3 × ek ücret.</p>' +
-        '<button class="p" id="tsave" style="margin-top:12px">Kaydet</button>');
+        '<button class="p" id="tsave" style="margin-top:12px">Kaydet</button>';
+      if (hedef) hedef.innerHTML = html; else panelAy(html);
       $('tsave').onclick = function () {
         var values = [Number($('t0').value) || 0];
         Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-t]'), function (inp) {
@@ -687,10 +691,13 @@
   }
 
   function drawLimit() {
+    var host = document.getElementById('ay-body') || document.getElementById('adm-body');
+    host.innerHTML = '<h3 style="font-size:15px;margin:0 0 8px">Kurye paket limiti</h3><div id="ay-limit"></div>' +
+      '<div id="ay-tarife" style="margin-top:16px"></div>';
     API.yonetim('tarife').then(function (d) {
-      panelAy('<div class="fld" style="max-width:220px"><label>Limit (1–99)</label>' +
+      document.getElementById('ay-limit').innerHTML = '<div class="fld" style="max-width:220px"><label>Limit (1–99)</label>' +
         '<input id="lim" type="number" min="1" max="99" value="' + (d.limit || 3) + '"></div>' +
-        '<button class="p" id="lsave">Kaydet</button>');
+        '<button class="p" id="lsave">Kaydet</button>';
       $('lsave').onclick = function () {
         API.yonetim('limit', { limit: Number($('lim').value) }).then(function () {
           UI.toast('Limit kaydedildi', 'success');
@@ -699,20 +706,92 @@
     }).catch(showError);
   }
 
-  function drawSistem() {
+  function drawKurallar() {
     API.yonetim('tarife').then(function (d) {
-      var s = d.settings || {};
-      panelAy('<div class="fld" style="max-width:240px"><label>Açılış saati</label>' +
-        '<input id="open" type="time" value="' + esc(s.open_time || "07:00") + '"></div>' +
-        '<div class="fld" style="max-width:240px"><label>Kapanış saati</label>' +
-        '<input id="close" type="time" value="' + esc(s.close_time || "22:00") + '"></div>' +
-        '<button class="p" id="ssave">Kaydet</button>');
-      $('ssave').onclick = function () {
-        API.yonetim('sistem', { open_time: $('open').value, close_time: $('close').value }).then(function () {
-          UI.toast('Çalışma saatleri kaydedildi', 'success');
+      var st = d.settings || {};
+      var r = st.rules || {};
+      var alan = function (id, baslik, deger) {
+        return '<div class="fld"><label>' + baslik + '</label><textarea id="' + id + '" rows="4">' + esc(deger || '') + '</textarea></div>';
+      };
+      panelAy('<h3 style="font-size:15px;margin:0 0 8px">Çalışma saatleri</h3>' +
+        '<div class="acts" style="gap:8px;max-width:420px">' +
+          '<div class="fld" style="flex:1;margin:0"><label>Açılış</label><input id="open" type="time" value="' + esc(st.open_time || '07:00') + '"></div>' +
+          '<div class="fld" style="flex:1;margin:0"><label>Kapanış</label><input id="close" type="time" value="' + esc(st.close_time || '22:00') + '"></div>' +
+        '</div>' +
+        '<h3 style="font-size:15px;margin:16px 0 8px">Metinler</h3>' +
+        alan('r-mesafeler', 'Mesafeler', r.mesafeler) +
+        alan('r-teslimat', 'Teslimat süresi', r.teslimat) +
+        alan('r-iptal', 'İptal durumları', r.iptal) +
+        alan('r-cihaz', 'Cihaz (POS–Telefon)', r.cihaz) +
+        alan('r-sabit', 'Sabit kurye', r.sabit) +
+        '<button class="p" id="ksave" style="margin-top:6px">Kaydet</button>');
+      $('ksave').onclick = function () {
+        var body = {
+          open_time: $('open').value, close_time: $('close').value,
+          rules: {
+            mesafeler: $('r-mesafeler').value, teslimat: $('r-teslimat').value, iptal: $('r-iptal').value,
+            cihaz: $('r-cihaz').value, sabit: $('r-sabit').value,
+          },
+        };
+        API.yonetim('sistem', body).then(function () {
+          UI.toast('Kurallar ve saatler kaydedildi', 'success');
         }).catch(function (e) { UI.toast(e.message || 'Kaydedilemedi', 'error'); });
       };
     }).catch(showError);
+  }
+
+  function drawTanilama() {
+    var logs = (API.logs ? API.logs() : []).slice(-60);
+    panelAy('<div class="card" style="padding:12px;font-size:12px">' +
+        '<div><b>Mod:</b> ' + (API.mode === 'real' ? 'CANLI' : 'MİMİK') + ' · <b>initData:</b> ' +
+        (window.Telegram && Telegram.WebApp && Telegram.WebApp.initData ? 'var' : 'YOK') + '</div>' +
+        '<div><b>Son hata:</b> ' + esc(API.lastError || '—') + '</div></div>' +
+      '<div class="card" style="padding:12px;font-size:12px;white-space:pre-wrap">' +
+        (logs.length ? logs.map(esc).join('\n') : 'Kayıt yok.') + '</div>' +
+      '<button class="p" id="log-send" style="width:100%;margin-top:8px">Sunucuya Gönder</button>');
+    $('log-send').onclick = function () {
+      API.sendLogs('tanılama').then(function () { UI.toast('Gönderildi', 'success'); })
+        .catch(function (e) { UI.toast(e.message || 'Gönderilemedi', 'error'); });
+    };
+  }
+
+  function drawLogs() {
+    if (!S.logKaynak) S.logKaynak = '';
+    panelAy('<div class="filters" style="margin-bottom:10px">' +
+        '<select id="lg-kaynak">' +
+          [['', 'Tümü'], ['sistem', 'Sistem'], ['kurye', 'Kurye'], ['restoran', 'Restoran'], ['yonetici', 'Yönetici'], ['istemci', 'İstemci']].map(function (x) {
+            return '<option value="' + x[0] + '"' + (S.logKaynak === x[0] ? ' selected' : '') + '>' + x[1] + '</option>';
+          }).join('') +
+        '</select>' +
+        '<button class="p sm" id="lg-yenile">↻ Yenile</button>' +
+        '<button class="d sm" id="lg-temizle">Temizle</button>' +
+      '</div><div id="lg-liste"><div class="empty">Yükleniyor…</div></div>');
+    function yukle() {
+      API.yonetim('loglar', { kaynak: S.logKaynak }).then(function (d) {
+        var items = d.items || [];
+        document.getElementById('lg-liste').innerHTML =
+          '<div class="note" style="margin-bottom:6px">Toplam ' + (d.total || 0) + ' kayıt · son ' + items.length + '</div>' +
+          (items.length ? '<div class="card" style="padding:6px 10px">' + items.map(function (l) {
+            return '<div class="logrow"><span class="lt">' + dt(new Date(l.at * 1000).toISOString()) + '</span>' +
+              '<span class="lk ' + esc(l.source) + '">' + esc(l.source) + '</span>' +
+              '<span class="lm">' + esc(l.message) + '</span></div>';
+          }).join('') + '</div>' : '<div class="empty">Kayıt yok.</div>');
+      }).catch(showError);
+    }
+    yukle();
+    $('lg-kaynak').onchange = function () { S.logKaynak = $('lg-kaynak').value; yukle(); };
+    $('lg-yenile').onclick = yukle;
+    $('lg-temizle').onclick = function () {
+      UI.openSheet('<h2>Logları temizle</h2><p>' + (S.logKaynak ? 'Seçili kaynağın' : 'Tüm') + ' kayıtları silinsin mi?</p>' +
+        '<button class="d" id="lg-ok" style="width:100%">Sil</button>' +
+        '<button class="d" id="lg-vaz" style="width:100%;margin-top:6px">Vazgeç</button>');
+      document.getElementById('lg-vaz').onclick = function () { UI.closeSheet(); };
+      document.getElementById('lg-ok').onclick = function () {
+        API.yonetim('loglarTemizle', { kaynak: S.logKaynak }).then(function (r) {
+          UI.closeSheet(); UI.toast((r.deleted || 0) + ' kayıt silindi', 'success'); yukle();
+        }).catch(function (e) { UI.toast(e.message || 'Silinemedi', 'error'); });
+      };
+    };
   }
 
   function viewSonTalepler() {

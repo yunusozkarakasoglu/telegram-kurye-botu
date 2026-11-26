@@ -592,3 +592,14 @@ header h1{display:inline}
 .sh.full .pk-ft{grid-template-columns:1fr;gap:7px}
 .sh.full .pk-ft button,.sh.full .pk-ft .btn{min-height:40px;padding:8px 12px;font-size:14px}
 .sh.full .pk-ft .pkexit{min-height:40px}
+
+/* yönetici log listesi */
+.logrow{display:grid;grid-template-columns:96px 78px 1fr;gap:8px;padding:5px 2px;border-bottom:1px solid var(--ln);font-size:12px}
+.logrow:last-child{border-bottom:0}
+.logrow .lt{color:var(--t2);white-space:nowrap;font-variant-numeric:tabular-nums}
+.logrow .lk{font-weight:600;font-size:11px;text-transform:uppercase;color:var(--t2)}
+.logrow .lk.sistem{color:#c0353a}
+.logrow .lk.kurye{color:#178a44}
+.logrow .lk.restoran{color:#b07d00}
+.logrow .lk.yonetici{color:#2b6cb0}
+.logrow .lm{overflow-wrap:anywhere}

@@ -1497,7 +1497,7 @@
     var restoran = S.session && S.session.role === 'restoran';
     var sekmeler = admin
       ? [['fiyat', 'Fiyatlandırma'], ['restoran', 'Restoranlar'], ['kurye', 'Kuryeler'], ['bolge', 'Bölgeler'], ['log', 'Tanılama']]
-      : [['fiyat', 'Fiyatlandırma'], ['kurallar', 'Kurallar'], ['log', 'Tanılama']];
+      : [['fiyat', 'Fiyatlandırma'], ['kurallar', 'Kurallar']];
     var seg = '<div class="seg four">' + sekmeler.map(function (x) {
       return '<button data-st="' + x[0] + '" class="' + (S.sistemTab === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
     }).join('') + '</div>';
@@ -1512,11 +1512,16 @@
         '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:14px"><span>Kapanış</span><b>' + esc(st.close_time || '22:00') + '</b></div></div>';
     }
     function kurallarHtml(st) {
-      var liste = (window.KURALLAR || []).map(function (b) {
-        return '<div class="card rulecard"><b>' + esc(b.baslik) + '</b><ul>' +
-          b.maddeler.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>';
-      }).join('') || '<div class="empty">Kural tanımlı değil.</div>';
-      return saatlerKart(st) + liste;
+      var r = st.rules || {};
+      var bolum = function (baslik, metin) {
+        if (!metin) return '';
+        var satirlar = String(metin).split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+        return '<div class="card rulecard"><b>' + esc(baslik) + '</b><ul>' +
+          satirlar.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>';
+      };
+      var liste = bolum('Mesafeler', r.mesafeler) + bolum('Teslimat Süresi', r.teslimat) +
+        bolum('İptal Durumları', r.iptal) + bolum('Cihaz (POS–Telefon)', r.cihaz) + bolum('Sabit Kurye', r.sabit);
+      return saatlerKart(st) + (liste || '<div class="empty">Kural tanımlı değil.</div>');
     }
     function draw() {
       var d = S.sistem;
