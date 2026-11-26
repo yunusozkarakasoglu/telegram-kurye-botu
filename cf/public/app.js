@@ -280,7 +280,7 @@
     if (opts.pay && !cancelled && delivered && p.payment_received !== true) {
       actions += '<button class="p w" data-a="odeme" data-i="' + p.id + '">Ödeme Aldım</button>';
     }
-    if (opts.closable) actions += '<button class="w" data-a="kapat" data-i="' + p.id + '">Çıkış</button>';
+    if (opts.closable) actions += '<button class="w pkexit" data-a="kapat" data-i="' + p.id + '">Çıkış</button>';
 
     var warn = (S.kmPending && opts.own) ? '<div class="pk-warn">Km girişi bekleniyor. Önce km girişini tamamlayın.</div>' : '';
     var kuryeNotu = duzenlenebilir

@@ -560,3 +560,6 @@ header h1{display:inline}
 .drawer-status button.on.online{background:#1fa855;border-color:#1fa855;color:#fff}
 .drawer-status button.on.busy{background:#e6a817;border-color:#e6a817;color:#1b1b1b}
 .drawer-status button.on.offline{background:#e5484d;border-color:#e5484d;color:#fff}
+
+.pk-ft .pkexit{background:var(--er);border-color:var(--er);color:#fff;font-weight:600}
+.pk-ft .pkexit:active{background:#c0353a;border-color:#c0353a}
