@@ -228,3 +228,11 @@ python3 tools/verify_package.py
 - Km girişi 12,1 km: “Bu paketten alacağınız: 940 TL” + **10 km üzeri uyarısı**; kayıt engellenmedi.
 - `/api/sistem` → `payments` içinde “Cihaz hatası (ödemesiz)”; `reasons` içinde “Ambalaj yetersiz/patladı” ve “30 dk teslim süresi aşıldı”.
 - e2e **73/73** · `tsc` ✅ · deploy `5525ee3c` (v86).
+
+### Son doğrulama (2026-11-26, kurye notu + filtre düzeni)
+
+- Km girişinde not: “Zayıf ambalaj, geç teslim olabilir” → `packages.courier_note` dolu; kartta **Kurye notu** amber kutuda.
+- Restoran kartında da aynı not görünüyor (DTO `courier_note`).
+- Filtre paneli başlığı: `Filtrele 🧹 ✕` (37px ikonlar); geniş “Filtreyi temizle” butonu kaldırıldı, 🧹 sıfırlıyor.
+- Kurye Geçmiş: hızlı filtre segleri yok; `⚙ Filtre` + zaman/durum/ödeme/grupla panelde.
+- e2e **75/75** · `tsc` ✅ · deploy `290ec9d0` (v96).
