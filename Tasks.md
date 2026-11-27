@@ -50,6 +50,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] **v181**: restoran paket kartı açılmıyordu (`duzenlenebilir` tanımsız) → düzeltildi; restoran/yönetici kartı yeni tema (başlık + çipler).
 - [x] **v180**: kart alt satırındaki 3 butona (Ara · Aktar · İptal) belirgin kenarlık (`rgba(148,163,184,.45)`).
 - [x] **v178-179**: sipariş kartı yeni tema (çerçeveli başlık + ÖDEME/BÖLGE çipleri); "Harita aç" butonu kaldırıldı (yalnız 📍 link).
 - [x] **v177**: "Restoran konumu" değeri **mavi kesikli kutu** içinde (tasarım).

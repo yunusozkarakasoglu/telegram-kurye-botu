@@ -762,3 +762,12 @@ Doğrulama: `href=https://maps.google.com/?q=40.9851,29.1244` · `a.btn.act-sm` 
 | Paketi iptal et | ✔ aynı (kırmızı yazı korunuyor) |
 
 Zemin `var(--card)`, aktifken `var(--el)`. e2e **174/174** · deploy v180.
+
+### Restoran kartı açılmıyordu (2026-11-27, v181)
+
+| Sorun | Neden | Çözüm |
+|---|---|---|
+| Paketlerim'de satıra basınca kart açılmıyordu | `restPkgSheet` içinde `duzenlenebilir` **tanımsız** (v173'te eklenen konum satırı) → `ReferenceError` | `!p.cancelled_at && !p.delivered_at` |
+| Restoran/yönetici kartı teması | eski başlık düzeni | Kurye kartıyla aynı: çerçeveli başlık + **ÖDEME/BÖLGE çipleri** |
+
+Doğrulama: kart açılıyor (`SİPARİŞ KARTI` + çipler) · konsolda hata yok · e2e **174/174** · deploy v181.

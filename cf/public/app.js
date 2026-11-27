@@ -1451,13 +1451,15 @@
     var sh = UI.openSheet(
       '<div class="pk">' +
         '<div class="pk-title">SİPARİŞ KARTI</div>' +
-        '<div class="pk-hd"><b>' + esc(p.restaurant || '') + '</b><em class="lb r">' + esc(p.region || '—') + '</em>' +
-          UI.statusTag(p.status) + '</div>' +
+        '<div class="pk-hd">' +
+          '<div class="pk-hd-top"><b>' + esc(p.restaurant || '') + '</b>' + UI.statusTag(p.status) + '</div>' +
+          '<div class="pk-chips">' +
+            '<div class="pk-chip od"><small>Ödeme</small><b>' + esc(p.payment || '—') + '</b></div>' +
+            '<div class="pk-chip bol"><small>Bölge</small><b>' + esc(p.region || '—') + '</b></div>' +
+          '</div>' +
+        '</div>' +
         '<div class="pk-bd"><dl class="pk-fields">' +
           '<dt>Sipariş no</dt><dd>Talep #' + p.batch + '-' + p.number + '</dd>' +
-          '<dt>Restoran</dt><dd>' + esc(p.restaurant || '—') + '</dd>' +
-          '<dt>Bölge</dt><dd>' + esc(p.region || '—') + '</dd>' +
-          '<dt>Ödeme</dt><dd>' + esc(p.payment || '—') + '</dd>' +
           '<dt>Yetkili</dt><dd>' + esc(p.restaurant_contact || '—') + '</dd>' +
           '<dt>Oluşturma</dt><dd>' + dt(p.created_at) + '</dd>' +
           '<dt>Kabul</dt><dd>' + dt(p.accepted_at) + '</dd>' +
@@ -1465,7 +1467,7 @@
           '<dt>Teslim</dt><dd>' + dt(p.delivered_at) + '</dd>' +
           '<dt>İptal</dt><dd>' + dt(p.cancelled_at) + '</dd>' +
           '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
-          (duzenlenebilir
+          (!p.cancelled_at && !p.delivered_at
             ? '<dt>Restoran konumu</dt><dd><span class="pk-loc"><a class="maplink" href="' + esc(haritaUrl(p)) + '" target="_blank" rel="noopener">📍 Haritada aç</a></span></dd>'
             : '') +
           '<dt>Mesafe</dt><dd>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</dd>' +
