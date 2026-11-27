@@ -699,12 +699,13 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
           paket_sure_sn: sureAdet ? Math.round(sure / sureAdet) : null,
           ciro_tl: Math.round(ciro),
         },
-        // Sıra: tanımlı bölgeler (ayarlardaki sıra) → sonra "Belirtilmedi" gibi diğerleri
+        // Sıra: tanımlı bölgeler (ayarlardaki sıra) → sonra "Belirtilmedi" gibi diğerleri.
+        // 0 adetli bölgeler GÖSTERİLMEZ.
         bolgeler: [
           ...bolgeler.map((ad) => ({ ad, adet: dagilim[ad] || 0 })),
           ...Object.keys(dagilim).filter((ad) => !bolgeler.includes(ad))
             .map((ad) => ({ ad, adet: dagilim[ad] })),
-        ],
+        ].filter((x) => x.adet > 0),
       });
     }
 

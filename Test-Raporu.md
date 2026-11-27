@@ -601,3 +601,12 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | Bölge sırası | ✔ ayar sırası + “Belirtilmedi” sonda |
 | Yetki | ✔ kurye 403 |
 | e2e | **151/151 PASS** · deploy `73fd1f59` (v160) |
+
+### Rapor: sıfır bölgeler gizlendi (2026-11-27, v161)
+
+| Test | Sonuç |
+|---|---|
+| Bölge listesi | ✔ yalnız adedi > 0 olanlar (`Ataşehir 25 · Belirtilmedi 2`) |
+| Adet toplamı | ✔ paket sayısına eşit (9 = 9) |
+| Boş durum | ✔ "Bu dönemde paket yok" |
+| e2e | **152/152 PASS** · deploy `1e6053fb` (v161) |

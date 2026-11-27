@@ -1238,9 +1238,9 @@
           kart('Paket / Süre', o.paket_sure_sn == null ? '—' : hm(o.paket_sure_sn)) +
         '</div>' +
         '<h3 class="rp-h">Bölge istatistikleri</h3>' +
-        '<div class="rp-bolge">' + (bolgeler.length ? bolgeler.map(function (b) {
+        '<div class="rp-bolge">' + (bolgeler.length ? bolgeler.filter(function (b) { return b.adet > 0; }).map(function (b) {
           return '<div class="rp-bchip"><span>' + esc(b.ad) + '</span><b>' + b.adet + '</b></div>';
-        }).join('') : '<div class="empty">Bölge yok</div>') + '</div>';
+        }).join('') || '<div class="empty">Bu dönemde paket yok</div>' : '<div class="empty">Bu dönemde paket yok</div>') + '</div>';
       var host = $('rp-icerik');
       if (host) host.innerHTML = html;
     }).catch(function (e) {

@@ -712,6 +712,9 @@ def senaryo_restoran_rapor(api: Api, o: dict[str, Oturum], baglam: dict) -> None
     T.ok("bölge listesi dolu", len(bugun.get("bolgeler") or []) >= 1, f"{len(bugun.get('bolgeler') or [])} bölge")
     toplam_bolge = sum(int(x.get("adet") or 0) for x in (bugun.get("bolgeler") or []))
     T.esit("bölge adetleri paket toplamına eşit", int(o1.get("paket") or 0), toplam_bolge)
+    T.ok("0 adetli bölge listelenmiyor",
+         all(int(x.get("adet") or 0) > 0 for x in (bugun.get("bolgeler") or [])),
+         f"{(bugun.get('bolgeler') or [])[:3]}")
 
     genel = api.cagir("GET", "/api/restoran/rapor?range=all", token=rest.token)
     o2 = genel.get("ozet") or {}
