@@ -529,3 +529,13 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | Restoran listesi | ✔ Paketlerim'de kabul edildi + `✅ Kurye QR/PIN ile aldı` kartı |
 | Satır popup'ı | ✔ sadeleşti (QR anahtarı kaldırıldı) |
 | e2e | **118/118 PASS** · deploy `09b386e4` (v155) |
+
+### Paketlerim listesi temizliği (2026-11-27, v156)
+
+| Test | Sonuç |
+|---|---|
+| Paketlerim ekranı | ✔ `atakart` (kurye aldı / iptal) **0** · yalnız paket satırları (24) |
+| Açık QR/PIN bekleyen | ✔ `🔑 QR/PIN bekliyor · kod` satırı kalır |
+| Alınan claim | ✔ açık listeden düşer |
+| API `/api/restoran/atamalar` | ✔ yalnız `{items}` (recent yok) |
+| e2e | **119/119 PASS** · deploy `44b2c243` (v156) |

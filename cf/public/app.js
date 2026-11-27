@@ -1188,13 +1188,6 @@
         return '<button data-atama="' + a.id + '" data-kod="' + esc(a.code || '') + '" data-qr="' + esc(a.qr_token || '') + '">' +
           '🔑 QR/PIN bekliyor · <b>' + esc(a.code || '') + '</b> · ' + esc(a.region || 'Bölge yok') + '</button>';
       }).join('') + '</div>' : '') +
-        (S.atamaSon && S.atamaSon.length ? '<div class="atanotlar">' + S.atamaSon.map(function (a) {
-          var iyi = a.state === 'done';
-          var etiket = iyi ? '✅ Kurye QR/PIN ile aldı' : a.state === 'cancelled' ? '⛔ QR iptal edildi' : '⌛ Süresi doldu';
-          return '<div class="atakart ' + (iyi ? 'ok' : 'no') + '"><b>' + etiket + '</b>' +
-            '<small>' + esc(a.courier_name || 'Kurye') + ' · ' + esc(a.region || 'Bölge yok') +
-            ' · ' + esc(a.payment || 'Ödeme yok') + '</small></div>';
-        }).join('') + '</div>' : '') +
         '<div class="filterbar"><button id="rf-open">⚙ Filtre' + (n ? ' (' + n + ')' : '') + '</button>' +
         (n ? '<button id="rf-clear-page">✕ Temizle</button>' : '') + '</div>';
     })() +
@@ -2143,7 +2136,6 @@
     ]).then(function (r) {
       S.restItems = r[0];
       S.atamalar = (r[1] && r[1].items) || [];
-      S.atamaSon = (r[1] && r[1].recent) || [];
       render();
     });
   }

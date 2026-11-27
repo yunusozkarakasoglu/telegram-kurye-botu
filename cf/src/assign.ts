@@ -54,18 +54,12 @@ export async function openClaim(
   };
 }
 
-/** Restoranın açık claim'leri (QR tekrar gösterilebilsin) + son hareketler. */
+/** Restoranın açık claim'leri (QR tekrar gösterilebilsin). */
 export async function claimsForOwner(bot: Bot, owner: number) {
   const items = await bot.db.all<any>(
     `SELECT id, region, payment, note, code, qr_token, tries, expires
      FROM assign_codes WHERE owner=? AND state='pending' AND expires>? ORDER BY id`, owner, bot.nowF());
-  // Yalnız anlamlı sonuçlar: kurye aldı / süre doldu. İptal edilenler listeyi kirletmesin.
-  const recent = await bot.db.all<any>(
-    `SELECT a.id, a.courier, c.name AS courier_name, a.state, a.region, a.payment, a.note, a.created
-     FROM assign_codes a LEFT JOIN accounts c ON c.id=a.courier
-     WHERE a.owner=? AND a.state IN ('done','expired') AND a.created>?
-     ORDER BY a.id DESC LIMIT ?`, owner, bot.nowF() - 1800, 3);
-  return { items, recent };
+  return { items };
 }
 
 /** Kurye: token ile teklif özeti (kimlik kontrolü yok — ilk alan kazanır). */

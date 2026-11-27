@@ -50,6 +50,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] **v156**: restoran Paketlerim'de atama hareket kartları kaldırıldı (liste temiz); API `atamalar` yalnız açık claim'ler.
 - [x] **v155**: "QR ile Ekle" sekmesi (Bölge+Ödeme+Not → QR Oluştur); satır QR anahtarı kaldırıldı, akış tek yerden. e2e 118/118.
 - [x] **v154**: iptal QR'lar listeden çıktı · header 📷 QR okut (Telegram native) · açık uygulamada yeni start_param yakalama. e2e 116/116.
 - [x] **QR/PIN self-claim (v153)**: kurye seçimi kalktı; restoran satırda anahtar → QR+4 hane; kurye QR okutur veya "Kod ile paket al" der, paket atomik olarak ona geçer; restoran ekranında görünür onay/iptal kartları. e2e 113/113.

@@ -383,14 +383,11 @@ def senaryo_restoran_kuryeye_gonder(api: Api, o: dict[str, Oturum], baglam: dict
     gecersiz = api.cagir("POST", "/api/kurye/atama-al", {"code": str(ac3.get("code"))}, token=k2.token, bekle_hata=True)
     T.ok("iptal edilen kod kullanılamıyor", gecersiz.get("_status") in (409, 422))
 
-    # 8) Restoran görünür kartlar: "kurye aldı"
+    # 8) Alınan/iptal edilen claim açık listede KALMAZ (liste kirletilmez)
     son_hareket = api.cagir("GET", "/api/restoran/atamalar", token=rest.token)
-    T.ok("restoran 'kurye aldı' kartını görüyor",
-         any(x.get("state") == "done" for x in (son_hareket.get("recent") or [])),
-         f"{len(son_hareket.get('recent') or [])} hareket")
-    T.ok("iptal edilenler listede GÖRÜNMÜYOR (kirletmesin)",
-         not any(x.get("state") == "cancelled" for x in (son_hareket.get("recent") or [])),
-         f"{(son_hareket.get('recent') or [])[:2]}")
+    T.ok("alınan claim açık listeden düştü", not any(x["id"] == claim_id for x in (son_hareket.get("items") or [])))
+    T.ok("iptal edilen claim açık listede yok", not any(x["id"] == ac3.get("claim_id") for x in (son_hareket.get("items") or [])))
+    T.ok("yanıtta 'recent' alanı yok (liste temiz)", "recent" not in son_hareket, str(list(son_hareket.keys())))
 
     # 9) Yetki: kurye restoran uçlarını kullanamıyor
     yasak = api.cagir("POST", "/api/restoran/atama-ac", {"region": baglam["bolge"]}, token=k1.token, bekle_hata=True)
