@@ -610,3 +610,15 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | Adet toplamı | ✔ paket sayısına eşit (9 = 9) |
 | Boş durum | ✔ "Bu dönemde paket yok" |
 | e2e | **152/152 PASS** · deploy `1e6053fb` (v161) |
+
+### Rapor kotası optimizasyonu (2026-11-27, v162)
+
+| Ölçüm / test | Sonuç |
+|---|---|
+| Rapor sekmesinde 20 sn bekleme | **0** API isteği (önce: 15 sn'de 1 → ~80/saat) |
+| **↻ Yenile** | **1** istek |
+| Genel kapsamı | **son 90 gün** (`range=90`) |
+| Tüm zamanlar | ayrı buton (bilinçli tıklama), `range=all` |
+| 90 gün ≥ bugün | ✔ 9 ≥ 9 |
+| Kota projeksiyonu | ~%95 daha az rapor sorgusu (100 restoran senaryosunda 115 M/gün → ~5 M/gün) |
+| e2e | **156/156 PASS** · deploy `91eec581` (v162) |

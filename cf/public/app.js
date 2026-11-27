@@ -1201,14 +1201,15 @@
   function renderRestRapor() {
     setHeader('Rapor', '');
     var main = $('mn');
-    var kapsam = S.raporKapsam === 'all' ? 'all' : 'today';
+    var kapsam = S.raporKapsam === 'all' ? 'all' : (S.raporKapsam === 'today' ? 'today' : '90');
     S.raporKapsam = kapsam;
 
-    var iskelet = '<div class="seg two" style="margin-bottom:10px">' +
+    main.innerHTML =
+      '<div class="seg two" style="margin-bottom:10px">' +
         '<button data-rp2="today" class="' + (kapsam === 'today' ? 'on' : '') + '">Bugün</button>' +
-        '<button data-rp2="all" class="' + (kapsam === 'all' ? 'on' : '') + '">Genel</button></div>' +
+        '<button data-rp2="90" class="' + (kapsam === 'today' ? '' : 'on') + '">Genel</button></div>' +
       '<div id="rp-icerik"><div class="empty">Yükleniyor…</div></div>';
-    main.innerHTML = iskelet;
+
     Array.prototype.forEach.call(main.querySelectorAll('[data-rp2]'), function (b) {
       b.onclick = function () { S.raporKapsam = b.getAttribute('data-rp2'); renderRestRapor(); };
     });
@@ -1225,9 +1226,11 @@
       var kart = function (etiket, deger) {
         return '<div class="rp-card"><b>' + deger + '</b><small>' + etiket + '</small></div>';
       };
-      var bolgeler = (r && r.bolgeler) || [];
+      var bolgeler = ((r && r.bolgeler) || []).filter(function (b) { return b.adet > 0; });
+      var baslik = kapsam === 'today' ? 'Gün sonu' : (kapsam === 'all' ? 'Tüm zamanlar' : 'Son 90 gün');
       var html =
-        '<h3 class="rp-h">' + (kapsam === 'today' ? 'Gün sonu' : 'Genel toplam') + '</h3>' +
+        '<div class="rp-top"><h3 class="rp-h">' + baslik + '</h3>' +
+          '<button class="rp-yenile" id="rp-yenile" title="Yenile">↻</button></div>' +
         '<div class="rp-grid two">' +
           kart('Toplam paket', o.paket || 0) +
           kart('Toplam Km', o.km ? kmf(o.km) : '—') +
@@ -1237,12 +1240,17 @@
           kart('Paket / Km', o.paket_km == null ? '—' : kmf(o.paket_km)) +
           kart('Paket / Süre', o.paket_sure_sn == null ? '—' : hm(o.paket_sure_sn)) +
         '</div>' +
+        (kapsam === 'all' ? '' : '<button class="rp-all" id="rp-all">Tüm zamanlar dahil et</button>') +
         '<h3 class="rp-h">Bölge istatistikleri</h3>' +
-        '<div class="rp-bolge">' + (bolgeler.length ? bolgeler.filter(function (b) { return b.adet > 0; }).map(function (b) {
+        '<div class="rp-bolge">' + (bolgeler.length ? bolgeler.map(function (b) {
           return '<div class="rp-bchip"><span>' + esc(b.ad) + '</span><b>' + b.adet + '</b></div>';
-        }).join('') || '<div class="empty">Bu dönemde paket yok</div>' : '<div class="empty">Bu dönemde paket yok</div>') + '</div>';
+        }).join('') : '<div class="empty">Bu dönemde paket yok</div>') + '</div>';
       var host = $('rp-icerik');
       if (host) host.innerHTML = html;
+      var yn = $('rp-yenile');
+      if (yn) yn.onclick = function () { renderRestRapor(); UI.toast('Yenilendi', 'success'); };
+      var all = $('rp-all');
+      if (all) all.onclick = function () { S.raporKapsam = 'all'; renderRestRapor(); };
     }).catch(function (e) {
       var host = $('rp-icerik');
       if (host) host.innerHTML = '<div class="empty"><b>Rapor alınamadı</b>' + esc(e.message || '') + '</div>';
@@ -2271,6 +2279,8 @@
     var role = curRole();
     if (role === 'restoran') {
       if (S.tab === 'paketlerim') return loadRest().catch(function () {});
+      // Rapor: sessiz yoklama YOK — yalnız sekme açılışı / aşağı çekme / ↻ (kota koruması)
+      if (S.tab === 'rapor') { if (full) renderRestRapor(); return Promise.resolve(); }
       render();
       return Promise.resolve();
     }

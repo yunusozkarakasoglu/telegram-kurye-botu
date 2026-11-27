@@ -664,11 +664,15 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     // Restoran raporu: kartlar (paket/km/süre ortalamaları) + bölge dağılımı
     if (path === "/restoran/rapor" && method === "GET") {
       if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
-      const kapsam = url.searchParams.get("range") === "all" ? "all" : "today";
+      const istenen = url.searchParams.get("range") || "today";
+      // today · 90 (varsayılan "Genel" = son 90 gün) · all (tüm zamanlar, bilinçli tıklama)
+      const kapsam = istenen === "all" ? "all" : istenen === "90" ? "90" : "today";
       let start = 0;
       if (kapsam === "today") {
         const n = bot.now();
         start = Math.floor((n + 3 * 3600) / 86400) * 86400 - 3 * 3600;
+      } else if (kapsam === "90") {
+        start = bot.now() - 90 * 86400;
       }
       const rows = await bot.db.all<any>(
         `SELECT p.id, p.region, p.distance_km, b.created_at, p.accepted_at, p.delivered_at, p.cancelled_at, p.courier_fee

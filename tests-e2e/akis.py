@@ -716,6 +716,12 @@ def senaryo_restoran_rapor(api: Api, o: dict[str, Oturum], baglam: dict) -> None
          all(int(x.get("adet") or 0) > 0 for x in (bugun.get("bolgeler") or [])),
          f"{(bugun.get('bolgeler') or [])[:3]}")
 
+    son90 = api.cagir("GET", "/api/restoran/rapor?range=90", token=rest.token)
+    o90 = son90.get("ozet") or {}
+    T.esit("son 90 gün kapsamı dönüyor", "90", son90.get("range"))
+    T.ok("90 gün ≥ bugün", int(o90.get("paket") or 0) >= int(o1.get("paket") or 0),
+         f"90={o90.get('paket')} bugün={o1.get('paket')}")
+
     genel = api.cagir("GET", "/api/restoran/rapor?range=all", token=rest.token)
     o2 = genel.get("ozet") or {}
     T.ok("genel rapor daha büyük veya eşit", int(o2.get("paket") or 0) >= int(o1.get("paket") or 0),
@@ -748,7 +754,7 @@ def senaryo_on_yuz(api: Api) -> None:
     T.esit("aynı fonksiyon iki kez tanımlı değil", [], cift)
 
     # menü / atama kodu akışının işaretleri
-    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "hdr-qr", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "atamaDurum", "ak-okundu", "rp-card", "rp-bchip", "restoranRapor", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
+    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "hdr-qr", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "atamaDurum", "ak-okundu", "rp-card", "rp-bchip", "restoranRapor", "rp-yenile", "rp-all", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
         T.ok(f"yüzeyde '{iz}' var", iz in js)
 
     with urllib.request.urlopen(f"{api.base}/admin.js", timeout=30) as y:
