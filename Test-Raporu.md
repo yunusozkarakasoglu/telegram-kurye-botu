@@ -517,3 +517,15 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | Uygulama içi QR okutma yok | Header'a **📷** ikonu → `Telegram.WebApp.showScanQrPopup` (Bot API 6.4+) | ✔ tarayıcıda nazik fallback ("kodu elle girin") + kod penceresi |
 | QR metni çeşitli biçimlerde | `atama_<token>`, tam URL, 32 hex → regex ile ayrıştırma | ✔ |
 | e2e | — | **116/116** · deploy `43b16a1f` (v154) |
+
+### "QR ile Ekle" sekmesi (2026-11-27, v155)
+
+| Adım | Sonuç |
+|---|---|
+| Sekmeler | ✔ Sipariş Ekle · **QR ile Ekle** |
+| QR sekmesi alanları | ✔ Bölge · Ödeme tipi · Not (opsiyonel) |
+| "QR Oluştur" | ✔ QR (yerel) + yedek kod `7059` + Tamam / QR'ı iptal et |
+| Kurye: kod ile al | ✔ "Paket alındı · açık paketlerinizde" → Açık Paketler |
+| Restoran listesi | ✔ Paketlerim'de kabul edildi + `✅ Kurye QR/PIN ile aldı` kartı |
+| Satır popup'ı | ✔ sadeleşti (QR anahtarı kaldırıldı) |
+| e2e | **118/118 PASS** · deploy `09b386e4` (v155) |

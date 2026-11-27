@@ -943,16 +943,24 @@
     var regions = st.regions || [];
     var payments = st.payments || ODemeTipleri;
     if (!S.reqDraft) S.reqDraft = { region: '', payment: '', note: '' };
+    if (!S.qrDraft) S.qrDraft = { region: '', payment: '', note: '' };
+    var mod = S.reqMode === 'qr' ? 'qr' : 'siparis';
+
+    var sekme = '<div class="seg two" style="margin-bottom:10px">' +
+      '<button data-rm="siparis" class="' + (mod === 'siparis' ? 'on' : '') + '">Sipariş Ekle</button>' +
+      '<button data-rm="qr" class="' + (mod === 'qr' ? 'on' : '') + '">QR ile Ekle</button></div>';
+
+    if (mod === 'qr') { renderQrTalep(sekme, regions, payments); return; }
+
     var d = S.reqDraft;
     var rows = S.reqItems.map(function (it, i) {
-      var kurye = it.courier_name ? ('👤 ' + esc(it.courier_name)) : '';
       return '<button class="reqrow" data-row="' + i + '">' +
         '<span class="rq-l"><b>#' + (i + 1) + '</b>' +
-          '<small>' + esc(it.region || 'Bölge yok') + ' · ' + esc(it.payment || 'Ödeme yok') + (it.note ? ' · 📝' : '') + (kurye ? ' · ' + kurye : '') + '</small></span>' +
-        '<span class="rq-r">' + (it.qr ? '<em class="stg direct">QR/PIN</em>' : '<em class="stg">Havuza</em>') + '<i class="chev">›</i></span>' +
+          '<small>' + esc(it.region || 'Bölge yok') + ' · ' + esc(it.payment || 'Ödeme yok') + (it.note ? ' · 📝' : '') + '</small></span>' +
+        '<span class="rq-r"><i class="chev">›</i></span>' +
       '</button>';
     }).join('');
-    main.innerHTML =
+    main.innerHTML = sekme +
       '<div class="card addcard">' +
         '<div class="prow"><label>Bölge</label>' +
           '<button class="pbtn" id="ar">' + esc(d.region || '— seçin —') + '<i>▾</i></button></div>' +
@@ -962,8 +970,11 @@
         '<button class="p addbtn" id="addbtn">＋ Paket Ekle</button>' +
       '</div>' +
       '<div class="reqlist">' + (rows || '<p class="note" style="margin:4px 0">Listeniz boş. Bölge ve ödeme seçip “Paket Ekle”ye basın.</p>') + '</div>' +
-      '<p class="hint" style="margin:6px 0 10px">Satıra dokunun: bölge/ödeme/not düzenleyin, isterseniz kurye seçin. Kurye seçilirse paket havuza düşmez.</p>';
+      '<p class="hint" style="margin:6px 0 10px">Satıra dokunun: bölge/ödeme/not düzenleyin. Gönderince paket havuza düşer.</p>';
 
+    Array.prototype.forEach.call(main.querySelectorAll('[data-rm]'), function (b) {
+      b.onclick = function () { S.reqMode = b.getAttribute('data-rm'); render(); };
+    });
     main.querySelector('#ar').onclick = function () {
       secimSheet('Bölge', regions, S.reqDraft.region, function (v) { S.reqDraft.region = v; render(); });
     };
@@ -973,7 +984,7 @@
     main.querySelector('#an').oninput = function (e) { S.reqDraft.note = e.target.value; };
     main.querySelector('#addbtn').onclick = function () {
       if (S.reqItems.length >= 10) { UI.toast('En fazla 10 paket eklenebilir', 'error'); return; }
-      S.reqItems.push({ region: S.reqDraft.region, payment: S.reqDraft.payment, note: (S.reqDraft.note || '').trim(), courier: '', courier_name: '' });
+      S.reqItems.push({ region: S.reqDraft.region, payment: S.reqDraft.payment, note: (S.reqDraft.note || '').trim() });
       S.reqDraft = { region: '', payment: '', note: '' };
       render();
     };
@@ -986,30 +997,58 @@
     if (cs) cs.onclick = function () {
       if (!S.reqItems.length) { UI.toast('Önce paket ekleyin', 'error'); return; }
       cs.disabled = true;
-      var havuz = S.reqItems.filter(function (it) { return !it.qr; });
-      var qrli = S.reqItems.filter(function (it) { return !!it.qr; });
-      S.bekleyenSatirlar = {};   // iptal edilirse satırlar geri gelsin
-      var isler = [];
-      var qrlar = [];
-      if (havuz.length) isler.push(API.talepVer(havuz).then(function (r) { return r.count + ' havuza'; }));
-      qrli.forEach(function (it) {
-        isler.push(API.atamaAc({ region: it.region || '', payment: it.payment || '', note: (it.note || '').trim() })
-          .then(function (r) {
-            var kayit = { claim_id: r.claim_id, code: r.code, qr_link: r.qr_link };
-            qrlar.push(kayit);
-            S.bekleyenSatirlar[r.claim_id] = it;
-            return 'QR hazır';
-          }));
-      });
-      Promise.all(isler).then(function (sonuc) {
+      API.talepVer(S.reqItems).then(function (r) {
         S.reqItems = [];
         S.reqDraft = { region: '', payment: '', note: '' };
-        UI.toast('Gönderildi: ' + sonuc.join(' · '), 'success');
+        UI.toast('Talep #' + r.req_no + ' · ' + r.count + ' paket havuza atıldı', 'success');
         S.tab = 'paketlerim';
         S.restFilter = 'open';
         refresh(true);
-        if (qrlar.length) atamaKodSheet(qrlar[0]);
       }).catch(function (e) { cs.disabled = false; UI.toast(e.message || 'Gönderilemedi', 'error'); });
+    };
+    nav(restaurantTabs(), {});
+  }
+
+  /** "QR ile Ekle" sekmesi: bölge + ödeme → QR oluştur → kurye okutup paketi kendisi alır. */
+  function renderQrTalep(sekme, regions, payments) {
+    var main = $('mn');
+    var d = S.qrDraft;
+    main.innerHTML = sekme +
+      '<div class="card addcard">' +
+        '<div class="prow"><label>Bölge</label>' +
+          '<button class="pbtn" id="qr-ar">' + esc(d.region || '— seçin —') + '<i>▾</i></button></div>' +
+        '<div class="prow"><label>Ödeme tipi</label>' +
+          '<button class="pbtn" id="qr-ap">' + esc(d.payment || '— seçin —') + '<i>▾</i></button></div>' +
+        '<div class="fld"><label>Not (opsiyonel)</label><textarea id="qr-an" rows="2" placeholder="Siparişe özel not (kurye görür)">' + esc(d.note || '') + '</textarea></div>' +
+      '</div>' +
+      '<p class="hint" style="margin:6px 0 10px">QR oluşturun; kurye kendi telefonuyla okutup (veya kodu girerek) paketi üzerine alır. ' +
+        'Restoranın Paketlerim listesine düşer, kuryenin Açık Paketlerine eklenir.</p>';
+
+    Array.prototype.forEach.call(main.querySelectorAll('[data-rm]'), function (b) {
+      b.onclick = function () { S.reqMode = b.getAttribute('data-rm'); render(); };
+    });
+    main.querySelector('#qr-ar').onclick = function () {
+      secimSheet('Bölge', regions, S.qrDraft.region, function (v) { S.qrDraft.region = v; render(); });
+    };
+    main.querySelector('#qr-ap').onclick = function () {
+      secimSheet('Ödeme tipi', payments, S.qrDraft.payment, function (v) { S.qrDraft.payment = v; render(); });
+    };
+    main.querySelector('#qr-an').oninput = function (e) { S.qrDraft.note = e.target.value; };
+
+    $('cta').innerHTML = '<button class="p" id="qr-olustur">QR Oluştur</button>';
+    var btn = $('qr-olustur');
+    btn.onclick = function () {
+      btn.disabled = true;
+      API.atamaAc({
+        region: S.qrDraft.region || '', payment: S.qrDraft.payment || '', note: (S.qrDraft.note || '').trim(),
+      }).then(function (r) {
+        btn.disabled = false;
+        S.qrDraft = { region: '', payment: '', note: '' };
+        atamaKodSheet({ claim_id: r.claim_id, code: r.code, qr_link: r.qr_link });
+      }).catch(function (e) {
+        btn.disabled = false;
+        UI.toast(e.message || 'QR oluşturulamadı', 'error');
+      });
     };
     nav(restaurantTabs(), {});
   }
@@ -1022,10 +1061,6 @@
       '<h2>Sipariş #' + (i + 1) + '</h2>' +
       '<div class="fld"><label>Bölge</label><button class="pbtn w" id="er">' + esc(it.region || '— seçin —') + '<i>▾</i></button></div>' +
       '<div class="fld"><label>Ödeme</label><button class="pbtn w" id="ep">' + esc(it.payment || '— seçin —') + '<i>▾</i></button></div>' +
-      '<div class="fld qrtoggle"><label>Kurye QR/PIN ile alsın</label>' +
-        '<button class="swbtn' + (it.qr ? ' on' : '') + '" id="eqr"><em>' + (it.qr ? 'AÇIK' : 'KAPALI') + '</em><i class="sw"></i></button>' +
-      '</div>' +
-      '<p class="hint" style="margin:-4px 0 8px">Açıkken sipariş havuza düşmez; kurye QR okutarak veya kodu girerek paketi kendisi alır.</p>' +
       '<div class="fld"><label>Not</label><textarea id="en" rows="2" placeholder="Siparişe özel not (kurye görür)">' + esc(it.note || '') + '</textarea></div>' +
       '<button class="p" id="esave">Kaydet</button><button class="d" id="edel">Sil</button><button class="g" id="ecancel">Vazgeç</button>');
 
@@ -1036,12 +1071,6 @@
     sh.querySelector('#ep').onclick = function () {
       UI.closeSheet();
       secimSheet('Ödeme', payments, it.payment, function (v) { it.payment = v; reqItemSheet(i, regions, payments); });
-    };
-    sh.querySelector('#eqr').onclick = function () {
-      it.qr = !it.qr;
-      var b = sh.querySelector('#eqr');
-      b.className = 'swbtn' + (it.qr ? ' on' : '');
-      b.querySelector('em').textContent = it.qr ? 'AÇIK' : 'KAPALI';
     };
     sh.querySelector('#esave').onclick = function () {
       it.note = (sh.querySelector('#en').value || '').trim();

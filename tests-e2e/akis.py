@@ -630,7 +630,7 @@ def senaryo_on_yuz(api: Api) -> None:
     T.ok("app.js servis ediliyor", len(js) > 50000, f"{len(js)} bayt")
 
     gerekli = [
-        "renderTalep", "reqItemSheet", "secimSheet", "atamaKodSheet",
+        "renderTalep", "renderQrTalep", "reqItemSheet", "secimSheet", "atamaKodSheet",
         "renderRestRapor", "renderRestPaketlerim", "restSure", "restFilterSheet",
         "renderDrawer", "setKuryeDurum", "mesgulSebepSheet", "renderHavuz", "refresh", "boot",
     ]
@@ -641,7 +641,7 @@ def senaryo_on_yuz(api: Api) -> None:
     T.esit("aynı fonksiyon iki kez tanımlı değil", [], cift)
 
     # menü / atama kodu akışının işaretleri
-    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "hdr-qr", "sonAtamaToken", "showScanQrPopup", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
+    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "hdr-qr", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
         T.ok(f"yüzeyde '{iz}' var", iz in js)
 
     with urllib.request.urlopen(f"{api.base}/admin.js", timeout=30) as y:
