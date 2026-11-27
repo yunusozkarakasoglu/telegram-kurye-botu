@@ -741,3 +741,14 @@ Doğrulama: `href=https://maps.google.com/?q=40.9851,29.1244` · `a.btn.act-sm` 
 | Yükseklik | ✔ 26 px, yuvarlak 7 px |
 | Link | ✔ `https://maps.google.com/?q=lat,lng` — saf `<a>` |
 | e2e | **174/174 PASS** · deploy v177 |
+
+### Sipariş kartı teması (2026-11-27, v178–v179)
+
+| Öğe | Sonuç |
+|---|---|
+| Başlık kartı | ✔ çerçeveli blok · restoran adı 17px bold + sağda durum |
+| Çipler | ✔ **ÖDEME** amber `#f0a020` · **BÖLGE** yeşil `#3ecf8e` (etiket + değer) |
+| Alan listesi | ✔ Sipariş no · Yetkili · Kabul · Alım · Teslim · Mesafe · Paket ücreti · Ödeme (hakediş) · Durum · Kurye · **Restoran konumu (mavi kesikli)** · Restoran notu · Kurye notu |
+| Butonlar | ✔ `Km gir`/`Teslim ettim` (tam) · `Restoranı Ara · ⇄ Aktar · Paketi iptal et` · `Çıkış` |
+| **Harita aç butonu** | ✔ **kaldırıldı** (yalnız 📍 Haritada aç linki) |
+| e2e | **174/174 PASS** · deploy v179 |

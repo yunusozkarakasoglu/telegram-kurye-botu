@@ -318,13 +318,15 @@
 
     return '<div class="pk">' +
       '<div class="pk-title">SİPARİŞ KARTI</div>' +
-      '<div class="pk-hd"><b>' + esc(p.restaurant) + '</b><em class="lb r">' + esc(p.region || '—') + '</em>' +
-        UI.statusTag(p.status) + '</div>' +
+      '<div class="pk-hd">' +
+        '<div class="pk-hd-top"><b>' + esc(p.restaurant) + '</b>' + UI.statusTag(p.status) + '</div>' +
+        '<div class="pk-chips">' +
+          '<div class="pk-chip od"><small>Ödeme</small><b>' + esc(p.payment || '—') + '</b></div>' +
+          '<div class="pk-chip bol"><small>Bölge</small><b>' + esc(p.region || '—') + '</b></div>' +
+        '</div>' +
+      '</div>' +
       '<div class="pk-bd"><dl class="pk-fields">' +
         '<dt>Sipariş no</dt><dd>Talep #' + p.batch + '-' + p.number + '</dd>' +
-        '<dt>Restoran</dt><dd>' + esc(p.restaurant) + '</dd>' +
-        '<dt>Bölge</dt><dd>' + esc(p.region || '—') + '</dd>' +
-        '<dt>Ödeme</dt><dd>' + esc(p.payment || '—') + '</dd>' +
         '<dt>Yetkili</dt><dd>' + esc(p.restaurant_contact || '—') + '</dd>' +
         '<dt>Kabul</dt><dd>' + dt(p.accepted_at) + '</dd>' +
         '<dt>Alım</dt><dd>' + dt(p.picked_up_at) + '</dd>' +
