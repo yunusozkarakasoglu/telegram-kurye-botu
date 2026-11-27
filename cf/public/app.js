@@ -1121,7 +1121,7 @@
         : '<p id="ak-durum">Kurye kodu uygulamasına girerek paketi alır.</p>') +
       '<div id="ak-okundu" hidden class="ak-okundu">' +
         '<b>✔ Kurye kabul etti</b>' +
-        '<small>Ekranın kapanmasına kalan süre: <b id="ak-sayac">10</b></small>' +
+        '<small>Ekranın kapanmasına kalan süre: <b id="ak-sayac">5</b></small>' +
       '</div>' +
       '<p class="note" style="text-align:center;margin-top:-4px" id="ak-ipucu">QR okutamazsa: kurye uygulamasında “Kod ile al”a basıp aşağıdaki kodu girer.</p>' +
       (kod ? '<div class="kodbox"><small>Kurye kodu (uygulamasına girecek)</small><b>' + esc(kod) + '</b></div>' : '') +
@@ -1152,7 +1152,7 @@
       // (Tasarım gereği kod kutusu ve “QR’ı iptal et” görünür kalır)
       var ipt = sh.querySelector('#ak-iptal');
       if (ipt) ipt.textContent = 'Kapat';
-      var kalan = 10;
+      var kalan = 5;
       var el = sh.querySelector('#ak-sayac');
       if (el) el.textContent = String(kalan);
       sayac = setInterval(function () {

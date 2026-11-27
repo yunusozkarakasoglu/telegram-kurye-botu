@@ -560,7 +560,7 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 |---|---|
 | Kabul öncesi | ✔ `state=pending` |
 | Kurye kabul etti | ✔ `state=done` + `courier_name` döndü |
-| Restoran ekranı | ✔ Yeşil **“✔ Boş Kurye kabul etti”** + **“Ekranın kapanmasına kalan süre: 8”** |
+| Restoran ekranı | ✔ Yeşil **“✔ Boş Kurye kabul etti”** + **“Ekranın kapanmasına kalan süre: 4”** (5'ten geri sayar) |
 | Geri sayım | ✔ 10→0 sonra otomatik kapanır, Paketlerim/Açık açılır |
 | Manuel | ✔ **Tamam** hemen kapatır · **Kapat** elle kapatır (kabul sonrası) |
 | Paket | ✔ restoranın **açık/havuz** listesine düşer (5 açık paket testi) |
@@ -630,3 +630,12 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | Rapor sayfası | v160–v161 | Bugün/Genel · 5 kart · bölge chipleri · 0 adetli bölge gizli |
 | Rapor kotası | v162 | sessiz yoklama kaldırıldı · **↻ Yenile** · Genel=90 gün |
 | **Toplam kalite** | — | ruff ✅ · Python **382/382** ✅ · tsc ✅ · e2e **156/156** ✅ · canlı `91eec581` (v162) |
+
+### QR geri sayımı 5 sn (2026-11-27, v163)
+
+| Test | Sonuç |
+|---|---|
+| Kurye kabul etti | ✔ geri sayım **5**'ten başlar (2 sn sonra "4") |
+| Süre bitince | ✔ ekran otomatik kapandı → **Paketlerim/Açık** |
+| Paket | ✔ `#910190-1` "Kabul edildi · 0 dk" |
+| e2e | **156/156** · deploy `cc0068eb` (v163) |
