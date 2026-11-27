@@ -50,6 +50,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] **v164**: kurye header (+) → "Paket Ekle" menüsü (QR Okut / Kod Gir) · tuş takımlı 4 hane girişi · **bekleyen kodlar benzersiz** (partial unique index). e2e 162/162.
 - [x] **v163**: QR kabul ekranındaki otomatik kapanma geri sayımı **10 sn → 5 sn**.
 - [x] **Rapor turu (v160-162)**: yeni Rapor sayfası (Bugün/Genel, 5 kart, bölge chipleri) · 0 adetli bölge gizli · sessiz yoklama kaldırıldı + **↻ Yenile** · Genel=90 gün, tüm zamanlar ayrı. e2e 156/156.
 - [x] **v162**: Rapor kotası — sessiz yoklama kaldırıldı (20 sn'de 0 istek), **↻ Yenile** düğmesi, **Genel = son 90 gün** + “Tüm zamanlar” ayrı. e2e 156/156.

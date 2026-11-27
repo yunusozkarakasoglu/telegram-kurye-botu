@@ -40,12 +40,23 @@ export async function openClaim(
   bot: Bot, owner: number, region: string | null, payment: string | null, note: string | null,
 ): Promise<{ ok: boolean; error?: string; claim_id?: number; code?: string; qr_token?: string; qr_link?: string; expires_at?: number }> {
   const simdi = bot.nowF();
-  const kod = kodUret();
   const token = tokenUret();
-  await bot.db.run(
-    `INSERT INTO assign_codes(owner,courier,code,qr_token,region,payment,note,tries,state,created,expires)
-     VALUES (?,0,?,?,?,?,?,0,'pending',?,?)`,
-    owner, kod, token, region, payment, note, simdi, simdi + ASSIGN_CODE_TTL);
+  // Kod, BEKLEYEN tüm claim'lerden farklı olmalı (partial unique index + yeniden deneme).
+  let kod = "";
+  for (let i = 0; i < 30; i++) {
+    const aday = kodUret();
+    try {
+      await bot.db.run(
+        `INSERT INTO assign_codes(owner,courier,code,qr_token,region,payment,note,tries,state,created,expires)
+         VALUES (?,0,?,?,?,?,?,0,'pending',?,?)`,
+        owner, aday, token, region, payment, note, simdi, simdi + ASSIGN_CODE_TTL);
+      kod = aday;
+      break;
+    } catch {
+      /* UNIQUE çakışması → yeni kod dene */
+    }
+  }
+  if (!kod) return { ok: false, error: "Şu an çok fazla bekleyen kod var; birkaç saniye sonra tekrar deneyin." };
   const row = await bot.db.first<{ id: number }>("SELECT last_insert_rowid() AS id");
   return {
     ok: true, claim_id: row?.id ?? 0, code: kod, qr_token: token,

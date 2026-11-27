@@ -1912,11 +1912,11 @@
     if (role === 'yonetici') { hr.innerHTML = ''; return; }
     var unread = (S.notifs && S.notifs.unread) || 0;
     hr.innerHTML = '<span class="hicons">' +
-      (role === 'kurye' ? '<button class="ico ico-qr" id="hdr-qr" title="QR okut">' + QR_IKON + '</button>' : '') +
+      (role === 'kurye' ? '<button class="ico ico-plus" id="hdr-plus" title="Paket ekle">+</button>' : '') +
       '<button class="ico" id="hdr-bell" title="Bildirimler">🔔' + (unread ? '<em>' + unread + '</em>' : '') + '</button></span>';
     $('hdr-bell').onclick = notifSheet;
-    var hq = $('hdr-qr');
-    if (hq) hq.onclick = atamaQrOku;
+    var hp = $('hdr-plus');
+    if (hp) hp.onclick = paketEkleSheet;
     renderDrawer();
   }
 
@@ -1983,6 +1983,19 @@
     }
   }
 
+  /** Header (+): paket alma seçenekleri — QR Okut / Kod Gir. */
+  function paketEkleSheet() {
+    var sh = UI.openSheet(
+      '<div class="pkadd"><h2>Paket Ekle</h2>' +
+        '<button class="pkbtn qr" id="pa-qr"><i>' + QR_IKON + '</i>QR Okut</button>' +
+        '<button class="pkbtn kod" id="pa-kod"><i class="ki">▤</i>Kod Gir</button>' +
+        '<button class="pk-cancel" id="pa-x">Vazgeç</button>' +
+      '</div>');
+    sh.querySelector('#pa-qr').onclick = function () { UI.closeSheet(); atamaQrOku(); };
+    sh.querySelector('#pa-kod').onclick = function () { UI.closeSheet(); atamaKodSor(); };
+    sh.querySelector('#pa-x').onclick = function () { UI.closeSheet(); };
+  }
+
   /** QR okut (Telegram yerel tarayıcı) — yoksa kod girme penceresi açılır. */
   function atamaQrOku() {
     var tg = window.Telegram && Telegram.WebApp;
@@ -2011,36 +2024,57 @@
     }
   }
 
-  /** QR yoksa/okutulamıyorsa: 4 haneli kodu kurye kendi uygulamasına girer. */
+  /** Kod girişi: 4 kutu + kendi tuş takımı (OS klavyesi yok). */
   function atamaKodSor() {
+    var girilen = '';
+    var mesgul = false;
+    var tuslar = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
     var sh = UI.openSheet(
-      '<h2>🔑 Kod ile paket al</h2>' +
-      '<p>Restoranın ekranındaki <b>4 haneli kodu</b> girin. Paket anında hesabınıza eklenir.</p>' +
-      '<div class="fld"><label>Kod</label><input id="ak-kod" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="one-time-code"></div>' +
-      '<div class="err" id="ak-err"></div>' +
-      '<button class="p" id="ak-al">Paketi al</button>' +
-      '<button class="g" id="ak-scan" style="margin-top:6px">QR okut</button>');
-    var inp = sh.querySelector('#ak-kod');
-    var err = sh.querySelector('#ak-err');
-    inp.oninput = function () { inp.value = (inp.value || '').replace(/\D/g, '').slice(0, 4); };
-    sh.querySelector('#ak-scan').onclick = function () { UI.closeSheet(); atamaQrOku(); };
-    sh.querySelector('#ak-al').onclick = function () {
-      var v = (inp.value || '').trim();
+      '<div class="kodgir">' +
+        '<p class="kg-lbl">4 haneli kodu girin</p>' +
+        '<div class="kg-kutular" id="kg-kutular">' + [0, 1, 2, 3].map(function () { return '<span></span>'; }).join('') + '</div>' +
+        '<div class="err" id="kg-err"></div>' +
+        '<div class="kg-tuslar">' + tuslar.map(function (t) {
+          if (t === '') return '<span class="kg-bos"></span>';
+          return '<button class="kg-tus' + (t === '⌫' ? ' sil' : '') + '" data-t="' + t + '">' + t + '</button>';
+        }).join('') + '</div>' +
+      '</div>');
+
+    var kutular = sh.querySelectorAll('#kg-kutular span');
+    var err = sh.querySelector('#kg-err');
+    function ciz() {
+      for (var i = 0; i < 4; i++) {
+        kutular[i].textContent = girilen[i] || '';
+        kutular[i].className = girilen[i] ? 'dolu' : '';
+      }
+    }
+    function gonder() {
+      if (mesgul) return;
+      mesgul = true;
       err.textContent = '';
-      if (!/^\d{4}$/.test(v)) { err.textContent = 'Kod 4 haneli olmalı'; return; }
-      var b = sh.querySelector('#ak-al');
-      b.disabled = true;
-      API.atamaAl({ code: v }).then(function () {
+      API.atamaAl({ code: girilen }).then(function () {
         UI.closeSheet();
         UI.toast('Paket alındı · açık paketlerinizde', 'success');
         S.tab = 'paketlerim';
         S.damga = '';
         refresh(true);
       }).catch(function (e) {
-        b.disabled = false;
+        mesgul = false;
+        girilen = '';
+        ciz();
         err.textContent = e.message || 'Paket alınamadı';
       });
-    };
+    }
+    Array.prototype.forEach.call(sh.querySelectorAll('.kg-tus'), function (b) {
+      b.onclick = function () {
+        var t = b.getAttribute('data-t');
+        if (t === '⌫') girilen = girilen.slice(0, -1);
+        else if (girilen.length < 4) girilen += t;
+        ciz();
+        if (girilen.length === 4) setTimeout(gonder, 120);
+      };
+    });
+    ciz();
   }
 
   /** QR/yönlendirme ile gelen paket: kart göster → "Kabul et". */

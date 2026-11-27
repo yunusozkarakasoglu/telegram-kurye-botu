@@ -389,6 +389,22 @@ def senaryo_restoran_kuryeye_gonder(api: Api, o: dict[str, Oturum], baglam: dict
     T.ok("iptal edilen claim açık listede yok", not any(x["id"] == ac3.get("claim_id") for x in (son_hareket.get("items") or [])))
     T.ok("yanıtta 'recent' alanı yok (liste temiz)", "recent" not in son_hareket, str(list(son_hareket.keys())))
 
+    # 8b) KRİTİK: bekleyen kodlar BENZERSİZ olmalı (çakışma = yanlış paket riski)
+    kodlar = []
+    for _ in range(12):
+        c = api.cagir("POST", "/api/restoran/atama-ac",
+                      {"region": baglam["bolge"], "payment": "Nakit", "note": "benzersizlik"}, token=rest.token)
+        kodlar.append(str(c.get("code")))
+    T.esit("bekleyen kodlar benzersiz", len(set(kodlar)), len(kodlar))
+    T.ok("kodlar 4 haneli", all(len(k) == 4 and k.isdigit() for k in kodlar), kodlar[:3])
+
+    # aynı kodla alma: yalnız bir paket düşmeli (belirsizlik yok)
+    tek = kodlar[0]
+    al1 = api.cagir("POST", "/api/kurye/atama-al", {"code": tek}, token=k2.token)
+    T.ok("benzersiz kodla tek paket alındı", bool(al1.get("ok")), str(al1.get("package_id")))
+    al2 = api.cagir("POST", "/api/kurye/atama-al", {"code": tek}, token=k1.token, bekle_hata=True)
+    T.ok("aynı kod ikinci kez paket vermiyor", al2.get("_status") in (409, 422), f"status={al2.get('_status')}")
+
     # 9) Yetki: kurye restoran uçlarını kullanamıyor
     yasak = api.cagir("POST", "/api/restoran/atama-ac", {"region": baglam["bolge"]}, token=k1.token, bekle_hata=True)
     T.esit("kurye atama açamıyor", 403, yasak.get("_status"))
@@ -754,7 +770,7 @@ def senaryo_on_yuz(api: Api) -> None:
     T.esit("aynı fonksiyon iki kez tanımlı değil", [], cift)
 
     # menü / atama kodu akışının işaretleri
-    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "hdr-qr", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "atamaDurum", "ak-okundu", "rp-card", "rp-bchip", "restoranRapor", "rp-yenile", "rp-all", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
+    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "atamaDurum", "ak-okundu", "rp-card", "rp-bchip", "restoranRapor", "rp-yenile", "rp-all", "paketEkleSheet", "kg-tuslar", "hdr-plus", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
         T.ok(f"yüzeyde '{iz}' var", iz in js)
 
     with urllib.request.urlopen(f"{api.base}/admin.js", timeout=30) as y:

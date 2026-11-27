@@ -773,3 +773,33 @@ header h1{display:inline}
   background:var(--el);color:var(--tx);font-size:16px;line-height:1;cursor:pointer;margin:8px 2px 0 0}
 .rp-all{width:100%;margin:2px 0 4px;padding:10px;border-radius:10px;border:1px dashed var(--ln);
   background:transparent;color:var(--t2);font:inherit;font-size:12px;cursor:pointer}
+
+/* ---------- Kurye: header (+) ve "Paket Ekle" menüsü (v164) ---------- */
+.ico-plus{background:#22c55e;border-color:#22c55e;color:#fff;font-size:24px;font-weight:700;
+  line-height:1;border-radius:50%;width:36px;height:36px}
+.ico-plus:active{background:#1ea24f}
+.pkadd{text-align:center}
+.pkadd h2{margin:2px 0 14px;font-size:16px}
+.pkbtn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:46px;
+  border-radius:12px;font:inherit;font-size:15px;font-weight:700;border:1px solid transparent;margin-bottom:8px;cursor:pointer}
+.pkbtn i{font-style:normal;display:inline-flex;align-items:center}
+.pkbtn i svg{width:18px;height:18px}
+.pkbtn.qr{background:#22c55e;color:#fff}
+.pkbtn.qr:active{background:#1ea24f}
+.pkbtn.kod{background:var(--el);color:var(--tx);border-color:var(--ln)}
+.pkbtn.kod .ki{font-size:15px}
+.pk-cancel{width:100%;padding:12px;border:0;background:transparent;color:var(--t2);font:inherit;font-size:14px;cursor:pointer}
+
+/* ---------- Kod girişi: 4 kutu + tuş takımı ---------- */
+.kodgir{padding-top:6px}
+.kg-lbl{text-align:center;color:var(--t2);font-size:13px;margin:6px 0 14px}
+.kg-kutular{display:flex;justify-content:center;gap:10px;margin-bottom:10px}
+.kg-kutular span{width:52px;height:56px;border-radius:12px;border:1px solid var(--ln);background:var(--el);
+  display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800}
+.kg-kutular span.dolu{border-color:#22c55e}
+.kg-tuslar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.kg-tus{min-height:52px;border-radius:12px;border:1px solid var(--ln);background:var(--el);color:var(--tx);
+  font:inherit;font-size:20px;font-weight:700;cursor:pointer}
+.kg-tus:active{background:var(--el2)}
+.kg-tus.sil{font-size:18px}
+.kg-bos{display:block}

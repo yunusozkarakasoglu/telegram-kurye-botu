@@ -115,3 +115,7 @@ CREATE TABLE IF NOT EXISTS cancel_notices (
   at REAL NOT NULL, seen INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS cancel_notices_courier ON cancel_notices(courier, seen);
+
+-- Bekleyen (state='pending') claim'lerde 4 haneli kod BENZERSİZ olmalı:
+-- aksi halde kurye kodu girdiğinde hangi paketi alacağı belirsiz kalır.
+CREATE UNIQUE INDEX IF NOT EXISTS assign_codes_pending_code ON assign_codes(code) WHERE state='pending';

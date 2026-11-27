@@ -639,3 +639,16 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | Süre bitince | ✔ ekran otomatik kapandı → **Paketlerim/Açık** |
 | Paket | ✔ `#910190-1` "Kabul edildi · 0 dk" |
 | e2e | **156/156** · deploy `cc0068eb` (v163) |
+
+### Kod girme + benzersizlik (2026-11-27, v164)
+
+| Test | Sonuç |
+|---|---|
+| Header (+) | ✔ yeşil yuvarlak buton (QR ikonu kaldırıldı) |
+| "Paket Ekle" menüsü | ✔ **QR Okut** · **Kod Gir** · Vazgeç |
+| Kod girişi | ✔ "4 haneli kodu girin" + 4 kutu + tuş takımı (1-9, 0, ⌫) |
+| Kod ile alma | ✔ "Paket alındı · açık paketlerinizde" |
+| **Benzersizlik** | ✔ 25 claim → **25 farklı kod** · e2e 12/12 benzersiz |
+| Aynı kod 2. kez | ✔ 409 (ikinci paket verilmez) |
+| Kilit (3 hata) | ✔ korunuyor |
+| e2e | **162/162 PASS** · deploy `87f65434` (v164) |
