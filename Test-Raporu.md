@@ -731,3 +731,13 @@ Doğrulama: `href=https://www.google.com/maps/dir/?api=1&destination=40.9923,29.
 | Konum yok | `https://maps.google.com/?q=<Restoran> <Bölge>` |
 
 Doğrulama: `href=https://maps.google.com/?q=40.9851,29.1244` · `a.btn.act-sm` (alt çizgi yok, koyu buton) · e2e **174/174** · deploy `1cd5ce07` (v176).
+
+### Restoran konumu kutusu (2026-11-27, v177)
+
+| Kontrol | Sonuç |
+|---|---|
+| Kenarlık | ✔ `dashed rgb(59,130,246)` (mavi) |
+| Zemin | ✔ `rgba(59,130,246,.10)` |
+| Yükseklik | ✔ 26 px, yuvarlak 7 px |
+| Link | ✔ `https://maps.google.com/?q=lat,lng` — saf `<a>` |
+| e2e | **174/174 PASS** · deploy v177 |

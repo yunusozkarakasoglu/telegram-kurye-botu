@@ -50,6 +50,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] **v177**: "Restoran konumu" değeri **mavi kesikli kutu** içinde (tasarım).
 - [x] **v176**: Harita aç butonu kaldırıldı (ERR_UNKNOWN_URL_SCHEME); konum **saf https link** olarak kartta. 2. satır 3 sütun: Ara · Aktar · İptal.
 - [x] **v174**: Harita aç — `maps.google.com/?q=lat,lng` + app-first (geo:/maps://) → 1,2 sn'de açılmazsa https fallback.
 - [x] **v173**: admin restoran ekle/düzenle → **konum alanı** (Maps linki veya lat,lng; `parseKonum`); kurye kartında **📍 Haritada aç** (teslim edilene kadar); koordinat yoksa harita araması. e2e 176/176.

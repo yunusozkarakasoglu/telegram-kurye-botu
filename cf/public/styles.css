@@ -826,3 +826,9 @@ a.pk-map:active{filter:brightness(.94)}
 .act-row.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .act-row.three > *{min-height:40px}
 .act-sm{min-height:40px;font-size:13px;padding:6px 4px;border-radius:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Restoran konumu: mavi kesikli kutu (tasarım) */
+.pk-fields dd .pk-loc{display:flex;align-items:center;gap:6px;width:100%;
+  border:1px dashed #3b82f6;border-radius:7px;padding:3px 8px;min-height:26px;
+  background:rgba(59,130,246,.10)}
+.pk-fields dd .pk-loc .maplink{font-weight:700}

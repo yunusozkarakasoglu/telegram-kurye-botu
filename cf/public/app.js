@@ -339,7 +339,7 @@
         (p.cancelled_at ? '<dt>İptal eden</dt><dd>' + esc((p.cancelled_by_role === 'restoran' ? 'Restoran' : p.cancelled_by_role === 'kurye' ? 'Kurye' : 'Yönetici') + ' · ' + (p.cancelled_by_name || '—')) + '</dd>' : '') +
         '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
         (duzenlenebilir
-          ? '<dt>Restoran konumu</dt><dd><a class="maplink" href="' + esc(haritaUrl(p)) + '" target="_blank" rel="noopener">📍 Haritada aç</a></dd>'
+          ? '<dt>Restoran konumu</dt><dd><span class="pk-loc"><a class="maplink" href="' + esc(haritaUrl(p)) + '" target="_blank" rel="noopener">📍 Haritada aç</a></span></dd>'
           : '') +
         '<dt>Restoran notu</dt><dd>' + esc(p.note || '—') + '</dd>' +
         kuryeNotuSatir +
@@ -1464,7 +1464,7 @@
           '<dt>İptal</dt><dd>' + dt(p.cancelled_at) + '</dd>' +
           '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
           (duzenlenebilir
-            ? '<dt>Restoran konumu</dt><dd><a class="maplink" href="' + esc(haritaUrl(p)) + '" target="_blank" rel="noopener">📍 Haritada aç</a></dd>'
+            ? '<dt>Restoran konumu</dt><dd><span class="pk-loc"><a class="maplink" href="' + esc(haritaUrl(p)) + '" target="_blank" rel="noopener">📍 Haritada aç</a></span></dd>'
             : '') +
           '<dt>Mesafe</dt><dd>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</dd>' +
           '<dt>Ücret</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +
