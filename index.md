@@ -4,7 +4,7 @@
 
 | Konu | Durum |
 |---|---|
-| Canlı | `29fa23e8` · asset **v148** · ana/admin/saglik 200 |
+| Canlı | `40e09d9b` · asset **v150** · ana/admin/saglik 200 |
 | Arayüz | kurye: havuz/paketlerim/geçmiş + **yeni hamburger menü** (profil kartı · DURUM · 2×2 ızgara) · restoran: sipariş ekle/paketlerim/rapor |
 | Plan | **Workers Paid ($5/ay)** — CPU 503'leri bitti, deploy açık |
 | Performans | **Faz A–E bitti** · kapasite ~1.290 kurye (hatasız), p95 ~170 ms → `docs/Kapasite-Raporu.md` |

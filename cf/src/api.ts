@@ -641,7 +641,10 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       // Onay akışı: paket hemen atanmaz; kuryeye 4 haneli kod gider, restoran kodu girer.
       const r = await assign.requestAssign(bot, user.id, courierId, region || null, payment || null, note || null);
       return r.ok
-        ? json({ ok: true, needs_code: true, request_id: r.request_id, code: r.code, expires_at: r.expires_at })
+        ? json({
+            ok: true, needs_code: true, request_id: r.request_id, code: r.code,
+            qr_token: r.qr_token, qr_link: r.qr_link, expires_at: r.expires_at,
+          })
         : fail(r.error || "Gönderilemedi.", 409, "conflict");
     }
 
@@ -672,6 +675,27 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const body = await readBody(request);
       const ok = await assign.cancelAssign(bot, user.id, Number(body.request_id));
       return ok ? json({ ok: true }) : fail("İstek bulunamadı.", 404, "not_found");
+    }
+
+    // Kurye: QR token ile atama teklifi (onaydan önce özet gösterilir)
+    if (path === "/kurye/atama-teklif" && method === "GET") {
+      if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const token = url.searchParams.get("token") || "";
+      const r = await assign.offerByToken(bot, user.id, token);
+      if (!r.ok) return json({ error: r.error, code: r.code }, r.code === "wrong_courier" ? 403 : 409);
+      return json(r);
+    }
+
+    // Kurye: QR onayı → paket atanır
+    if (path === "/kurye/atama-onayla" && method === "POST") {
+      if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const body = await readBody(request);
+      const token = String(body.token ?? "").trim();
+      if (!token) return fail("Kod belirtilmedi.", 422, "invalid");
+      if (await hizAsildi(bot, user.id, 60)) return fail("Çok hızlı işlem. Birkaç saniye bekleyin.", 429, "rate_limited");
+      const r = await assign.approveByToken(bot, user.id, token);
+      if (r.ok) return json({ ok: true, package_id: r.package_id, req_no: r.req_no });
+      return json({ error: r.error, code: r.code }, r.code === "wrong_courier" ? 403 : 409);
     }
 
     if (path === "/restoran/paketlerim" && method === "GET") {

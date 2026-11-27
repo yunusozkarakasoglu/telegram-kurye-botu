@@ -428,6 +428,8 @@
     atamalar: function () { return req('GET', '/api/restoran/atamalar'); },
     atamaDogrula: function (requestId, code) { return req('POST', '/api/restoran/atama-dogrula', { request_id: requestId, code: code }); },
     atamaIptal: function (requestId) { return req('POST', '/api/restoran/atama-iptal', { request_id: requestId }); },
+    atamaTeklif: function (token) { return req('GET', '/api/kurye/atama-teklif?token=' + encodeURIComponent(token)); },
+    atamaOnayla: function (token) { return req('POST', '/api/kurye/atama-onayla', { token: token }); },
     paketlerimRestoran: function (filter) { return req('GET', '/api/restoran/paketlerim?filter=' + encodeURIComponent(filter || 'all')); },
     profil: function (data) { return req('PATCH', '/api/profil', data); },
     durum: function (status, reason) { return req('POST', '/api/durum', { status: status, reason: reason || null }); },
@@ -527,7 +529,7 @@
     }
   };
   ['oturum', 'havuz', 'kabul', 'atamaKarar', 'notEkle', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
-    'kazanc', 'talepVer', 'kuryeTalep', 'restoranKuryeler', 'atamalar', 'atamaDogrula', 'atamaIptal', 'paketlerimRestoran', 'profil', 'durum', 'durumOzet', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'girisKullanicilar', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
+    'kazanc', 'talepVer', 'kuryeTalep', 'restoranKuryeler', 'atamalar', 'atamaDogrula', 'atamaIptal', 'atamaTeklif', 'atamaOnayla', 'paketlerimRestoran', 'profil', 'durum', 'durumOzet', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'girisKullanicilar', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);
         var target = mode === 'real' ? real : mock;

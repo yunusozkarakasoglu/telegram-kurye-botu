@@ -898,6 +898,17 @@
     };
   }
 
+  /** QR (yerel kütüphane, dış servis yok). SVG döner; kütüphane yoksa null. */
+  function qrSvg(metin, boyut) {
+    try {
+      if (typeof qrcode !== 'function') return null;
+      var q = qrcode(0, 'M');
+      q.addData(metin);
+      q.make();
+      return q.createSvgTag({ cellSize: 4, margin: 4, scalable: true });
+    } catch (e) { return null; }
+  }
+
   /** Liste seçimi: native <select> yerine dokunmatik güvenli pencere. */
   function secimSheet(baslik, secenekler, secili, cb) {
     var sh = UI.openSheet(
@@ -974,7 +985,7 @@
       direkt.forEach(function (it, i) {
         isler.push(API.kuryeTalep({ courier_id: Number(it.courier), region: it.region || '', payment: it.payment || '', note: (it.note || '').trim() })
           .then(function (r) {
-            kodlar.push({ request_id: r.request_id, code: r.code, ad: it.courier_name || 'Kurye' });
+            kodlar.push({ request_id: r.request_id, code: r.code, ad: it.courier_name || 'Kurye', qr_link: r.qr_link });
             return (it.courier_name || 'Kurye') + ' · kod hazır';
           }));
       });
@@ -985,7 +996,7 @@
         S.tab = 'paketlerim';
         S.restFilter = 'open';
         refresh(true);
-        if (kodlar.length) atamaKodSheet(kodlar[0].request_id, kodlar[0].code, kodlar[0].ad);
+        if (kodlar.length) atamaKodSheet(kodlar[0].request_id, kodlar[0].code, kodlar[0].ad, kodlar[0].qr_link);
       }).catch(function (e) { cs.disabled = false; UI.toast(e.message || 'Gönderilemedi', 'error'); });
     };
     nav(restaurantTabs(), {});
@@ -1038,6 +1049,157 @@
       render();
     };
     sh.querySelector('#ecancel').onclick = function () { UI.closeSheet(); };
+  }
+
+  function atamaKodSheet(requestId, kod, kuryeAdi, qrLink) {
+    var qr = qrLink ? qrSvg(qrLink, 220) : null;
+    var sh = UI.openSheet(
+      '<h2>Kurye onayı</h2>' +
+      (qr
+        ? '<p>Kurye QR’ı <b>kendi telefonuyla okutup</b> onaylar — paket anında atanır.</p>' +
+          '<div class="qrzon">' + qr + '</div>' +
+          '<p class="note" style="text-align:center;margin-top:-4px">QR çalışmazsa: kurye kodu söyler, siz girin.</p>'
+        : '<p><b>' + esc(kuryeAdi || 'Kurye') + '</b> kişisine atama için <b>4 haneli kod</b> gönderildi. Kurye kodu size söyler; buraya girin.</p>') +
+      (kod ? '<div class="kodbox"><small>Yedek kod (kuryeye de gitti)</small><b>' + esc(kod) + '</b></div>' : '') +
+      '<div class="fld"><label>4 haneli kod</label>' +
+        '<input id="akod" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="one-time-code"></div>' +
+      '<div class="err" id="aerr"></div>' +
+      '<button class="p" id="aok">Onayla ve Ata</button>' +
+      '<button class="g" id="aiptal" style="margin-top:6px">Vazgeç (atamayı iptal et)</button>');
+
+    var inp = sh.querySelector('#akod');
+    var err = sh.querySelector('#aerr');
+    var btn = sh.querySelector('#aok');
+    inp.oninput = function () { inp.value = inp.value.replace(/\D/g, '').slice(0, 4); };
+    btn.onclick = function () {
+      var v = (inp.value || '').trim();
+      err.textContent = '';
+      if (!/^\d{4}$/.test(v)) { err.textContent = 'Kod 4 haneli olmalı'; return; }
+      btn.disabled = true;
+      API.atamaDogrula(requestId, v).then(function (r) {
+        UI.closeSheet();
+        UI.toast('Onaylandı · paket kuryeye atandı', 'success');
+        S.restFilter = 'open';
+        refresh(true);
+      }).catch(function (e) {
+        btn.disabled = false;
+        if (e.code === 'locked') {
+          err.textContent = e.message || 'Kilitlendi';
+          btn.disabled = true;
+          setTimeout(function () { UI.closeSheet(); refresh(true); }, 1800);
+          return;
+        }
+        err.textContent = (e.message || 'Kod doğrulanamadı') + (e.kalan != null ? '' : '');
+      });
+    };
+    sh.querySelector('#aiptal').onclick = function () {
+      API.atamaIptal(requestId).catch(function () {}).then(function () {
+        UI.closeSheet();
+        UI.toast('Atama iptal edildi', 'success');
+        refresh(true);
+      });
+    };
+  }
+
+  function renderRestRapor() {
+    setHeader('Rapor', 'Bugünün paketleri');
+    var main = $('mn');
+    var items = (S.restItems && S.restItems.items) || [];
+    var day0 = new Date(); day0.setHours(0, 0, 0, 0);
+    var day1 = new Date(day0); day1.setDate(day1.getDate() + 1);
+    var t0 = Math.floor(day0.getTime() / 1000), t1 = Math.floor(day1.getTime() / 1000);
+    var rows = items.filter(function (p) { return p.created_at && p.created_at >= t0 && p.created_at < t1; });
+    var hm = function (sec) {
+      if (sec == null || sec < 0) return '—';
+      var m = Math.floor(sec / 60), h = Math.floor(m / 60);
+      return h ? (h + ' sa ' + (m % 60) + ' dk') : (m + ' dk');
+    };
+    var delivered = rows.filter(function (p) { return !!p.delivered_at; });
+    var durs = rows.filter(function (p) { return p.created_at && p.delivered_at; })
+      .map(function (p) { return p.delivered_at - p.created_at; });
+    var ortSure = durs.length ? Math.round(durs.reduce(function (a, b) { return a + b; }, 0) / durs.length) : null;
+    var kms = rows.filter(function (p) { return p.distance_km != null; });
+    var ortKm = kms.length ? (kms.reduce(function (a, p) { return a + Number(p.distance_km); }, 0) / kms.length) : null;
+    var kpi = '<div class="kpis">' +
+      '<div class="kpi"><b>' + rows.length + '</b><small>Bugün paket</small></div>' +
+      '<div class="kpi"><b>' + (ortSure == null ? '—' : hm(ortSure)) + '</b><small>Ort. süre</small></div>' +
+      '<div class="kpi"><b>' + (ortKm == null ? '—' : (ortKm.toFixed(1).replace('.', ',') + ' km')) + '</b><small>Ort. mesafe</small></div>' +
+      '</div>';
+    main.innerHTML = kpi + '<div class="card" style="padding:10px 12px;margin-bottom:8px"><b>' + rows.length + ' paket</b>' +
+      '<small style="color:var(--t2)"> · ' + day0.toLocaleDateString('tr-TR') + (delivered.length ? ' · ' + delivered.length + ' teslim' : '') + '</small></div>' +
+      (rows.length ? '<div class="tblwrap"><table class="rtbl"><thead><tr>' +
+        '<th>Tarih</th><th>Talep</th><th>Kurye</th><th>Süre</th><th>Km</th><th>Tutar</th><th>Öd</th>' +
+        '</tr></thead><tbody>' + rows.map(function (p) {
+          var sure = p.created_at && p.delivered_at ? p.delivered_at - p.created_at : null;
+          return '<tr data-rp="' + p.id + '">' +
+            '<td>' + (p.created_at ? new Date(p.created_at * 1000).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '—') + '</td>' +
+            '<td>#' + p.batch + '-' + p.number + '</td>' +
+            '<td>' + esc(p.courier_name || '—') + '</td>' +
+            '<td>' + hm(sure) + '</td>' +
+            '<td>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</td>' +
+            '<td>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</td>' +
+            '<td>' + (p.payment_received === true ? '<span class="pcheck on">✓</span>' : p.payment_received === false ? '<span class="pcheck off">✕</span>' : '—') + '</td>' +
+          '</tr>';
+        }).join('') + '</tbody></table></div>' : '<div class="empty"><b>Bugün paket yok</b>Bugün oluşturulan sipariş bulunmuyor.</div>');
+    Array.prototype.forEach.call(main.querySelectorAll('[data-rp]'), function (tr) {
+      tr.onclick = function () {
+        var id = Number(tr.getAttribute('data-rp'));
+        var p = rows.filter(function (x) { return x.id === id; })[0];
+        if (p) restPkgSheet(p);
+      };
+    });
+    $('cta').innerHTML = '';
+    nav(restaurantTabs(), {});
+  }
+
+  function renderRestPaketlerim() {
+    setHeader('Paketlerim', '');
+    var filters = [['all', 'Tümü'], ['open', 'Açık'], ['closed', 'Kapalı']];
+    var main = $('mn');
+    var items = (S.restItems && S.restItems.items) || [];
+    main.innerHTML = '<div class="seg three">' + filters.map(function (f) {
+      return '<button data-f="' + f[0] + '" class="' + (S.restFilter === f[0] ? 'on' : '') + '">' + f[1] + '</button>';
+    }).join('') + '</div>' +
+    (function () {
+      var n = restAdvCount();
+      return (S.atamalar && S.atamalar.length ? '<div class="assignbar">' + S.atamalar.map(function (a) {
+        return '<button data-atama="' + a.id + '">⏳ ' + esc(a.courier_name || 'Kurye') + ' · kurye onayı bekliyor' +
+          (a.tries ? ' (' + a.tries + ' hatalı)' : '') + '</button>';
+      }).join('') + '</div>' : '') +
+        '<div class="filterbar"><button id="rf-open">⚙ Filtre' + (n ? ' (' + n + ')' : '') + '</button>' +
+        (n ? '<button id="rf-clear-page">✕ Temizle</button>' : '') + '</div>';
+    })() +
+    (function () {
+      var list = restApplyAdv(items);
+      return list.length ? list.map(function (p) {
+      var st = String(p.status || '');
+      var cls = /İptal/i.test(st) ? 'cancelled' : /Teslim/i.test(st) ? 'delivered' : /Yolda/i.test(st) ? 'onway'
+        : /Kabul/i.test(st) ? 'accepted' : 'waiting';
+      return '<button class="rrow ' + cls + '" data-pkg="' + p.id + '">' +
+        '<span class="rl"><b>Talep #' + p.batch + '-' + p.number + '</b>' +
+          '<small>' + esc(p.region || 'Bölge yok') + ' · ' + esc(p.payment || 'Ödeme yok') + '</small></span>' +
+        '<span class="rr"><em class="stg">' + esc(st || '—') + '</em>' + restSure(p) + '</span></button>';
+      }).join('') : '<div class="empty"><b>Kayıt yok</b>Bu filtrede paket bulunmuyor.</div>';
+    })();
+    Array.prototype.forEach.call(main.querySelectorAll('button[data-f]'), function (b) {
+      b.onclick = function () { S.restFilter = b.getAttribute('data-f'); loadRest(); };
+    });
+    Array.prototype.forEach.call(main.querySelectorAll('[data-pkg]'), function (b) {
+      b.onclick = function () {
+        var id = Number(b.getAttribute('data-pkg'));
+        var p = items.filter(function (x) { return x.id === id; })[0];
+        if (p) restPkgSheet(p);
+      };
+    });
+    Array.prototype.forEach.call(main.querySelectorAll('[data-atama]'), function (b) {
+      b.onclick = function () { atamaKodSheet(Number(b.getAttribute('data-atama')), null, ''); };
+    });
+    var rf = main.querySelector('#rf-open');
+    if (rf) rf.onclick = restFilterSheet;
+    var rc = main.querySelector('#rf-clear-page');
+    if (rc) rc.onclick = function () { S.restAdv = null; loadRest(); };
+    $('cta').innerHTML = '';
+    nav(restaurantTabs(), {});
   }
 
   /** Paketlerim süresi: teslim edilmişse sabit (yeşil), iptalde yok, açıkta canlı sayar. */
@@ -1698,6 +1860,57 @@
     }
   }
 
+  /** QR ile gelen atama isteğini göster (kurye onayı). */
+  function atamaTeklifSheet(token) {
+    API.atamaTeklif(token).then(function (t) {
+      var sh = UI.openSheet(
+        '<h2>📦 Atama onayı</h2>' +
+        '<p><b>' + esc(t.restaurant || 'Restoran') + '</b> size paket atamak istiyor:</p>' +
+        '<div class="card" style="padding:10px 12px;margin-bottom:10px">' +
+          '<div><b>Bölge:</b> ' + esc(t.region || 'Belirtilmedi') + '</div>' +
+          '<div><b>Ödeme:</b> ' + esc(t.payment || 'Belirtilmedi') + '</div>' +
+          (t.note ? '<div><b>Not:</b> ' + esc(t.note) + '</div>' : '') +
+        '</div>' +
+        '<button class="p" id="ta-ok">Onayla ve paketi al</button>' +
+        '<button class="g" id="ta-x" style="margin-top:6px">Şimdi değil</button>');
+      sh.querySelector('#ta-ok').onclick = function () {
+        var b = sh.querySelector('#ta-ok');
+        b.disabled = true;
+        API.atamaOnayla(token).then(function () {
+          UI.closeSheet();
+          UI.toast('Onaylandı · paket hesabınıza eklendi', 'success');
+          S.tab = 'paketlerim';
+          S.damga = '';
+          refresh(true);
+        }).catch(function (e) {
+          b.disabled = false;
+          UI.toast(e.message || 'Onaylanamadı', 'error');
+        });
+      };
+      sh.querySelector('#ta-x').onclick = function () { UI.closeSheet(); };
+    }).catch(function (e) {
+      var kod = e && e.code;
+      if (kod === 'wrong_courier') UI.toast('Bu atama size ait değil', 'error');
+      else if (kod === 'expired' || kod === 'closed') UI.toast(e.message || 'Kod geçersiz', 'error');
+      else UI.toast(e.message || 'Atama bulunamadı', 'error');
+    });
+  }
+
+  /** Derin linkten gelen atama token'ı (QR → Telegram startapp). */
+  function atamaToken() {
+    try {
+      var tg = window.Telegram && Telegram.WebApp;
+      var sp = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
+      if (!sp) sp = (window.TG && TG.startParam && TG.startParam()) || '';
+      if (!sp) sp = new URLSearchParams(location.search).get('atama') || '';
+      sp = String(sp || '').trim();
+      if (!sp) return '';
+      if (sp.indexOf('atama_') === 0) return sp.slice(6);   // startapp=atama_<token>
+      if (sp.indexOf('atama=') === 0) return sp.slice(6);
+      return /^[0-9a-f]{32}$/i.test(sp) ? sp : '';          // doğrudan token (?atama=<token>)
+    } catch (e) { return ''; }
+  }
+
   function renderDrawer() {
     var d = $('drawer-nav');
     if (!d) return;
@@ -2103,6 +2316,9 @@
         }
       }
       refresh(true);
+      // QR ile gelen atama isteği (kurye onayı)
+      var at = atamaToken();
+      if (at) setTimeout(function () { atamaTeklifSheet(at); }, 500);
       // Faz A2: 15 sn ± %20 jitter (senkron dalgayı kırar), sekme gizliyken durur
       (function dongu() {
         var gecikme = (window.API && API.jitter) ? API.jitter(15000, 0.2) : 15000;

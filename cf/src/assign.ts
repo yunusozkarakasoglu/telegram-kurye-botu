@@ -3,6 +3,18 @@ import type { Account } from "./types";
 import { ASSIGN_CODE_TTL, ASSIGN_MAX_TRIES, ASSIGN_LOCK_SECONDS } from "./constants";
 import { submitToCourier } from "./forms";
 
+/** QR için tek kullanımlık uzun token (tahmin edilemez). */
+function tokenUret(): string {
+  const b = new Uint8Array(16);
+  crypto.getRandomValues(b);
+  return Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+}
+
+/** Telegram startapp linki (kurye QR'ı okutunca Mini App açılır). */
+function qrLink(botKullanici: string, token: string): string {
+  return `https://t.me/${botKullanici}?startapp=atama_${token}`;
+}
+
 /** 4 haneli onay kodu (kriptografik rastgele). */
 function kodUret(): string {
   const buf = new Uint32Array(1);
@@ -36,7 +48,7 @@ async function bildir(bot: Bot, courier: number, text: string, kind: string) {
 export async function requestAssign(
   bot: Bot, owner: number, courierId: number,
   region: string | null, payment: string | null, note: string | null,
-): Promise<{ ok: boolean; error?: string; code?: string; request_id?: number; expires_at?: number }> {
+): Promise<{ ok: boolean; error?: string; code?: string; request_id?: number; qr_token?: string; qr_link?: string; expires_at?: number }> {
   const courier = await bot.db.first<Account>("SELECT * FROM accounts WHERE id=? AND role='kurye' AND active=1 AND deleted=0", courierId);
   if (!courier) return { ok: false, error: "Kurye bulunamadı veya pasif." };
   const kilit = await assignLockUntil(bot, courierId);
@@ -48,20 +60,24 @@ export async function requestAssign(
   // Aynı kuryeye bekleyen istek varsa geçersiz kıl (yeni kod geçerli olur)
   await bot.db.run("UPDATE assign_codes SET state='cancelled' WHERE courier=? AND state='pending'", courierId);
   const kod = kodUret();
+  const token = tokenUret();
   await bot.db.run(
-    `INSERT INTO assign_codes(owner,courier,code,region,payment,note,tries,state,created,expires)
-     VALUES (?,?,?,?,?,?,0,'pending',?,?)`,
-    owner, courierId, kod, region, payment, note, simdi, simdi + ASSIGN_CODE_TTL);
+    `INSERT INTO assign_codes(owner,courier,code,qr_token,region,payment,note,tries,state,created,expires)
+     VALUES (?,?,?,?,?,?,?,0,'pending',?,?)`,
+    owner, courierId, kod, token, region, payment, note, simdi, simdi + ASSIGN_CODE_TTL);
   const row = await bot.db.first<{ id: number }>("SELECT last_insert_rowid() AS id");
   const requestId = row?.id ?? 0;
   const restoran = await bot.db.first<{ name: string }>("SELECT name FROM accounts WHERE id=?", owner);
+  const botKullanici = (bot.env as any).BOT_USERNAME || "YunusKuryePilot_4862_bot";
+  const link = qrLink(botKullanici, token);
   // Telegram bildirimi (kod burada gider) + Mini App zili
   await bot.send(courierId,
     `🔐 <b>ATAMA ONAYI</b>\n<b>${restoran?.name || "Restoran"}</b> size paket atamak istiyor.\n` +
-    `Onay kodu: <b>${kod}</b>\nKodu restorana söyleyin; ${Math.round(ASSIGN_CODE_TTL / 60)} dakika geçerlidir.`,
+    `QR'ı okutup onaylayın: ${link}\n` +
+    `veya onay kodu: <b>${kod}</b> (restorana söyleyin) — ${Math.round(ASSIGN_CODE_TTL / 60)} dakika geçerlidir.`,
     undefined, "HTML");
   await bildir(bot, courierId, `Atama onayı bekliyor · ${restoran?.name || "Restoran"} · kod ${kod}`, "assign_code");
-  return { ok: true, code: kod, request_id: requestId, expires_at: simdi + ASSIGN_CODE_TTL };
+  return { ok: true, code: kod, request_id: requestId, qr_token: token, qr_link: link, expires_at: simdi + ASSIGN_CODE_TTL };
 }
 
 /** Restoranın bekleyen atama istekleri (kod gösterilmez). */
@@ -116,4 +132,37 @@ export async function cancelAssign(bot: Bot, owner: number, requestId: number): 
   await bot.db.run("UPDATE assign_codes SET state='cancelled' WHERE id=?", requestId);
   await bot.send(req.courier, "ℹ️ Restoran atama isteğinden vazgeçti.");
   return true;
+}
+/** Kurye QR'ı okuttuğunda: teklif özeti (başkasının token'ı ise hata). */
+export async function offerByToken(bot: Bot, courier: number, token: string) {
+  const req = await bot.db.first<any>(
+    "SELECT * FROM assign_codes WHERE qr_token=?", String(token || "").trim());
+  if (!req) return { ok: false as const, error: "Kod geçersiz.", code: "not_found" };
+  if (Number(req.courier) !== Number(courier)) return { ok: false as const, error: "Bu onay kodu size ait değil.", code: "wrong_courier" };
+  if (req.state === "done") return { ok: false as const, error: "Bu atama zaten onaylandı.", code: "closed" };
+  if (req.state !== "pending") return { ok: false as const, error: "Bu atama artık geçerli değil.", code: "closed" };
+  if (Number(req.expires) < bot.nowF()) {
+    await bot.db.run("UPDATE assign_codes SET state='expired' WHERE id=?", req.id);
+    return { ok: false as const, error: "Kodun süresi doldu.", code: "expired" };
+  }
+  const restoran = await bot.db.first<{ name: string }>("SELECT name FROM accounts WHERE id=?", req.owner);
+  return {
+    ok: true as const,
+    restaurant: restoran?.name || "Restoran",
+    region: req.region || null, payment: req.payment || null, note: req.note || null,
+    expires: Number(req.expires),
+  };
+}
+
+/** Kurye QR'ı okutup onayladı → paket oluşturulur ve kuryeye atanır. */
+export async function approveByToken(bot: Bot, courier: number, token: string) {
+  const teklif = await offerByToken(bot, courier, token);
+  if (!teklif.ok) return teklif;
+  const req = await bot.db.first<any>("SELECT * FROM assign_codes WHERE qr_token=?", String(token || "").trim());
+  const r = await submitToCourier(bot, Number(req.owner), courier,
+    req.region || null, req.payment || null, req.note || null);
+  if (!r.ok) return { ok: false as const, error: r.error || "Atama yapılamadı.", code: "failed" };
+  await bot.db.run("UPDATE assign_codes SET state='done' WHERE id=?", req.id);
+  await bot.send(Number(req.owner), `✅ ${(await bot.db.first<{ name: string }>("SELECT name FROM accounts WHERE id=?", courier))?.name || "Kurye"} atamayı onayladı · paket #${r.req_no}-1 yola çıktı.`);
+  return { ok: true as const, package_id: r.package_id, req_no: r.req_no };
 }

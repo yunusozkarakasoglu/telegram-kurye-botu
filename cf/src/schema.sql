@@ -95,9 +95,16 @@ CREATE INDEX IF NOT EXISTS notify_outbox_durum ON notify_outbox(state, next_at);
 
 CREATE TABLE IF NOT EXISTS assign_codes (
   id INTEGER PRIMARY KEY AUTOINCREMENT, owner INTEGER NOT NULL, courier INTEGER NOT NULL,
-  code TEXT NOT NULL, region TEXT, payment TEXT, note TEXT,
+  code TEXT NOT NULL, qr_token TEXT, region TEXT, payment TEXT, note TEXT,
   tries INTEGER NOT NULL DEFAULT 0, state TEXT NOT NULL DEFAULT 'pending',
   created REAL NOT NULL, expires REAL NOT NULL
 );
 CREATE INDEX IF NOT EXISTS assign_codes_owner ON assign_codes(owner, state);
 CREATE INDEX IF NOT EXISTS assign_codes_courier ON assign_codes(courier, state);
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, created_at REAL NOT NULL,
+  kind TEXT, ref INTEGER, role TEXT, audience TEXT, delivered INTEGER
+);
+CREATE TABLE IF NOT EXISTS notif_targets (notif INTEGER NOT NULL, account INTEGER NOT NULL, PRIMARY KEY(notif, account));
+CREATE TABLE IF NOT EXISTS notif_read (account INTEGER PRIMARY KEY, last_id INTEGER NOT NULL);

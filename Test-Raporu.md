@@ -478,3 +478,16 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | Satır popup'ındaki 3 alan | Aynı pencere (Kurye listesi `assign_locked` etiketiyle) | Popup: Ataşehir / Yemek Çeki / — seçin — ✔ |
 | Gönderim | Değişmedi | "Gönderildi: 1 havuza" ✔ |
 | e2e | — | **97/97** · deploy `29fa23e8` (v148) |
+
+### QR ile kurye onayı (2026-11-27, v150)
+
+| Test | Sonuç |
+|---|---|
+| Restoran: atama isteği | ✔ `qr_token` (32 hex) + `qr_link` (`t.me/...?startapp=atama_...`) + yedek kod |
+| Restoran ekranı | ✔ QR görünüyor (`qrSvg`, yerel kütüphane) + "Yedek kod" kutusu + PIN girişi |
+| Kurye: QR okutma | ✔ `?atama=<token>` → **"📦 Atama onayı"** penceresi (restoran · bölge · ödeme · not) |
+| Kurye: onay | ✔ "Onaylandı · paket hesabınıza eklendi" → paket `Kabul edildi` |
+| Tek kullanım | ✔ aynı QR ikinci kez → 409 |
+| Yetki | ✔ başka kurye teklifi göremez/onaylayamaz (403) |
+| PIN yedeği | ✔ eski akış korunuyor (3 hata → 30 dk kilit) |
+| e2e | **120/120 PASS** · deploy `40e09d9b` (v150) |

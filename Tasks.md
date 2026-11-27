@@ -50,6 +50,8 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] **QR onay (v150)**: restoran QR gösterir, kurye okutup onaylar (startapp token) + 4 haneli PIN yedeği; tek kullanım, 15 dk, başka kurye 403. e2e 120/120.
+- [x] **Şema kuralı**: yeni tablo → `schema.sql` + `npm run db:remote` (canlıda `notifications/notif_targets/notif_read` de eklendi).
 - [x] **v148**: Sipariş Ekle Bölge/Ödeme/Kurye seçimleri native `<select>` yerine dokunmatik seçim penceresi (Telegram WebView'de liste açılmama sorunu).
 - [x] **Atama kodu (v147)**: kurye ataması 4 haneli kod onaylı; kod kuryeye Telegram+zil ile gider, restoran girer; 3 hatalı deneme → kurye 30 dk atama kilidi (normal sipariş serbest). e2e 97/97.
 - [x] **Hamburger menü (v144-146)**: profil kartı + DURUM + 2×2 ızgara; meşgul sebepleri Meşgul ile Offline arasında, seçince kapanır (Mola/Arıza/Kaza/**Diğer**); meşgul artık “Offline” görünmüyor.

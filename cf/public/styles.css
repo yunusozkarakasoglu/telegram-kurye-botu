@@ -688,3 +688,8 @@ header h1{display:inline}
 .pick em{display:none;font-style:normal;color:#22c55e;font-weight:700}
 .pick.on{border-color:#22c55e;background:rgba(34,197,94,.10)}
 .pick.on em{display:inline}
+
+/* QR (kurye onayı) */
+.qrzon{display:flex;justify-content:center;background:#fff;border-radius:14px;padding:10px;margin:4px 0 6px}
+.qrzon svg{width:200px;height:200px;display:block}
+@media (prefers-color-scheme:dark){.qrzon{background:#fff}}

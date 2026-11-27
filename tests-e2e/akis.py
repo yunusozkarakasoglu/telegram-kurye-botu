@@ -387,6 +387,34 @@ def senaryo_restoran_kuryeye_gonder(api: Api, o: dict[str, Oturum], baglam: dict
                     {"courier_id": 999999, "region": baglam["bolge"]}, token=rest.token, bekle_hata=True)
     T.ok("olmayan kurye reddedildi", yok.get("_status") in (403, 404, 409), f"status={yok.get('_status')}")
 
+    # 6) QR akışı: kurye kendi QR'ını onaylar
+    sql(f"UPDATE accounts SET assign_lock_until=0 WHERE id IN ({K1},{K2})")
+    qr = api.cagir("POST", "/api/restoran/kurye-talep",
+                   {"courier_id": K2, "region": baglam["bolge"], "payment": "Kart", "note": "QR testi"},
+                   token=rest.token)
+    qr_token = str(qr.get("qr_token") or "")
+    T.ok("QR token üretildi (32 hex)", bool(qr_token) and len(qr_token) == 32, qr_token[:8])
+    T.ok("QR linki Telegram startapp", "t.me/" in str(qr.get("qr_link")) and "startapp=atama_" in str(qr.get("qr_link")))
+
+    teklif = api.cagir("GET", f"/api/kurye/atama-teklif?token={qr_token}", token=k2.token)
+    T.ok("kurye teklifi görebiliyor", bool(teklif.get("ok")) and len(str(teklif.get("restaurant") or "")) > 1,
+         str(teklif.get("restaurant")))
+    T.esit("teklifte ödeme taşınıyor", "Kart", teklif.get("payment"))
+
+    baska = api.cagir("GET", f"/api/kurye/atama-teklif?token={qr_token}", token=k1.token, bekle_hata=True)
+    T.esit("başka kurye teklifi göremiyor", 403, baska.get("_status"))
+    baska2 = api.cagir("POST", "/api/kurye/atama-onayla", {"token": qr_token}, token=k1.token, bekle_hata=True)
+    T.esit("başka kurye onaylayamıyor", 403, baska2.get("_status"))
+
+    onay = api.cagir("POST", "/api/kurye/atama-onayla", {"token": qr_token}, token=k2.token)
+    T.ok("QR ile onaylandı", bool(onay.get("ok")), f"paket={onay.get('package_id')}")
+    qr_paket = next((p for p in paketlerim(api, k2) if p["id"] == onay.get("package_id")), {})
+    T.esit("QR paketi kabul edildi", "Kabul edildi", qr_paket.get("status"))
+    T.esit("QR notu taşındı", "QR testi", qr_paket.get("note"))
+
+    tekrar = api.cagir("POST", "/api/kurye/atama-onayla", {"token": qr_token}, token=k2.token, bekle_hata=True)
+    T.esit("aynı QR ikinci kez kullanılamıyor", 409, tekrar.get("_status"))
+
     yasak = api.cagir("POST", "/api/restoran/atama-dogrula", {"request_id": 1, "code": "1234"},
                       token=k1.token, bekle_hata=True)
     T.esit("kurye kod doğrulama ucunu kullanamıyor", 403, yasak.get("_status"))
@@ -608,6 +636,37 @@ def senaryo_durum_yetki(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
     T.esit("yoklama kuryeyi çevrimdışı yapmıyor", True, bool((kurye_durum.get("user") or {}).get("online")))
 
 
+def senaryo_on_yuz(api: Api) -> None:
+    """Statik yüzey testi: app.js'te kritik fonksiyonlar var ve tekil.
+    Blok değiştirirken bir fonksiyonun silinmesi `node --check`ten kaçar; bu test yakalar."""
+    T.bolum("ÖN YÜZ · KRİTİK FONKSİYONLAR")
+    import urllib.request
+
+    with urllib.request.urlopen(f"{api.base}/app.js", timeout=30) as y:
+        js = y.read().decode()
+    T.ok("app.js servis ediliyor", len(js) > 50000, f"{len(js)} bayt")
+
+    gerekli = [
+        "renderTalep", "reqItemSheet", "secimSheet", "atamaKodSheet",
+        "renderRestRapor", "renderRestPaketlerim", "restSure", "restFilterSheet",
+        "renderDrawer", "setKuryeDurum", "mesgulSebepSheet", "renderHavuz", "refresh", "boot",
+    ]
+    eksik = [ad for ad in gerekli if f"function {ad}(" not in js]
+    T.esit("kritik fonksiyonların hepsi tanımlı", [], eksik)
+
+    cift = [ad for ad in gerekli if js.count(f"function {ad}(") > 1]
+    T.esit("aynı fonksiyon iki kez tanımlı değil", [], cift)
+
+    # menü / atama kodu akışının işaretleri
+    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "qrSvg", "atamaTeklifSheet", "atamaToken"]:
+        T.ok(f"yüzeyde '{iz}' var", iz in js)
+
+    with urllib.request.urlopen(f"{api.base}/admin.js", timeout=30) as y:
+        admin_js = y.read().decode()
+    T.ok("admin.js servis ediliyor", len(admin_js) > 10000, f"{len(admin_js)} bayt")
+    T.ok("admin kuyruk görünümü var", "kuyruk" in admin_js)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Legacy kurye operasyonu uçtan uca test")
     ap.add_argument("--base", default="http://127.0.0.1:8787", help="Worker adresi")
@@ -627,6 +686,7 @@ def main() -> int:
     senaryo_restoran_kuryeye_gonder(api, oturumlar, baglam)
     senaryo_admin_kullanici_ekleme(api, oturumlar)
     senaryo_durum_yetki(api, oturumlar, baglam)
+    senaryo_on_yuz(api)
     return T.ozet()
 
 
