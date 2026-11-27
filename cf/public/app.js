@@ -952,10 +952,14 @@
       var havuz = S.reqItems.filter(function (it) { return !it.courier; });
       var direkt = S.reqItems.filter(function (it) { return !!it.courier; });
       var isler = [];
+      var kodlar = [];
       if (havuz.length) isler.push(API.talepVer(havuz).then(function (r) { return r.count + ' havuza'; }));
       direkt.forEach(function (it, i) {
         isler.push(API.kuryeTalep({ courier_id: Number(it.courier), region: it.region || '', payment: it.payment || '', note: (it.note || '').trim() })
-          .then(function () { return (it.courier_name || 'Kurye') + ' · #' + (i + 1); }));
+          .then(function (r) {
+            kodlar.push({ request_id: r.request_id, code: r.code, ad: it.courier_name || 'Kurye' });
+            return (it.courier_name || 'Kurye') + ' · kod hazır';
+          }));
       });
       Promise.all(isler).then(function (sonuc) {
         S.reqItems = [];
@@ -964,6 +968,7 @@
         S.tab = 'paketlerim';
         S.restFilter = 'open';
         refresh(true);
+        if (kodlar.length) atamaKodSheet(kodlar[0].request_id, kodlar[0].code, kodlar[0].ad);
       }).catch(function (e) { cs.disabled = false; UI.toast(e.message || 'Gönderilemedi', 'error'); });
     };
     nav(restaurantTabs(), {});
@@ -1014,6 +1019,53 @@
       render();
     };
     sh.querySelector('#ecancel').onclick = function () { UI.closeSheet(); };
+  }
+
+  /** Atama onayı: kuryeye giden 4 haneli kodun girilmesi (en fazla 3 deneme). */
+  function atamaKodSheet(requestId, kod, kuryeAdi) {
+    var sh = UI.openSheet(
+      '<h2>Kurye onayı</h2>' +
+      '<p><b>' + esc(kuryeAdi || 'Kurye') + '</b> kişisine atama için <b>4 haneli kod</b> gönderildi. ' +
+        'Kurye kodu size söyler; buraya girin.</p>' +
+      (kod ? '<div class="kodbox"><small>Kuryeye giden kod</small><b>' + esc(kod) + '</b></div>' : '') +
+      '<div class="fld"><label>4 haneli kod</label>' +
+        '<input id="akod" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="one-time-code"></div>' +
+      '<div class="err" id="aerr"></div>' +
+      '<button class="p" id="aok">Onayla ve Ata</button>' +
+      '<button class="g" id="aiptal" style="margin-top:6px">Vazgeç (atamayı iptal et)</button>');
+
+    var inp = sh.querySelector('#akod');
+    var err = sh.querySelector('#aerr');
+    var btn = sh.querySelector('#aok');
+    inp.oninput = function () { inp.value = inp.value.replace(/\D/g, '').slice(0, 4); };
+    btn.onclick = function () {
+      var v = (inp.value || '').trim();
+      err.textContent = '';
+      if (!/^\d{4}$/.test(v)) { err.textContent = 'Kod 4 haneli olmalı'; return; }
+      btn.disabled = true;
+      API.atamaDogrula(requestId, v).then(function (r) {
+        UI.closeSheet();
+        UI.toast('Onaylandı · paket kuryeye atandı', 'success');
+        S.restFilter = 'open';
+        refresh(true);
+      }).catch(function (e) {
+        btn.disabled = false;
+        if (e.code === 'locked') {
+          err.textContent = e.message || 'Kilitlendi';
+          btn.disabled = true;
+          setTimeout(function () { UI.closeSheet(); refresh(true); }, 1800);
+          return;
+        }
+        err.textContent = (e.message || 'Kod doğrulanamadı') + (e.kalan != null ? '' : '');
+      });
+    };
+    sh.querySelector('#aiptal').onclick = function () {
+      API.atamaIptal(requestId).catch(function () {}).then(function () {
+        UI.closeSheet();
+        UI.toast('Atama iptal edildi', 'success');
+        refresh(true);
+      });
+    };
   }
 
   function renderRestRapor() {
@@ -1077,7 +1129,11 @@
     }).join('') + '</div>' +
     (function () {
       var n = restAdvCount();
-      return '<div class="filterbar"><button id="rf-open">⚙ Filtre' + (n ? ' (' + n + ')' : '') + '</button>' +
+      return (S.atamalar && S.atamalar.length ? '<div class="assignbar">' + S.atamalar.map(function (a) {
+        return '<button data-atama="' + a.id + '">⏳ ' + esc(a.courier_name || 'Kurye') + ' · kurye onayı bekliyor' +
+          (a.tries ? ' (' + a.tries + ' hatalı)' : '') + '</button>';
+      }).join('') + '</div>' : '') +
+        '<div class="filterbar"><button id="rf-open">⚙ Filtre' + (n ? ' (' + n + ')' : '') + '</button>' +
         (n ? '<button id="rf-clear-page">✕ Temizle</button>' : '') + '</div>';
     })() +
     (function () {
@@ -1101,6 +1157,9 @@
         var p = items.filter(function (x) { return x.id === id; })[0];
         if (p) restPkgSheet(p);
       };
+    });
+    Array.prototype.forEach.call(main.querySelectorAll('[data-atama]'), function (b) {
+      b.onclick = function () { atamaKodSheet(Number(b.getAttribute('data-atama')), null, ''); };
     });
     var rf = main.querySelector('#rf-open');
     if (rf) rf.onclick = restFilterSheet;
@@ -1895,7 +1954,14 @@
 
   function loadRest() {
     var f = S.tab === 'rapor' ? 'all' : S.restFilter;
-    return API.paketlerimRestoran(f).then(function (r) { S.restItems = r; render(); });
+    return Promise.all([
+      API.paketlerimRestoran(f),
+      API.atamalar().catch(function () { return { items: [] }; }),
+    ]).then(function (r) {
+      S.restItems = r[0];
+      S.atamalar = (r[1] && r[1].items) || [];
+      render();
+    });
   }
 
   function refresh(full) {

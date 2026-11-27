@@ -454,3 +454,18 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | Header düzeni | v143 | ikon çakışması yok |
 | Hamburger menü + meşgul akışı | v144–v146 | tasarım birebir; Mola/Arıza/Kaza/Diğer |
 | **Toplam kalite** | — | ruff ✅ · Python **382/382** ✅ · tsc ✅ · e2e **85/85** ✅ |
+
+### Kurye atama onayı — 4 haneli kod (2026-11-27, v147)
+
+| Test | Sonuç |
+|---|---|
+| Atama isteği (`kurye-talep`) | ✔ `{needs_code, request_id, code}` — **paket oluşmuyor** |
+| Kod | ✔ 4 hane, 15 dk geçerli, kuryeye Telegram + Mini App zili |
+| Bekleyen atama listesi | ✔ `GET /api/restoran/atamalar` |
+| Yanlış kod | ✔ 422 + `kalan: 2` |
+| Doğru kod | ✔ paket oluşup kuryeye atanıyor (`Kabul edildi`), not taşınıyor, havuza düşmüyor |
+| 3 hatalı deneme | ✔ **423 locked** + kurye **30 dk** atama kilidi |
+| Kilitliyken atama | ✔ 409 “30 dakika kilitli” · **normal havuza sipariş 200** |
+| İptal | ✔ `atama-iptal` → istek kapanır, kod kullanılamaz |
+| Yetki | ✔ kurye bu uçları kullanamıyor (403) |
+| e2e | **97/97 PASS** · deploy `6b950322` (v147) |

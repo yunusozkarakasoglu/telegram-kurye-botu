@@ -1,6 +1,6 @@
 export interface Env { DB: D1Database; BOT_TOKEN: string; BOT_USERNAME?: string; ADMIN_CODE: string; REGIONS?: string; WEBHOOK_SECRET?: string; DEV_AUTH?: string; PANEL_URL?: string; ASSETS?: Fetcher }
 export interface Account {
-  tg_chat_id?: number | null; pin_must_change?: number; id: number; role: string; name: string; locked: number; online: number; latitude: number | null; longitude: number | null; contact_name: string | null; phone: string | null; active: number; deleted: number; pin_hash?: string | null; pin_fail?: number; pin_lock?: number; pin_ok_until?: number; pin_plain?: string | null; busy?: number; busy_reason?: string | null }
+  tg_chat_id?: number | null; pin_must_change?: number; id: number; role: string; name: string; locked: number; online: number; latitude: number | null; longitude: number | null; contact_name: string | null; phone: string | null; active: number; deleted: number; pin_hash?: string | null; pin_fail?: number; pin_lock?: number; pin_ok_until?: number; pin_plain?: string | null; busy?: number; busy_reason?: string | null; assign_lock_until?: number | null }
 export interface PackageRow {
   id: number; batch: number; number: number; region: string; courier: number | null; payment: string | null;
   accepted_at: number | null; picked_up_at: number | null; delivered_at: number | null; distance_km: string | null;

@@ -311,7 +311,7 @@ def senaryo_restoran_kurye(api: Api, o: dict[str, Oturum]) -> dict:
 
 
 def senaryo_restoran_kuryeye_gonder(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
-    T.bolum("RESTORAN → KURYEYE DOĞRUDAN GÖNDERİM (havuza düşmez)")
+    T.bolum("RESTORAN → KURYE ATAMA (4 HANELİ KOD ONAYI)")
     rest, k1, k2 = o["rest"], o["k1"], o["k2"]
 
     # kurye2'yi boşalt (önceki paketleri kapat)
@@ -319,30 +319,77 @@ def senaryo_restoran_kuryeye_gonder(api: Api, o: dict[str, Oturum], baglam: dict
         if not p.get("picked_up_at"):
             api.cagir("POST", f"/api/paket/{p['id']}/km", {"km": "2"}, token=k2.token)
             api.cagir("POST", f"/api/paket/{p['id']}/teslim", {"paid": False}, token=k2.token)
+    sql(f"UPDATE accounts SET assign_lock_until=0 WHERE id IN ({K1},{K2})")
 
     liste = api.cagir("GET", "/api/restoran/kuryeler", token=rest.token)["couriers"]
     T.ok("restoran kurye listesini görebiliyor", any(c["id"] == K2 for c in liste), f"{len(liste)} kurye")
 
+    # 1) Atama isteği: paket HENÜZ oluşmaz, 4 haneli kod döner
     gonder = api.cagir("POST", "/api/restoran/kurye-talep",
                        {"courier_id": K2, "region": baglam["bolge"], "payment": "Nakit",
                         "note": "Kuryeye özel"}, token=rest.token)
-    T.ok("kuryeye gönderildi", bool(gonder.get("ok")), f"talep #{gonder.get('req_no')}")
-    pk_id = gonder.get("package_id")
+    kod = str(gonder.get("code") or "")
+    rid = gonder.get("request_id")
+    T.ok("atama isteği oluştu", bool(gonder.get("needs_code")) and bool(rid), f"rid={rid}")
+    T.esit("kod 4 haneli", 4, len(kod))
+    T.ok("paket henüz oluşmadı", not any(p.get("note") == "Kuryeye özel" for p in paketlerim(api, k2)))
+
+    bekleyen = api.cagir("GET", "/api/restoran/atamalar", token=rest.token)["items"]
+    T.ok("bekleyen atama listede", any(x["id"] == rid for x in bekleyen), f"{len(bekleyen)} istek")
+
+    # 2) Yanlış kod → deneme sayılır
+    yanlis = api.cagir("POST", "/api/restoran/atama-dogrula", {"request_id": rid, "code": "0000"},
+                       token=rest.token, bekle_hata=True)
+    T.esit("yanlış kod reddedildi", 422, yanlis.get("_status"))
+    T.esit("kalan deneme 2", 2, yanlis.get("kalan"))
+
+    # 3) Doğru kod → paket oluşur ve kuryeye atanır
+    dogru = api.cagir("POST", "/api/restoran/atama-dogrula", {"request_id": rid, "code": kod}, token=rest.token)
+    pk_id = dogru.get("package_id")
+    T.ok("doğru kodla paket atandı", bool(dogru.get("ok")) and bool(pk_id), f"paket={pk_id}")
+    kayit = next((p for p in paketlerim(api, k2) if p["id"] == pk_id), {})
+    T.esit("paket kabul edildi durumunda", "Kabul edildi", kayit.get("status"))
+    T.esit("not taşındı", "Kuryeye özel", kayit.get("note"))
     T.ok("paket havuza düşmedi", not havuzda_var(api, k1, pk_id))
 
-    k2_list = paketlerim(api, k2)
-    T.ok("kurye2'nin paketlerinde", any(p["id"] == pk_id for p in k2_list))
-    kayit = next((p for p in k2_list if p["id"] == pk_id), {})
-    T.esit("doğrudan kabul edildi", "Kabul edildi", kayit.get("status"))
-    T.esit("not taşındı", "Kuryeye özel", kayit.get("note"))
+    # 4) 3 hatalı deneme → kurye 30 dk atama kilidi; normal sipariş serbest
+    istek2 = api.cagir("POST", "/api/restoran/kurye-talep",
+                       {"courier_id": K2, "region": baglam["bolge"], "payment": "Nakit"}, token=rest.token)
+    rid2 = istek2.get("request_id")
+    son = {}
+    for _ in range(3):
+        son = api.cagir("POST", "/api/restoran/atama-dogrula", {"request_id": rid2, "code": "1111"},
+                        token=rest.token, bekle_hata=True)
+    T.esit("3. hatalı denemede kilit", 423, son.get("_status"))
+    T.ok("kilit kodu döndü", son.get("code") == "locked")
+
+    kilitli = api.cagir("POST", "/api/restoran/kurye-talep",
+                        {"courier_id": K2, "region": baglam["bolge"]}, token=rest.token, bekle_hata=True)
+    T.esit("kilitliyken atama engellendi", 409, kilitli.get("_status"))
+    T.ok("kilit mesajı anlaşılır", "kilitli" in str(kilitli.get("error", "")))
+
+    normal = api.cagir("POST", "/api/restoran/talep",
+                       {"packages": [{"region": baglam["bolge"], "payment": "Nakit"}]}, token=rest.token)
+    T.ok("kilitliyken normal sipariş girilebiliyor", bool(normal.get("ok")), f"talep #{normal.get('req_no')}")
+
+    # 5) İptal: bekleyen istek kapanır
+    sql(f"UPDATE accounts SET assign_lock_until=0 WHERE id IN ({K1},{K2})")
+    istek3 = api.cagir("POST", "/api/restoran/kurye-talep",
+                       {"courier_id": K2, "region": baglam["bolge"]}, token=rest.token)
+    iptal = api.cagir("POST", "/api/restoran/atama-iptal", {"request_id": istek3.get("request_id")}, token=rest.token)
+    T.ok("atama iptal edilebiliyor", bool(iptal.get("ok")))
+    gecersiz = api.cagir("POST", "/api/restoran/atama-dogrula",
+                         {"request_id": istek3.get("request_id"), "code": str(istek3.get("code"))},
+                         token=rest.token, bekle_hata=True)
+    T.ok("iptal edilen istek kullanılamıyor", gecersiz.get("_status") in (409, 422))
 
     yok = api.cagir("POST", "/api/restoran/kurye-talep",
                     {"courier_id": 999999, "region": baglam["bolge"]}, token=rest.token, bekle_hata=True)
     T.ok("olmayan kurye reddedildi", yok.get("_status") in (403, 404, 409), f"status={yok.get('_status')}")
 
-    yasak = api.cagir("POST", "/api/restoran/kurye-talep",
-                      {"courier_id": K1, "region": baglam["bolge"]}, token=k1.token, bekle_hata=True)
-    T.esit("kurye bu ucu kullanamıyor", 403, yasak.get("_status"))
+    yasak = api.cagir("POST", "/api/restoran/atama-dogrula", {"request_id": 1, "code": "1234"},
+                      token=k1.token, bekle_hata=True)
+    T.esit("kurye kod doğrulama ucunu kullanamıyor", 403, yasak.get("_status"))
 
     restor_kurye = api.cagir("GET", "/api/restoran/kuryeler", token=k1.token, bekle_hata=True)
     T.esit("kurye kurye listesini göremiyor", 403, restor_kurye.get("_status"))

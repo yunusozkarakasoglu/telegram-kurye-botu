@@ -92,3 +92,12 @@ CREATE TABLE IF NOT EXISTS notify_outbox (
   last_error TEXT, created_at REAL NOT NULL
 );
 CREATE INDEX IF NOT EXISTS notify_outbox_durum ON notify_outbox(state, next_at);
+
+CREATE TABLE IF NOT EXISTS assign_codes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, owner INTEGER NOT NULL, courier INTEGER NOT NULL,
+  code TEXT NOT NULL, region TEXT, payment TEXT, note TEXT,
+  tries INTEGER NOT NULL DEFAULT 0, state TEXT NOT NULL DEFAULT 'pending',
+  created REAL NOT NULL, expires REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS assign_codes_owner ON assign_codes(owner, state);
+CREATE INDEX IF NOT EXISTS assign_codes_courier ON assign_codes(courier, state);

@@ -50,6 +50,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] **Atama kodu (v147)**: kurye ataması 4 haneli kod onaylı; kod kuryeye Telegram+zil ile gider, restoran girer; 3 hatalı deneme → kurye 30 dk atama kilidi (normal sipariş serbest). e2e 97/97.
 - [x] **Hamburger menü (v144-146)**: profil kartı + DURUM + 2×2 ızgara; meşgul sebepleri Meşgul ile Offline arasında, seçince kapanır (Mola/Arıza/Kaza/**Diğer**); meşgul artık “Offline” görünmüyor.
 - [x] **Header (v143)**: sağ üstteki 📦/●/🔔 üst üste binmesi giderildi (absolute kaldırıldı), rozet/segment tek satır.
 - [x] **Kritik v141**: yoklama `POST /api/durum` → `GET /api/durum` (`durumOzet`); kurye “Bağlanıyor…” takılması + sessiz çevrimdışı olma giderildi; e2e’ye 4 regresyon testi.

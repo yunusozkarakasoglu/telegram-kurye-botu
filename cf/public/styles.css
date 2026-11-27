@@ -663,3 +663,12 @@ header h1{display:inline}
 .drawer .dw-why-opt{display:flex;align-items:center;justify-content:center;gap:4px;padding:12px 6px;
   border-radius:11px;border:1px solid var(--ln);background:var(--card);font-size:14px;font-weight:600;color:var(--tx)}
 .drawer .dw-why-opt.on{background:rgba(245,158,11,.16);border-color:#f59e0b;color:#ffd79a}
+
+/* Atama onayı: kuryeye giden kod kutusu + bekleyen atama bandı */
+.kodbox{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--el);border:1px dashed var(--ln);
+  border-radius:12px;padding:10px;margin:4px 0 10px}
+.kodbox small{font-size:11px;color:var(--t2)}
+.kodbox b{font-size:26px;letter-spacing:6px;font-weight:800}
+.assignbar{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.assignbar button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;font:inherit;font-size:13px;
+  padding:10px 12px;border-radius:10px;border:1px solid rgba(245,158,11,.45);background:rgba(245,158,11,.12);color:var(--tx)}

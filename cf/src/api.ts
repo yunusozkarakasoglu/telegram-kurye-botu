@@ -10,6 +10,7 @@ import * as acceptFlow from "./accept";
 import { dialNumber, validFullName, validPhone } from "./util";
 import { checkPinHash, loginToken, makePinHash, pinToken, validLoginToken, validPin, validPinToken } from "./pin";
 import { CANCEL_REASONS, PAYMENTS, MAX_PACKAGES, UNSPECIFIED } from "./constants";
+import * as assign from "./assign";
 
 /**
  * Mini App JSON API'si.
@@ -614,8 +615,16 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     if (path === "/restoran/kuryeler" && method === "GET") {
       if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
       const rows = await bot.db.all<Account>(
-        "SELECT id, name, online, busy FROM accounts WHERE role='kurye' AND active=1 AND deleted=0 ORDER BY online DESC, name");
-      return json({ couriers: rows.map((c) => ({ id: c.id, name: c.name, online: !!c.online, busy: !!c.busy })) });
+        `SELECT id, name, online, busy, assign_lock_until FROM accounts
+         WHERE role='kurye' AND active=1 AND deleted=0 ORDER BY online DESC, name`);
+      const simdi = bot.nowF();
+      return json({
+        couriers: rows.map((c) => ({
+          id: c.id, name: c.name, online: !!c.online, busy: !!c.busy,
+          assign_locked: Number(c.assign_lock_until || 0) > simdi,
+          lock_until: Number(c.assign_lock_until || 0) > simdi ? c.assign_lock_until : null,
+        })),
+      });
     }
 
     if (path === "/restoran/kurye-talep" && method === "POST") {
@@ -629,8 +638,40 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const regions = await bot.regionList();
       if (region && !regions.includes(region)) return fail(`Bilinmeyen bölge: ${region}`, 422, "invalid");
       if (payment && !PAYMENTS.includes(payment as any)) return fail(`Geçersiz ödeme tipi: ${payment}`, 422, "invalid");
-      const r = await forms.submitToCourier(bot, user.id, courierId, region || null, payment || null, note || null);
-      return r.ok ? json({ ok: true, req_no: r.req_no, package_id: r.package_id }) : fail(r.error || "Gönderilemedi.", 409, "conflict");
+      // Onay akışı: paket hemen atanmaz; kuryeye 4 haneli kod gider, restoran kodu girer.
+      const r = await assign.requestAssign(bot, user.id, courierId, region || null, payment || null, note || null);
+      return r.ok
+        ? json({ ok: true, needs_code: true, request_id: r.request_id, code: r.code, expires_at: r.expires_at })
+        : fail(r.error || "Gönderilemedi.", 409, "conflict");
+    }
+
+    // Restoran: bekleyen atama istekleri
+    if (path === "/restoran/atamalar" && method === "GET") {
+      if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      return json({ items: await assign.pendingAssigns(bot, user.id) });
+    }
+
+    // Restoran: kuryenin söylediği 4 haneli kodu doğrula → paket atanır
+    if (path === "/restoran/atama-dogrula" && method === "POST") {
+      if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const body = await readBody(request);
+      const requestId = Number(body.request_id);
+      const code = String(body.code ?? "").trim();
+      if (!requestId) return fail("Atama isteği belirtilmedi.", 422, "invalid");
+      if (!/^\d{4}$/.test(code)) return fail("Kod 4 haneli olmalı.", 422, "invalid");
+      if (await hizAsildi(bot, user.id, 60)) return fail("Çok hızlı deneme. Birkaç saniye bekleyin.", 429, "rate_limited");
+      const r = await assign.verifyAssign(bot, user.id, requestId, code);
+      if (r.ok) return json({ ok: true, package_id: r.package_id, req_no: r.req_no });
+      const durum = r.code === "locked" ? 423 : (r.code === "wrong_code" ? 422 : 409);
+      return json({ error: r.error, code: r.code, kalan: r.kalan ?? null, locked: !!r.locked }, durum);
+    }
+
+    // Restoran: atamadan vazgeç
+    if (path === "/restoran/atama-iptal" && method === "POST") {
+      if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const body = await readBody(request);
+      const ok = await assign.cancelAssign(bot, user.id, Number(body.request_id));
+      return ok ? json({ ok: true }) : fail("İstek bulunamadı.", 404, "not_found");
     }
 
     if (path === "/restoran/paketlerim" && method === "GET") {
