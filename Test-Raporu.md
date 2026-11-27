@@ -691,3 +691,13 @@ Doğrulama: ölçüm `plus [34,34]` / `bell [36,36]`, `border-radius:50%` · e2e
 | PWA/tarayıcı | `geo:` (Android) / `maps://` (iOS) korunuyor |
 
 Doğrulama (tarayıcı): `https://www.google.com/maps/dir/?api=1&destination=40.9923,29.1244` açıldı · e2e **168/168** · deploy `95265605` (v169).
+
+### Harita aç — gerçek bağlantı + mavi buton (2026-11-27, v170–v172)
+
+| Sorun | Çözüm |
+|---|---|
+| JS `openLink` bazı istemcilerde hiçbir şey yapmıyor | Buton **`<a href="https://…" target="_blank">`** — tarayıcı/Telegram kendi açar |
+| `a` etiketi `button.p` stilini almıyordu (alt çizgi, şeffaf zemin) | `a.pk-map` stili: **mavi**, `text-decoration:none`, 40 px, radius 10 |
+| Yükseklik uyumsuzluğu (40 vs 44) | `.act-row > * { min-height:40px }` |
+
+Doğrulama: `href=https://www.google.com/maps/dir/?api=1&destination=40.9923,29.1244`, `target=_blank`, `background: rgb(90,170,240)`, `h=40`, `text-decoration:none` · e2e **168/168** · deploy `a09ffd08` (v172).

@@ -50,6 +50,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] **v170-172**: "Harita aç" gerçek `<a href target=_blank>` (Telegram'da güvenilir) + mavi buton görünümü (`a.pk-map`, alt çizgi yok, 40 px).
 - [x] **v169**: "Harita aç" Telegram içinde https evrensel bağlantı kullanıyor (`geo:`/`maps://` şemaları WebView'de engelleniyordu).
 - [x] **v168**: sipariş kartı buton yerleşimi (Km gir ¾ + **Harita aç** ¼ · Konum/Ara yan yana · ⇄ Aktar) ve harita aç → cihazın varsayılan harita uygulaması. e2e 168/168.
 - [x] **v167**: km gir/güncelle sonrası tutar **anında** güncelleniyor (sayfa yenilemeye gerek yok). e2e 165/165.
