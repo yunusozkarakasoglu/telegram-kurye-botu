@@ -407,3 +407,15 @@ Doğrulama: 5× `GET /api/durum` → hepsi 200, `online` korunuyor; e2e **85/85*
 | Başlık uzun isimde taşıyordu | `header{display:flex}` + `h1{overflow:hidden;text-overflow:ellipsis}` |
 
 Doğrulama: 390 px viewport ekran görüntüsü — tek satır, çakışma yok · e2e **85/85** · deploy `afd2ccbf` (v143).
+
+### Hamburger menü (2026-11-27, v144)
+
+| Beklenen (tasarım) | Sonuç |
+|---|---|
+| Profil kartı: avatar baş harf + ad + durum | ✔ `B` · Boş Kurye · ● Online |
+| DURUM bölümü 3 satır | ✔ Online (yeşil çerçeve + ✓) · Meşgul · Offline |
+| Alt 2×2 ızgara | ✔ Sistem · Profil · Yenile · **Çıkış (kırmızı)** |
+| Sayfa sekmeleri menüden kaldırıldı | ✔ (alt menüde kalıyor) |
+| Restoranda DURUM yok | ✔ |
+
+Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · deploy `18da9369` (v144).

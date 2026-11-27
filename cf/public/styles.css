@@ -625,3 +625,32 @@ header h1{display:inline}
 /* Paketlerim: sabit süre (teslim) yeşil */
 .rrow .sure{font-style:normal;font-size:11px;font-weight:700}
 .rrow .sure.done{color:#1fa855}
+
+/* ---------- Hamburger menü (v144, tasarım: profil kartı + DURUM + 2x2 alt ızgara) ---------- */
+.drawer{padding:14px 12px}
+.drawer nav{display:flex;flex-direction:column;gap:8px;min-height:100%}
+.dw-user{display:flex;align-items:center;gap:11px;background:var(--el);border:1px solid var(--ln);
+  border-radius:14px;padding:12px;flex:none}
+.dw-av{width:46px;height:46px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;
+  background:#2f7cf6;color:#fff;font-size:18px;font-weight:700}
+.dw-meta{display:flex;flex-direction:column;gap:3px;min-width:0}
+.dw-meta b{font-size:15px;font-weight:600;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dw-meta small{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2)}
+.dw-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none;background:#9aa0a6}
+.dw-dot.online{background:#22c55e}
+.dw-dot.busy{background:#f59e0b}
+.dw-dot.offline{background:#9aa0a6}
+.dw-h{margin:10px 2px 0;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--t2);font-weight:700}
+.dw-status{display:flex;flex-direction:column;gap:6px;flex:none}
+.drawer .dw-st{display:flex;align-items:center;gap:10px;padding:13px 14px;border-radius:12px;
+  border:1px solid var(--ln);background:var(--card);font-size:14px;font-weight:600;color:var(--tx)}
+.drawer .dw-st span{flex:1;text-align:left}
+.drawer .dw-st .dw-tick{margin-left:auto;font-style:normal;color:#22c55e;font-weight:700}
+.drawer .dw-st.on.online{background:rgba(34,197,94,.12);border-color:#22c55e;color:#e9fff1}
+.drawer .dw-st.on.busy{background:rgba(245,158,11,.12);border-color:#f59e0b}
+.drawer .dw-st.on.offline{background:rgba(154,160,166,.14);border-color:#9aa0a6}
+.dw-bottom{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto;flex:none}
+.drawer .dw-bottom button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  padding:14px 8px;border-radius:12px;border:1px solid var(--ln);background:var(--el);font-size:13px;font-weight:600}
+.drawer .dw-bottom button i{font-style:normal;font-size:19px;line-height:1}
+.drawer .dw-bottom .dw-exit{color:#ff5b60;border-color:rgba(255,91,96,.35)}

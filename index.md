@@ -4,7 +4,7 @@
 
 | Konu | Durum |
 |---|---|
-| Canlı | `afd2ccbf` · asset **v143** · 30/30 giriş 200 |
+| Canlı | `18da9369` · asset **v144** · 30/30 giriş 200 |
 | Plan | **Workers Paid ($5/ay)** — CPU 503'leri bitti, deploy açık |
 | Performans | **Faz A–E bitti** · kapasite ~1.290 kurye (hatasız), p95 ~170 ms → `docs/Kapasite-Raporu.md` |
 | Yedek | yerel (systemd 03:00) + CI artifact (90 gün) + GitHub Release (son 30) — üçü de çalışıyor |

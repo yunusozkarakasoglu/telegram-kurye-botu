@@ -1767,23 +1767,35 @@
     var d = $('drawer-nav');
     if (!d) return;
     var role = curRole();
-    var pages = role === 'restoran' ? restaurantTabs() : courierTabs();
-    var h = '<h3>Sayfalar</h3>' + pages.map(function (p) {
-      return '<button data-dt="' + p[0] + '" class="' + (S.tab === p[0] ? 'on' : '') + '"><i>' + p[1] + '</i>' + p[2] + '</button>';
-    }).join('');
-    h += '<h3>İşlemler</h3>';
-    h += '<button data-da="refresh"><i>↻</i>Yenile</button>';
-    h += '<button data-dt="sistem" class="' + (S.tab === 'sistem' ? 'on' : '') + '"><i>⚙</i>Sistem</button>';
-    h += '<button data-dt="profil" class="' + (S.tab === 'profil' ? 'on' : '') + '"><i>👤</i>Profil</button>';
-    h += '<button data-da="logout"><i>⏻</i>Çıkış</button>';
-    if (role !== 'restoran' && S.session && S.session.user) {
-      var u = S.session.user;
-      var cur = u.busy ? 'busy' : (u.online ? 'online' : 'offline');
-      h += '<div class="drawer-status">' +
+    var u = (S.session && S.session.user) || {};
+    var ad = String(u.name || (role === 'restoran' ? 'Restoran' : 'Kurye')).trim();
+    var harf = (ad[0] || 'K').toUpperCase();
+    var durum = !u.online ? 'offline' : (u.busy ? 'busy' : 'online');
+    var durumAd = durum === 'online' ? 'Online' : durum === 'busy' ? ('Meşgul' + (u.busy_reason ? ' · ' + u.busy_reason : '')) : 'Offline';
+
+    var h = '<div class="dw-user">' +
+      '<span class="dw-av">' + esc(harf) + '</span>' +
+      '<span class="dw-meta"><b>' + esc(ad) + '</b>' +
+        '<small><i class="dw-dot ' + durum + '"></i>' + esc(durumAd) + '</small></span></div>';
+
+    // Durum yalnız kuryede; sayfa sekmeleri (Havuz/Açık Paketler/Geçmiş) alt menüde olduğu için burada YOK.
+    if (role !== 'restoran') {
+      h += '<h3 class="dw-h">Durum</h3><div class="dw-status">' +
         [['online', 'Online'], ['busy', 'Meşgul'], ['offline', 'Offline']].map(function (x) {
-          return '<button data-dst="' + x[0] + '" class="' + (cur === x[0] ? 'on ' + x[0] : '') + '">' + x[1] + '</button>';
+          var secili = durum === x[0];
+          return '<button class="dw-st ' + x[0] + (secili ? ' on' : '') + '" data-dst="' + x[0] + '">' +
+            '<i class="dw-dot ' + x[0] + '"></i><span>' + x[1] + '</span>' +
+            (secili ? '<em class="dw-tick">✓</em>' : '') + '</button>';
         }).join('') + '</div>';
     }
+
+    h += '<div class="dw-bottom">' +
+      '<button data-dt="sistem"><i>⚙</i><span>Sistem</span></button>' +
+      '<button data-dt="profil"><i>👤</i><span>Profil</span></button>' +
+      '<button data-da="refresh"><i>↻</i><span>Yenile</span></button>' +
+      '<button data-da="logout" class="dw-exit"><i>⏻</i><span>Çıkış</span></button>' +
+      '</div>';
+
     d.innerHTML = h;
     Array.prototype.forEach.call(d.querySelectorAll('[data-dt]'), function (b) {
       b.onclick = function () { S.tab = b.getAttribute('data-dt'); closeDrawer(); render(); refresh(false); };
@@ -1811,6 +1823,7 @@
       };
     });
   }
+
   function closeDrawer() {
     var d = $('drawer'), sc = $('dscrim');
     if (d) d.hidden = true;
