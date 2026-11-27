@@ -661,6 +661,53 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       return d ? json(d) : fail("Kayıt bulunamadı.", 404, "not_found");
     }
 
+    // Restoran raporu: kartlar (paket/km/süre ortalamaları) + bölge dağılımı
+    if (path === "/restoran/rapor" && method === "GET") {
+      if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const kapsam = url.searchParams.get("range") === "all" ? "all" : "today";
+      let start = 0;
+      if (kapsam === "today") {
+        const n = bot.now();
+        start = Math.floor((n + 3 * 3600) / 86400) * 86400 - 3 * 3600;
+      }
+      const rows = await bot.db.all<any>(
+        `SELECT p.id, p.region, p.distance_km, b.created_at, p.accepted_at, p.delivered_at, p.cancelled_at, p.courier_fee
+         FROM packages p JOIN batches b ON b.id=p.batch
+         WHERE b.owner=? AND b.created_at>=?`, user.id, start);
+      const bolgeler = await bot.regionList();
+      const paket = rows.length;
+      let km = 0, kmAdet = 0, sure = 0, sureAdet = 0, ciro = 0;
+      const dagilim: Record<string, number> = {};
+      for (const b of bolgeler) dagilim[b] = 0;
+      for (const p of rows) {
+        const bolge = String(p.region || "Belirtilmedi");
+        dagilim[bolge] = (dagilim[bolge] || 0) + 1;
+        if (p.distance_km != null) { km += Number(p.distance_km); kmAdet++; }
+        if (p.delivered_at && p.created_at) { sure += Math.max(0, Number(p.delivered_at) - Number(p.created_at)); sureAdet++; }
+        if (p.delivered_at && p.courier_fee != null) ciro += Number(p.courier_fee);
+      }
+      const teslim = rows.filter((p) => !!p.delivered_at).length;
+      return json({
+        range: kapsam,
+        ozet: {
+          paket, teslim, iptal: rows.filter((p) => !!p.cancelled_at).length,
+          km: Math.round(km * 10) / 10,
+          km_adet: kmAdet,
+          sure_sn: sure,
+          sure_adet: sureAdet,
+          paket_km: kmAdet ? Math.round((km / kmAdet) * 10) / 10 : null,
+          paket_sure_sn: sureAdet ? Math.round(sure / sureAdet) : null,
+          ciro_tl: Math.round(ciro),
+        },
+        // Sıra: tanımlı bölgeler (ayarlardaki sıra) → sonra "Belirtilmedi" gibi diğerleri
+        bolgeler: [
+          ...bolgeler.map((ad) => ({ ad, adet: dagilim[ad] || 0 })),
+          ...Object.keys(dagilim).filter((ad) => !bolgeler.includes(ad))
+            .map((ad) => ({ ad, adet: dagilim[ad] })),
+        ],
+      });
+    }
+
     // Restoran: claim'i iptal et
     if (path === "/restoran/atama-iptal" && method === "POST") {
       if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");

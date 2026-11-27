@@ -582,3 +582,22 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | İptal bildirimi + hakediş | v157 | TAMAM'a kadar sabit pencere; 0–10 dk 0, 10+ taban, kurye iptali tam |
 | QR kabul geri bildirimi | v159 | yeşil mesaj + 10 sn geri sayım |
 | **Toplam kalite** | — | ruff ✅ · Python **382/382** ✅ · tsc ✅ · e2e **140/140** ✅ |
+
+### Restoran Raporu yenilendi (2026-11-27, v160)
+
+| Kart | Değer / kaynak |
+|---|---|
+| Toplam paket | dönemdeki paket sayısı |
+| Toplam Km | `sum(distance_km)` |
+| Toplam süre | `sum(delivered_at - batch.created_at)` (havuza düşüş → teslim) |
+| Paket / Km | `km / km girilmiş paket` |
+| Paket / Süre | `süre / teslim edilmiş paket` |
+
+| Test | Sonuç |
+|---|---|
+| `/api/restoran/rapor?range=today` | ✔ `ozet` + `bolgeler` |
+| Bölge adetleri toplamı | ✔ paket sayısına **eşit** (9 = 9) |
+| Genel ≥ Bugün | ✔ |
+| Bölge sırası | ✔ ayar sırası + “Belirtilmedi” sonda |
+| Yetki | ✔ kurye 403 |
+| e2e | **151/151 PASS** · deploy `73fd1f59` (v160) |

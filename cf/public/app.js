@@ -1199,52 +1199,55 @@
   }
 
   function renderRestRapor() {
-    setHeader('Rapor', 'Bugünün paketleri');
+    setHeader('Rapor', '');
     var main = $('mn');
-    var items = (S.restItems && S.restItems.items) || [];
-    var day0 = new Date(); day0.setHours(0, 0, 0, 0);
-    var day1 = new Date(day0); day1.setDate(day1.getDate() + 1);
-    var t0 = Math.floor(day0.getTime() / 1000), t1 = Math.floor(day1.getTime() / 1000);
-    var rows = items.filter(function (p) { return p.created_at && p.created_at >= t0 && p.created_at < t1; });
-    var hm = function (sec) {
-      if (sec == null || sec < 0) return '—';
-      var m = Math.floor(sec / 60), h = Math.floor(m / 60);
-      return h ? (h + ' sa ' + (m % 60) + ' dk') : (m + ' dk');
-    };
-    var delivered = rows.filter(function (p) { return !!p.delivered_at; });
-    var durs = rows.filter(function (p) { return p.created_at && p.delivered_at; })
-      .map(function (p) { return p.delivered_at - p.created_at; });
-    var ortSure = durs.length ? Math.round(durs.reduce(function (a, b) { return a + b; }, 0) / durs.length) : null;
-    var kms = rows.filter(function (p) { return p.distance_km != null; });
-    var ortKm = kms.length ? (kms.reduce(function (a, p) { return a + Number(p.distance_km); }, 0) / kms.length) : null;
-    var kpi = '<div class="kpis">' +
-      '<div class="kpi"><b>' + rows.length + '</b><small>Bugün paket</small></div>' +
-      '<div class="kpi"><b>' + (ortSure == null ? '—' : hm(ortSure)) + '</b><small>Ort. süre</small></div>' +
-      '<div class="kpi"><b>' + (ortKm == null ? '—' : (ortKm.toFixed(1).replace('.', ',') + ' km')) + '</b><small>Ort. mesafe</small></div>' +
-      '</div>';
-    main.innerHTML = kpi + '<div class="card" style="padding:10px 12px;margin-bottom:8px"><b>' + rows.length + ' paket</b>' +
-      '<small style="color:var(--t2)"> · ' + day0.toLocaleDateString('tr-TR') + (delivered.length ? ' · ' + delivered.length + ' teslim' : '') + '</small></div>' +
-      (rows.length ? '<div class="tblwrap"><table class="rtbl"><thead><tr>' +
-        '<th>Tarih</th><th>Talep</th><th>Kurye</th><th>Süre</th><th>Km</th><th>Tutar</th><th>Öd</th>' +
-        '</tr></thead><tbody>' + rows.map(function (p) {
-          var sure = p.created_at && p.delivered_at ? p.delivered_at - p.created_at : null;
-          return '<tr data-rp="' + p.id + '">' +
-            '<td>' + (p.created_at ? new Date(p.created_at * 1000).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '—') + '</td>' +
-            '<td>#' + p.batch + '-' + p.number + '</td>' +
-            '<td>' + esc(p.courier_name || '—') + '</td>' +
-            '<td>' + hm(sure) + '</td>' +
-            '<td>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</td>' +
-            '<td>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</td>' +
-            '<td>' + (p.payment_received === true ? '<span class="pcheck on">✓</span>' : p.payment_received === false ? '<span class="pcheck off">✕</span>' : '—') + '</td>' +
-          '</tr>';
-        }).join('') + '</tbody></table></div>' : '<div class="empty"><b>Bugün paket yok</b>Bugün oluşturulan sipariş bulunmuyor.</div>');
-    Array.prototype.forEach.call(main.querySelectorAll('[data-rp]'), function (tr) {
-      tr.onclick = function () {
-        var id = Number(tr.getAttribute('data-rp'));
-        var p = rows.filter(function (x) { return x.id === id; })[0];
-        if (p) restPkgSheet(p);
-      };
+    var kapsam = S.raporKapsam === 'all' ? 'all' : 'today';
+    S.raporKapsam = kapsam;
+
+    var iskelet = '<div class="seg two" style="margin-bottom:10px">' +
+        '<button data-rp2="today" class="' + (kapsam === 'today' ? 'on' : '') + '">Bugün</button>' +
+        '<button data-rp2="all" class="' + (kapsam === 'all' ? 'on' : '') + '">Genel</button></div>' +
+      '<div id="rp-icerik"><div class="empty">Yükleniyor…</div></div>';
+    main.innerHTML = iskelet;
+    Array.prototype.forEach.call(main.querySelectorAll('[data-rp2]'), function (b) {
+      b.onclick = function () { S.raporKapsam = b.getAttribute('data-rp2'); renderRestRapor(); };
     });
+
+    var hm = function (sn) {
+      if (sn == null) return '—';
+      var dk = Math.round(sn / 60);
+      var sa = Math.floor(dk / 60);
+      return sa ? (sa + ' sa ' + (dk % 60) + ' dk') : (dk + ' dk');
+    };
+
+    API.restoranRapor(kapsam).then(function (r) {
+      var o = (r && r.ozet) || {};
+      var kart = function (etiket, deger) {
+        return '<div class="rp-card"><b>' + deger + '</b><small>' + etiket + '</small></div>';
+      };
+      var bolgeler = (r && r.bolgeler) || [];
+      var html =
+        '<h3 class="rp-h">' + (kapsam === 'today' ? 'Gün sonu' : 'Genel toplam') + '</h3>' +
+        '<div class="rp-grid two">' +
+          kart('Toplam paket', o.paket || 0) +
+          kart('Toplam Km', o.km ? kmf(o.km) : '—') +
+        '</div>' +
+        '<div class="rp-grid three">' +
+          kart('Toplam süre', o.sure_sn ? hm(o.sure_sn) : '—') +
+          kart('Paket / Km', o.paket_km == null ? '—' : kmf(o.paket_km)) +
+          kart('Paket / Süre', o.paket_sure_sn == null ? '—' : hm(o.paket_sure_sn)) +
+        '</div>' +
+        '<h3 class="rp-h">Bölge istatistikleri</h3>' +
+        '<div class="rp-bolge">' + (bolgeler.length ? bolgeler.map(function (b) {
+          return '<div class="rp-bchip"><span>' + esc(b.ad) + '</span><b>' + b.adet + '</b></div>';
+        }).join('') : '<div class="empty">Bölge yok</div>') + '</div>';
+      var host = $('rp-icerik');
+      if (host) host.innerHTML = html;
+    }).catch(function (e) {
+      var host = $('rp-icerik');
+      if (host) host.innerHTML = '<div class="empty"><b>Rapor alınamadı</b>' + esc(e.message || '') + '</div>';
+    });
+
     $('cta').innerHTML = '';
     nav(restaurantTabs(), {});
   }

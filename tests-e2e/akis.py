@@ -699,6 +699,30 @@ def senaryo_iptal_bildirimi(api: Api, o: dict[str, Oturum], baglam: dict) -> Non
     T.ok("kurye iptalinde tam ücret hakediş", int(kendi.get("fee_tl") or 0) > 0, f"fee={kendi.get('fee_tl')}")
 
 
+def senaryo_restoran_rapor(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
+    """Restoran raporu: kartlar + bölge dağılımı."""
+    T.bolum("RESTORAN RAPORU · KARTLAR + BÖLGE")
+    rest = o["rest"]
+
+    bugun = api.cagir("GET", "/api/restoran/rapor?range=today", token=rest.token)
+    o1 = bugun.get("ozet") or {}
+    T.ok("rapor ozeti geliyor", "paket" in o1 and int(o1.get("paket") or 0) >= 1, str(o1.get("paket")))
+    T.ok("toplam km sayısal", "km" in o1)
+    T.ok("paket/km ortalaması var", o1.get("paket_km") is None or float(o1["paket_km"]) >= 0, str(o1.get("paket_km")))
+    T.ok("bölge listesi dolu", len(bugun.get("bolgeler") or []) >= 1, f"{len(bugun.get('bolgeler') or [])} bölge")
+    toplam_bolge = sum(int(x.get("adet") or 0) for x in (bugun.get("bolgeler") or []))
+    T.esit("bölge adetleri paket toplamına eşit", int(o1.get("paket") or 0), toplam_bolge)
+
+    genel = api.cagir("GET", "/api/restoran/rapor?range=all", token=rest.token)
+    o2 = genel.get("ozet") or {}
+    T.ok("genel rapor daha büyük veya eşit", int(o2.get("paket") or 0) >= int(o1.get("paket") or 0),
+         f"genel={o2.get('paket')} bugün={o1.get('paket')}")
+    T.ok("genel süre toplamı var", int(o2.get("sure_sn") or 0) >= 0)
+
+    yasak = api.cagir("GET", "/api/restoran/rapor", token=o["k1"].token, bekle_hata=True)
+    T.esit("kurye raporu göremiyor", 403, yasak.get("_status"))
+
+
 def senaryo_on_yuz(api: Api) -> None:
     """Statik yüzey testi: app.js'te kritik fonksiyonlar var ve tekil.
     Blok değiştirirken bir fonksiyonun silinmesi `node --check`ten kaçar; bu test yakalar."""
@@ -721,7 +745,7 @@ def senaryo_on_yuz(api: Api) -> None:
     T.esit("aynı fonksiyon iki kez tanımlı değil", [], cift)
 
     # menü / atama kodu akışının işaretleri
-    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "hdr-qr", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "atamaDurum", "ak-okundu", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
+    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "hdr-qr", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "atamaDurum", "ak-okundu", "rp-card", "rp-bchip", "restoranRapor", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
         T.ok(f"yüzeyde '{iz}' var", iz in js)
 
     with urllib.request.urlopen(f"{api.base}/admin.js", timeout=30) as y:
@@ -749,6 +773,7 @@ def main() -> int:
     senaryo_restoran_kuryeye_gonder(api, oturumlar, baglam)
     senaryo_admin_kullanici_ekleme(api, oturumlar)
     senaryo_durum_yetki(api, oturumlar, baglam)
+    senaryo_restoran_rapor(api, oturumlar, baglam)
     senaryo_qr_durum(api, oturumlar, baglam)
     senaryo_iptal_bildirimi(api, oturumlar, baglam)
     senaryo_on_yuz(api)

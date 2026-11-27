@@ -50,6 +50,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] **v160**: restoran Rapor sayfası yenilendi (Bugün/Genel · 5 kart · bölge istatistikleri); `GET /api/restoran/rapor`. e2e 151/151.
 - [x] **QR/PIN ile atama (v147-159)**: "QR ile Ekle" sekmesi · kurye QR/kod ile atomik alma · kabulde yeşil mesaj + 10 sn geri sayım · iptal bildirimi + hakediş kuralı · SVG QR ikonu. e2e 140/140.
 - [x] **v159**: restoran QR ekranı kurye kabulünü görüyor (yeşil mesaj + 10 sn geri sayım + Tamam/Kapat) · paket açık listeye düşüyor. e2e 140/140.
 - [x] **v157**: iptalde kuryeye sabit bildirim (sipariş kartı + süre + hakediş, TAMAM'a kadar) · hakediş kuralı tek yerde (alınmadı 0 · 0–10 dk 0 · 10+ taban · kurye iptali tam) · restoran iptal ekranında hakediş önizlemesi · header QR ikonu SVG. e2e 133/133.
