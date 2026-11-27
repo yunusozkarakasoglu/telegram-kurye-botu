@@ -1598,26 +1598,44 @@
     return sonraki().then(function () { qBadge(); });
   }
 
-  /** Cihazın varsayılan harita uygulamasını açar (koordinat varsa). */
+  /**
+   * Haritayı açar (koordinat varsa).
+   * ÖNEMLİ: Telegram WebView'de `geo:` / `maps://` şemaları **sessizce engellenir** →
+   * Telegram içinde her zaman **https** evrensel bağlantı kullanılır (kurulu harita uygulamasını açar).
+   */
   function haritaAc(p) {
     var lat = p.restaurant_lat, lng = p.restaurant_lng;
     var ad = encodeURIComponent(p.restaurant || 'Restoran');
+    if ((lat == null || lng == null) && p.map_url) {
+      var tg0 = window.Telegram && Telegram.WebApp;
+      try { if (tg0 && tg0.openLink) { tg0.openLink(p.map_url, { try_instant_view: false }); return; } } catch (e) {}
+      window.open(p.map_url, '_blank');
+      return;
+    }
     if (lat == null || lng == null) {
-      UI.toast('Restoranın konumu kayıtlı değil', 'error');
+      UI.toast('Restoranın konumu kayıtlı değil — yönetici restoran profiline konum eklemeli', 'error');
       return;
     }
     var ua = navigator.userAgent || '';
     var android = /Android/i.test(ua);
     var ios = /iPhone|iPad|iPod/i.test(ua);
-    var url = android
-      ? 'geo:' + lat + ',' + lng + '?q=' + lat + ',' + lng + '(' + ad + ')'
-      : (ios ? 'maps://?daddr=' + lat + ',' + lng + '&q=' + ad
-             : 'https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng);
+    var gmaps = 'https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng;
+    var apple = 'https://maps.apple.com/?daddr=' + lat + ',' + lng + '&q=' + ad;
+    var geo = 'geo:' + lat + ',' + lng + '?q=' + lat + ',' + lng + '(' + ad + ')';
+    var tg = window.Telegram && Telegram.WebApp;
+
+    if (tg && typeof tg.openLink === 'function') {
+      // Telegram: https evrensel bağlantı (custom şema engellenir)
+      try { tg.openLink(ios ? apple : gmaps, { try_instant_view: false }); return; }
+      catch (e) { /* aşağıdaki yedeklere düş */ }
+    }
     try {
-      var tg = window.Telegram && Telegram.WebApp;
-      if (tg && typeof tg.openLink === 'function') { tg.openLink(url); return; }
-    } catch (e) { /* normal pencere */ }
-    window.open(url, '_blank');
+      if (android && !tg) { window.location.href = geo; return; }   // PWA/tarayıcı: varsayılan harita
+      if (ios && !tg) { window.location.href = 'maps://?daddr=' + lat + ',' + lng + '&q=' + ad; return; }
+      window.open(ios ? apple : gmaps, '_blank');
+    } catch (e) {
+      UI.toast('Harita açılamadı', 'error');
+    }
   }
 
   function setKuryeDurum(st, reason, menudeKal) {

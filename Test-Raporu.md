@@ -681,3 +681,13 @@ Doğrulama: ölçüm `plus [34,34]` / `bell [36,36]`, `border-radius:50%` · e2e
 | Koordinat yoksa | ✔ "Restoranın konumu kayıtlı değil" uyarısı |
 | DTO | ✔ `restaurant_lat/lng` alanları eklendi |
 | e2e | **168/168 PASS** · deploy `4ca71003` (v168) |
+
+### Harita açılmama düzeltmesi (2026-11-27, v169)
+
+| Sorun | Çözüm |
+|---|---|
+| Telegram WebView `geo:` / `maps://` şemalarını sessizce yutuyor | Telegram içinde **https**: Android `google.com/maps/dir`, iOS `maps.apple.com` |
+| Koordinat yok | `map_url` yedeği → yine https |
+| PWA/tarayıcı | `geo:` (Android) / `maps://` (iOS) korunuyor |
+
+Doğrulama (tarayıcı): `https://www.google.com/maps/dir/?api=1&destination=40.9923,29.1244` açıldı · e2e **168/168** · deploy `95265605` (v169).
