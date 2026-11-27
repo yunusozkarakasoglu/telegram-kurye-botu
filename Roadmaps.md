@@ -4,14 +4,15 @@
 > `~/Masaüstü/Kurye-Flow-Mobil/Roadmaps.md` (PackOn Express, Faz 2-6).
 > Burada yalnız acil düzeltmeler yapılır.
 >
-> **Sıradaki odak (26.11):** GET optimizasyonu + kota verimliliği, ardından arayüz düzenlemeleri.
-> **Aktif olay:** Cloudflare Workers API 504/10001 → deploy blokajı; runtime sağlıklı (20/20 200).
+> **Durum (27.11):** Performans serisi (A–E) ve arayüz turu kapandı; canlı `7e23eb06` / asset **v146**, e2e **85/85**.
+> **Sıradaki odak:** kullanıcının yeni UI istekleri → sonra PackOn Express Faz 2 (Süper Admin).
 
 1. **Tamamlandı — Yerel v2 çekirdek:** kabul/öncelik, aktarım + bildirim + onay, profil/harita/arama, medya yok sayma, durum etiketleri, komut menüleri, bölge/telefon/tarife yönetimi, kendi kendine kayıt, hesap aktif/pasif/sil, iptal akışı, havuz bölge gruplama. Kanıt: `Test-Raporu.md`.
 2. **Sürüyor — Canlı pilot (phase-5):** phase-1/2 tamam; phase-3 sipariş→kabul→km→teslim→kilit doğrulandı; phase-5'te yönetici ekranları ve 10 paketlik bölge grubu hazır. Ayrıntı: `Canli-Pilot-Raporu.md`.
 3. **Planlanacak — phase-4:** iki kurye + 10 paket/limit 6 ile kurye–kurye aktarım ve 10/6/4 havuz senaryosu.
 4. **Sürüyor — Cloudflare (bot + Mini App): yönetici paneli tamam; kurye modülü iyileştirmeleri sürüyor:** Worker + D1 yayında (`telegram-kurye-botu.packonexpress.workers.dev`), webhook aktif, yönetici akışları canlı doğrulandı; restoran/kurye canlı testi ve parite eksikleri sürüyor. Çalıştırma: `cf/README.md`.
-5. **Sürüyor — Performans / kuyruk:** `docs/Optimizasyon-ve-Kuyruk-Plani.md`.
+5. **Tamamlandı — Arayüz turu (27.11):** restoran UX (Yemek Çeki · satır popup'ı · paketlerim Tümü/Açık/Kapalı), header ikon düzeni, hamburger menü tasarımı, meşgul sebep akışı; kritik yoklama düzeltmesi (v141). Kanıt: `Test-Raporu.md`.
+6. **Sürüyor — Performans / kuyruk:** `docs/Optimizasyon-ve-Kuyruk-Plani.md`.
    - ✅ **Faz A** (v135): D1 retry+backoff, istemci 15 sn ± jitter, 5xx tekrarı, overload alarmı. 30 paralel → 0 hata.
    - ✅ **Faz B** (v136): idempotency, istemci eylem kuyruğu, batch kabul, kurye başına 30 yazma/dk hız sınırı.
    - ✅ **Faz C** (v137): tek uç `/api/durum?v=` (delta + `unchanged`), `package_events` denetim izi. Ölçüm: 3 uç 13,4 s → 1 uç 6,7 s → delta 3,7 s.

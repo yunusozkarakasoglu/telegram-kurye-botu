@@ -50,7 +50,9 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
-- [x] **v141 kritik düzeltme**: yoklama POST→GET ayrımı (`durumOzet`); kurye "Bağlanıyor…" takılması ve sessiz çevrimdışı olma giderildi; e2e 85/85.
+- [x] **Hamburger menü (v144-146)**: profil kartı + DURUM + 2×2 ızgara; meşgul sebepleri Meşgul ile Offline arasında, seçince kapanır (Mola/Arıza/Kaza/**Diğer**); meşgul artık “Offline” görünmüyor.
+- [x] **Header (v143)**: sağ üstteki 📦/●/🔔 üst üste binmesi giderildi (absolute kaldırıldı), rozet/segment tek satır.
+- [x] **Kritik v141**: yoklama `POST /api/durum` → `GET /api/durum` (`durumOzet`); kurye “Bağlanıyor…” takılması + sessiz çevrimdışı olma giderildi; e2e’ye 4 regresyon testi.
 - [x] **Restoran UX (v140)**: Yemek Çeki ödeme tipi · “Kurye Ekle” sekmesi → satır popup'ı (Bölge/Ödeme/Kurye/Not) · Paketlerim Tümü/Açık/Kapalı + yeşil sabit süre.
 - [x] **Faz A (performans)**: D1 retry+backoff, istemci 15 sn±jitter + 5xx tekrarı, overload alarmı (`23b47dc4`, v135). 30 paralel → 0 hata.
 - [x] **Faz B (v136)**: idempotency + istemci eylem kuyruğu + batch kabul + hız sınırı — test edildi.

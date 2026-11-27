@@ -1,10 +1,11 @@
 # Proje yönlendirmesi
 
-## Güncel durum (26.11.2026 akşam)
+## Güncel durum (27.11.2026)
 
 | Konu | Durum |
 |---|---|
-| Canlı | `7e23eb06` · asset **v146** · 30/30 giriş 200 |
+| Canlı | `7e23eb06` · asset **v146** · ana/admin/saglik 200 |
+| Arayüz | kurye: havuz/paketlerim/geçmiş + **yeni hamburger menü** (profil kartı · DURUM · 2×2 ızgara) · restoran: sipariş ekle/paketlerim/rapor |
 | Plan | **Workers Paid ($5/ay)** — CPU 503'leri bitti, deploy açık |
 | Performans | **Faz A–E bitti** · kapasite ~1.290 kurye (hatasız), p95 ~170 ms → `docs/Kapasite-Raporu.md` |
 | Yedek | yerel (systemd 03:00) + CI artifact (90 gün) + GitHub Release (son 30) — üçü de çalışıyor |

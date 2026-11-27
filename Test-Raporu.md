@@ -442,3 +442,15 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | Profil kartı | ✔ `Meşgul · Mola` |
 | Sunucu | `Diğer` sebebi kabul ediliyor (İhtiyaç geriye uyum için duruyor) |
 | e2e | **85/85** · deploy `7e23eb06` (v146) |
+
+### Oturum özeti (27.11.2026)
+
+| Tur | Sürüm | Sonuç |
+|---|---|---|
+| Faz A–E (performans/kuyruk/kapasite) | v135–v138 | 30/60 eşzamanlı **%0 hata**, p95 ~170 ms; ≈1.290 kurye |
+| Şema önbelleği otomatik imza | `94222e6` | elle sürüm artırma kalktı |
+| Restoran UX | v140 | Yemek Çeki · satır popup'ı · Paketlerim Tümü/Açık/Kapalı |
+| **Kritik** yoklama düzeltmesi | v141 | POST→GET (`durumOzet`); “Bağlanıyor…” + sessiz çevrimdışı bitti |
+| Header düzeni | v143 | ikon çakışması yok |
+| Hamburger menü + meşgul akışı | v144–v146 | tasarım birebir; Mola/Arıza/Kaza/Diğer |
+| **Toplam kalite** | — | ruff ✅ · Python **382/382** ✅ · tsc ✅ · e2e **85/85** ✅ |
