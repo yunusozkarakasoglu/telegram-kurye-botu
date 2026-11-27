@@ -50,6 +50,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] **Rapor turu (v160-162)**: yeni Rapor sayfası (Bugün/Genel, 5 kart, bölge chipleri) · 0 adetli bölge gizli · sessiz yoklama kaldırıldı + **↻ Yenile** · Genel=90 gün, tüm zamanlar ayrı. e2e 156/156.
 - [x] **v162**: Rapor kotası — sessiz yoklama kaldırıldı (20 sn'de 0 istek), **↻ Yenile** düğmesi, **Genel = son 90 gün** + “Tüm zamanlar” ayrı. e2e 156/156.
 - [x] **v161**: Rapor bölge kartlarında **0 adetli bölgeler gösterilmiyor** (boşsa “Bu dönemde paket yok”). e2e 152/152.
 - [x] **v160**: restoran Rapor sayfası yenilendi (Bugün/Genel · 5 kart · bölge istatistikleri); `GET /api/restoran/rapor`. e2e 151/151.

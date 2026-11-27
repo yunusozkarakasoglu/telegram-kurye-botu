@@ -622,3 +622,11 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | 90 gün ≥ bugün | ✔ 9 ≥ 9 |
 | Kota projeksiyonu | ~%95 daha az rapor sorgusu (100 restoran senaryosunda 115 M/gün → ~5 M/gün) |
 | e2e | **156/156 PASS** · deploy `91eec581` (v162) |
+
+### Kapanış (27.11 gece)
+
+| Tur | Sürüm | Özet |
+|---|---|---|
+| Rapor sayfası | v160–v161 | Bugün/Genel · 5 kart · bölge chipleri · 0 adetli bölge gizli |
+| Rapor kotası | v162 | sessiz yoklama kaldırıldı · **↻ Yenile** · Genel=90 gün |
+| **Toplam kalite** | — | ruff ✅ · Python **382/382** ✅ · tsc ✅ · e2e **156/156** ✅ · canlı `91eec581` (v162) |
