@@ -566,3 +566,19 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | Paket | ✔ restoranın **açık/havuz** listesine düşer (5 açık paket testi) |
 | Yetki | ✔ kurye `atama-durum` ucunu kullanamaz (403) |
 | e2e | **140/140 PASS** · deploy `89902ce5` (v159) |
+
+### Kapanış özeti (27.11 akşam)
+
+| Tur | Sürüm | Özet |
+|---|---|---|
+| Atama kodu (4 hane) | v147 | kurye onayı kodla; 3 hata → 30 dk kilit |
+| Seçim pencereleri | v148 | native `<select>` yerine dokunmatik sheet |
+| `atamaKodSheet` kaybı | v149 | silinen restoran ekranları geri + **e2e yüzey testi** |
+| QR onay | v150 | tek kullanımlık QR (startapp token) + PIN yedeği |
+| Meşgul sebebi / menü | v145-146 | Mola/Arıza/Kaza/Diğer akışı |
+| QR düzeltmeleri | v154 | iptaller listeden çıktı · header QR · açık uygulamada start_param yakalama |
+| “QR ile Ekle” sekmesi | v155 | akış tek yerden |
+| Paketlerim temizliği | v156 | atama kartları kaldırıldı |
+| İptal bildirimi + hakediş | v157 | TAMAM'a kadar sabit pencere; 0–10 dk 0, 10+ taban, kurye iptali tam |
+| QR kabul geri bildirimi | v159 | yeşil mesaj + 10 sn geri sayım |
+| **Toplam kalite** | — | ruff ✅ · Python **382/382** ✅ · tsc ✅ · e2e **140/140** ✅ |
