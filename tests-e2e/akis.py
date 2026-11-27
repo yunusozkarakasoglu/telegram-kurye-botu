@@ -311,116 +311,91 @@ def senaryo_restoran_kurye(api: Api, o: dict[str, Oturum]) -> dict:
 
 
 def senaryo_restoran_kuryeye_gonder(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
-    T.bolum("RESTORAN → KURYE ATAMA (4 HANELİ KOD ONAYI)")
+    T.bolum("RESTORAN → KURYE: QR / PIN ILE PAKET ALMA")
     rest, k1, k2 = o["rest"], o["k1"], o["k2"]
 
-    # kurye2'yi boşalt (önceki paketleri kapat)
+    # kurye2'yi boşalt
     for p in paketlerim(api, k2):
         if not p.get("picked_up_at"):
             api.cagir("POST", f"/api/paket/{p['id']}/km", {"km": "2"}, token=k2.token)
             api.cagir("POST", f"/api/paket/{p['id']}/teslim", {"paid": False}, token=k2.token)
-    sql(f"UPDATE accounts SET assign_lock_until=0 WHERE id IN ({K1},{K2})")
+    sql(f"UPDATE accounts SET assign_lock_until=0, assign_fail=0 WHERE id IN ({K1},{K2})")
 
-    liste = api.cagir("GET", "/api/restoran/kuryeler", token=rest.token)["couriers"]
-    T.ok("restoran kurye listesini görebiliyor", any(c["id"] == K2 for c in liste), f"{len(liste)} kurye")
-
-    # 1) Atama isteği: paket HENÜZ oluşmaz, 4 haneli kod döner
-    gonder = api.cagir("POST", "/api/restoran/kurye-talep",
-                       {"courier_id": K2, "region": baglam["bolge"], "payment": "Nakit",
-                        "note": "Kuryeye özel"}, token=rest.token)
-    kod = str(gonder.get("code") or "")
-    rid = gonder.get("request_id")
-    T.ok("atama isteği oluştu", bool(gonder.get("needs_code")) and bool(rid), f"rid={rid}")
+    # 1) Restoran QR/PIN claim açar — kurye seçmez, paket henüz oluşmaz
+    ac = api.cagir("POST", "/api/restoran/atama-ac",
+                   {"region": baglam["bolge"], "payment": "Nakit", "note": "QR akışı"}, token=rest.token)
+    claim_id = ac.get("claim_id")
+    kod = str(ac.get("code") or "")
+    T.ok("QR/PIN claim açıldı", bool(ac.get("ok")) and bool(claim_id), f"claim={claim_id}")
     T.esit("kod 4 haneli", 4, len(kod))
-    T.ok("paket henüz oluşmadı", not any(p.get("note") == "Kuryeye özel" for p in paketlerim(api, k2)))
+    T.ok("QR token 32 hex", len(str(ac.get("qr_token") or "")) == 32)
+    T.ok("QR linki Telegram startapp", "startapp=atama_" in str(ac.get("qr_link")))
+    T.ok("paket henüz oluşmadı", not any(p.get("note") == "QR akışı" for p in paketlerim(api, k2)))
 
-    bekleyen = api.cagir("GET", "/api/restoran/atamalar", token=rest.token)["items"]
-    T.ok("bekleyen atama listede", any(x["id"] == rid for x in bekleyen), f"{len(bekleyen)} istek")
+    bekleyen = api.cagir("GET", "/api/restoran/atamalar", token=rest.token)
+    T.ok("açık claim listede (kod ile)", any(x["id"] == claim_id and x.get("code") == kod for x in bekleyen.get("items", [])))
 
-    # 2) Yanlış kod → deneme sayılır
-    yanlis = api.cagir("POST", "/api/restoran/atama-dogrula", {"request_id": rid, "code": "0000"},
-                       token=rest.token, bekle_hata=True)
-    T.esit("yanlış kod reddedildi", 422, yanlis.get("_status"))
-    T.esit("kalan deneme 2", 2, yanlis.get("kalan"))
+    # 2) QR teklifi (kurye kartı) — kimlik bağı yok, her kurye görebilir
+    teklif = api.cagir("GET", f"/api/kurye/atama-teklif?token={ac.get('qr_token')}", token=k1.token)
+    T.ok("kurye paket kartını görebiliyor", bool(teklif.get("ok")) and teklif.get("region") == baglam["bolge"],
+         str(teklif.get("restaurant")))
 
-    # 3) Doğru kod → paket oluşur ve kuryeye atanır
-    dogru = api.cagir("POST", "/api/restoran/atama-dogrula", {"request_id": rid, "code": kod}, token=rest.token)
-    pk_id = dogru.get("package_id")
-    T.ok("doğru kodla paket atandı", bool(dogru.get("ok")) and bool(pk_id), f"paket={pk_id}")
+    # 3) Kurye 4 haneli kod ile alır (atomik)
+    al = api.cagir("POST", "/api/kurye/atama-al", {"code": kod}, token=k2.token)
+    pk_id = al.get("package_id")
+    T.ok("kod ile paket alındı", bool(al.get("ok")) and bool(pk_id), f"paket={pk_id}")
     kayit = next((p for p in paketlerim(api, k2) if p["id"] == pk_id), {})
-    T.esit("paket kabul edildi durumunda", "Kabul edildi", kayit.get("status"))
-    T.esit("not taşındı", "Kuryeye özel", kayit.get("note"))
+    T.esit("paket kabul edildi", "Kabul edildi", kayit.get("status"))
+    T.esit("not taşındı", "QR akışı", kayit.get("note"))
     T.ok("paket havuza düşmedi", not havuzda_var(api, k1, pk_id))
 
-    # 4) 3 hatalı deneme → kurye 30 dk atama kilidi; normal sipariş serbest
-    istek2 = api.cagir("POST", "/api/restoran/kurye-talep",
-                       {"courier_id": K2, "region": baglam["bolge"], "payment": "Nakit"}, token=rest.token)
-    rid2 = istek2.get("request_id")
+    # 4) Aynı kod tekrar → "zaten alındı", deneme harcanmaz
+    tekrar = api.cagir("POST", "/api/kurye/atama-al", {"code": kod}, token=k1.token, bekle_hata=True)
+    T.ok("alınmış kod reddedildi", tekrar.get("_status") in (409, 422), f"status={tekrar.get('_status')}")
+
+    # 5) İki kurye aynı QR'ı aynı anda alır → tam 1 kazanır
+    ac2 = api.cagir("POST", "/api/restoran/atama-ac",
+                    {"region": baglam["bolge"], "payment": "Kart", "note": "Yarış"}, token=rest.token)
+    import threading
+    sonuc = []
+    def al_dene(tk):
+        sonuc.append(api.cagir("POST", "/api/kurye/atama-al", {"token": ac2.get("qr_token")}, token=tk, bekle_hata=True))
+    th = [threading.Thread(target=al_dene, args=(t,)) for t in (k1.token, k2.token)]
+    [t.start() for t in th]
+    [t.join() for t in th]
+    T.esit("aynı QR'ı iki kurye: tek kazanan", 1, sum(1 for r in sonuc if r.get("ok")))
+
+    # 6) Yanlış kod 3 kez → kurye 30 dk kilit
+    sql(f"UPDATE accounts SET assign_lock_until=0, assign_fail=0 WHERE id IN ({K1},{K2})")
     son = {}
     for _ in range(3):
-        son = api.cagir("POST", "/api/restoran/atama-dogrula", {"request_id": rid2, "code": "1111"},
-                        token=rest.token, bekle_hata=True)
-    T.esit("3. hatalı denemede kilit", 423, son.get("_status"))
+        son = api.cagir("POST", "/api/kurye/atama-al", {"code": "0001"}, token=k1.token, bekle_hata=True)
+    T.esit("3 hatalı kodda kilit", 423, son.get("_status"))
     T.ok("kilit kodu döndü", son.get("code") == "locked")
+    kilitli = api.cagir("POST", "/api/kurye/atama-al", {"code": "0001"}, token=k1.token, bekle_hata=True)
+    T.esit("kilitli kurye kod giremiyor", 423, kilitli.get("_status"))
+    sql(f"UPDATE accounts SET assign_lock_until=0, assign_fail=0 WHERE id={K1}")
 
-    kilitli = api.cagir("POST", "/api/restoran/kurye-talep",
-                        {"courier_id": K2, "region": baglam["bolge"]}, token=rest.token, bekle_hata=True)
-    T.esit("kilitliyken atama engellendi", 409, kilitli.get("_status"))
-    T.ok("kilit mesajı anlaşılır", "kilitli" in str(kilitli.get("error", "")))
+    # 7) İptal
+    ac3 = api.cagir("POST", "/api/restoran/atama-ac", {"region": baglam["bolge"], "payment": "Nakit"}, token=rest.token)
+    iptal = api.cagir("POST", "/api/restoran/atama-iptal", {"claim_id": ac3.get("claim_id")}, token=rest.token)
+    T.ok("claim iptal edilebiliyor", bool(iptal.get("ok")))
+    gecersiz = api.cagir("POST", "/api/kurye/atama-al", {"code": str(ac3.get("code"))}, token=k2.token, bekle_hata=True)
+    T.ok("iptal edilen kod kullanılamıyor", gecersiz.get("_status") in (409, 422))
 
-    normal = api.cagir("POST", "/api/restoran/talep",
-                       {"packages": [{"region": baglam["bolge"], "payment": "Nakit"}]}, token=rest.token)
-    T.ok("kilitliyken normal sipariş girilebiliyor", bool(normal.get("ok")), f"talep #{normal.get('req_no')}")
+    # 8) Restoran görünür kartlar: "kurye aldı"
+    son_hareket = api.cagir("GET", "/api/restoran/atamalar", token=rest.token)
+    T.ok("restoran 'kurye aldı' kartını görüyor",
+         any(x.get("state") == "done" for x in (son_hareket.get("recent") or [])),
+         f"{len(son_hareket.get('recent') or [])} hareket")
+    T.ok("restoran 'iptal' kartını görüyor",
+         any(x.get("state") == "cancelled" for x in (son_hareket.get("recent") or [])))
 
-    # 5) İptal: bekleyen istek kapanır
-    sql(f"UPDATE accounts SET assign_lock_until=0 WHERE id IN ({K1},{K2})")
-    istek3 = api.cagir("POST", "/api/restoran/kurye-talep",
-                       {"courier_id": K2, "region": baglam["bolge"]}, token=rest.token)
-    iptal = api.cagir("POST", "/api/restoran/atama-iptal", {"request_id": istek3.get("request_id")}, token=rest.token)
-    T.ok("atama iptal edilebiliyor", bool(iptal.get("ok")))
-    gecersiz = api.cagir("POST", "/api/restoran/atama-dogrula",
-                         {"request_id": istek3.get("request_id"), "code": str(istek3.get("code"))},
-                         token=rest.token, bekle_hata=True)
-    T.ok("iptal edilen istek kullanılamıyor", gecersiz.get("_status") in (409, 422))
-
-    yok = api.cagir("POST", "/api/restoran/kurye-talep",
-                    {"courier_id": 999999, "region": baglam["bolge"]}, token=rest.token, bekle_hata=True)
-    T.ok("olmayan kurye reddedildi", yok.get("_status") in (403, 404, 409), f"status={yok.get('_status')}")
-
-    # 6) QR akışı: kurye kendi QR'ını onaylar
-    sql(f"UPDATE accounts SET assign_lock_until=0 WHERE id IN ({K1},{K2})")
-    qr = api.cagir("POST", "/api/restoran/kurye-talep",
-                   {"courier_id": K2, "region": baglam["bolge"], "payment": "Kart", "note": "QR testi"},
-                   token=rest.token)
-    qr_token = str(qr.get("qr_token") or "")
-    T.ok("QR token üretildi (32 hex)", bool(qr_token) and len(qr_token) == 32, qr_token[:8])
-    T.ok("QR linki Telegram startapp", "t.me/" in str(qr.get("qr_link")) and "startapp=atama_" in str(qr.get("qr_link")))
-
-    teklif = api.cagir("GET", f"/api/kurye/atama-teklif?token={qr_token}", token=k2.token)
-    T.ok("kurye teklifi görebiliyor", bool(teklif.get("ok")) and len(str(teklif.get("restaurant") or "")) > 1,
-         str(teklif.get("restaurant")))
-    T.esit("teklifte ödeme taşınıyor", "Kart", teklif.get("payment"))
-
-    baska = api.cagir("GET", f"/api/kurye/atama-teklif?token={qr_token}", token=k1.token, bekle_hata=True)
-    T.esit("başka kurye teklifi göremiyor", 403, baska.get("_status"))
-    baska2 = api.cagir("POST", "/api/kurye/atama-onayla", {"token": qr_token}, token=k1.token, bekle_hata=True)
-    T.esit("başka kurye onaylayamıyor", 403, baska2.get("_status"))
-
-    onay = api.cagir("POST", "/api/kurye/atama-onayla", {"token": qr_token}, token=k2.token)
-    T.ok("QR ile onaylandı", bool(onay.get("ok")), f"paket={onay.get('package_id')}")
-    qr_paket = next((p for p in paketlerim(api, k2) if p["id"] == onay.get("package_id")), {})
-    T.esit("QR paketi kabul edildi", "Kabul edildi", qr_paket.get("status"))
-    T.esit("QR notu taşındı", "QR testi", qr_paket.get("note"))
-
-    tekrar = api.cagir("POST", "/api/kurye/atama-onayla", {"token": qr_token}, token=k2.token, bekle_hata=True)
-    T.esit("aynı QR ikinci kez kullanılamıyor", 409, tekrar.get("_status"))
-
-    yasak = api.cagir("POST", "/api/restoran/atama-dogrula", {"request_id": 1, "code": "1234"},
-                      token=k1.token, bekle_hata=True)
-    T.esit("kurye kod doğrulama ucunu kullanamıyor", 403, yasak.get("_status"))
-
-    restor_kurye = api.cagir("GET", "/api/restoran/kuryeler", token=k1.token, bekle_hata=True)
-    T.esit("kurye kurye listesini göremiyor", 403, restor_kurye.get("_status"))
+    # 9) Yetki: kurye restoran uçlarını kullanamıyor
+    yasak = api.cagir("POST", "/api/restoran/atama-ac", {"region": baglam["bolge"]}, token=k1.token, bekle_hata=True)
+    T.esit("kurye atama açamıyor", 403, yasak.get("_status"))
+    yasak2 = api.cagir("GET", "/api/restoran/atamalar", token=k1.token, bekle_hata=True)
+    T.esit("kurye atama listesini göremiyor", 403, yasak2.get("_status"))
 
 
 def senaryo_restoran_admin(api: Api, o: dict[str, Oturum]) -> None:
@@ -579,6 +554,13 @@ def senaryo_durum_yetki(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
     T.bolum("DURUM · YETKİ · KİMLİK")
     rest, k1, k2 = o["rest"], o["k1"], o["k2"]
 
+    # k1'in üzerindeki paketleri kapat (önceki senaryolardan kalabilir)
+    for p_ in paketlerim(api, k1):
+        if not p_.get("picked_up_at"):
+            api.cagir("POST", f"/api/paket/{p_['id']}/km", {"km": "2"}, token=k1.token)
+        api.cagir("POST", f"/api/paket/{p_['id']}/teslim", {"paid": False}, token=k1.token)
+    api.cagir("POST", "/api/durum", {"status": "online"}, token=k1.token)
+
     yanlis = api.cagir("POST", "/api/giris", {"phone": PHONES[K1], "pin": "9999"}, bekle_hata=True)
     T.esit("yanlış PIN reddedildi", 401, yanlis.get("_status"))
 
@@ -658,7 +640,7 @@ def senaryo_on_yuz(api: Api) -> None:
     T.esit("aynı fonksiyon iki kez tanımlı değil", [], cift)
 
     # menü / atama kodu akışının işaretleri
-    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "qrSvg", "atamaTeklifSheet", "atamaToken"]:
+    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
         T.ok(f"yüzeyde '{iz}' var", iz in js)
 
     with urllib.request.urlopen(f"{api.base}/admin.js", timeout=30) as y:

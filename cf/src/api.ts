@@ -611,92 +611,64 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     }
 
 
-    // Restoran → kuryeye doğrudan gönderim (havuza düşmez)
-    if (path === "/restoran/kuryeler" && method === "GET") {
-      if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
-      const rows = await bot.db.all<Account>(
-        `SELECT id, name, online, busy, assign_lock_until FROM accounts
-         WHERE role='kurye' AND active=1 AND deleted=0 ORDER BY online DESC, name`);
-      const simdi = bot.nowF();
-      return json({
-        couriers: rows.map((c) => ({
-          id: c.id, name: c.name, online: !!c.online, busy: !!c.busy,
-          assign_locked: Number(c.assign_lock_until || 0) > simdi,
-          lock_until: Number(c.assign_lock_until || 0) > simdi ? c.assign_lock_until : null,
-        })),
-      });
-    }
-
-    if (path === "/restoran/kurye-talep" && method === "POST") {
+    // QR/PIN akışı: restoran sipariş satırı için claim açar (kurye seçilmez).
+    if (path === "/restoran/atama-ac" && method === "POST") {
       if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
       const body = await readBody(request);
-      const courierId = Number(body.courier_id);
-      if (!courierId) return fail("Kurye seçilmedi.", 422, "invalid");
       const region = String(body.region ?? "").trim();
       const payment = String(body.payment ?? "").trim();
       const note = String(body.note ?? "").trim().slice(0, 200);
       const regions = await bot.regionList();
       if (region && !regions.includes(region)) return fail(`Bilinmeyen bölge: ${region}`, 422, "invalid");
       if (payment && !PAYMENTS.includes(payment as any)) return fail(`Geçersiz ödeme tipi: ${payment}`, 422, "invalid");
-      // Onay akışı: paket hemen atanmaz; kuryeye 4 haneli kod gider, restoran kodu girer.
-      const r = await assign.requestAssign(bot, user.id, courierId, region || null, payment || null, note || null);
-      return r.ok
-        ? json({
-            ok: true, needs_code: true, request_id: r.request_id, code: r.code,
-            qr_token: r.qr_token, qr_link: r.qr_link, expires_at: r.expires_at,
-          })
-        : fail(r.error || "Gönderilemedi.", 409, "conflict");
+      const r = await assign.openClaim(bot, user.id, region || null, payment || null, note || null);
+      if (!r.ok) return fail(r.error || "QR oluşturulamadı.", 409, "conflict");
+      return json({ ok: true, claim_id: r.claim_id, code: r.code, qr_token: r.qr_token, qr_link: r.qr_link, expires_at: r.expires_at });
     }
 
-    // Restoran: bekleyen atama istekleri
+    // Restoran: kurye listesi (bilgi amaçlı; atama artık QR/PIN ile)
+    if (path === "/restoran/kuryeler" && method === "GET") {
+      if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const rows = await bot.db.all<Account>(
+        `SELECT id, name, online, busy FROM accounts WHERE role='kurye' AND active=1 AND deleted=0 ORDER BY online DESC, name`);
+      return json({ couriers: rows.map((c) => ({ id: c.id, name: c.name, online: !!c.online, busy: !!c.busy })) });
+    }
+
+    // Restoran: açık QR/PIN claim'leri + son hareketler (görünür kartlar)
     if (path === "/restoran/atamalar" && method === "GET") {
       if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
-      return json({ items: await assign.pendingAssigns(bot, user.id) });
+      return json(await assign.claimsForOwner(bot, user.id));
     }
 
-    // Restoran: kuryenin söylediği 4 haneli kodu doğrula → paket atanır
-    if (path === "/restoran/atama-dogrula" && method === "POST") {
-      if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
-      const body = await readBody(request);
-      const requestId = Number(body.request_id);
-      const code = String(body.code ?? "").trim();
-      if (!requestId) return fail("Atama isteği belirtilmedi.", 422, "invalid");
-      if (!/^\d{4}$/.test(code)) return fail("Kod 4 haneli olmalı.", 422, "invalid");
-      if (await hizAsildi(bot, user.id, 60)) return fail("Çok hızlı deneme. Birkaç saniye bekleyin.", 429, "rate_limited");
-      const r = await assign.verifyAssign(bot, user.id, requestId, code);
-      if (r.ok) return json({ ok: true, package_id: r.package_id, req_no: r.req_no });
-      const durum = r.code === "locked" ? 423 : (r.code === "wrong_code" ? 422 : 409);
-      return json({ error: r.error, code: r.code, kalan: r.kalan ?? null, locked: !!r.locked }, durum);
-    }
-
-    // Restoran: atamadan vazgeç
+    // Restoran: claim'i iptal et
     if (path === "/restoran/atama-iptal" && method === "POST") {
       if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
       const body = await readBody(request);
-      const ok = await assign.cancelAssign(bot, user.id, Number(body.request_id));
-      return ok ? json({ ok: true }) : fail("İstek bulunamadı.", 404, "not_found");
+      const ok = await assign.cancelClaim(bot, user.id, Number(body.claim_id || body.request_id));
+      return ok ? json({ ok: true }) : fail("İptal edilecek açık QR bulunamadı.", 404, "not_found");
     }
 
-    // Kurye: QR token ile atama teklifi (onaydan önce özet gösterilir)
+    // Kurye: QR token ile teklif özeti (kart gösterimi)
     if (path === "/kurye/atama-teklif" && method === "GET") {
       if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
-      const token = url.searchParams.get("token") || "";
-      const r = await assign.offerByToken(bot, user.id, token);
-      if (!r.ok) return json({ error: r.error, code: r.code }, r.code === "wrong_courier" ? 403 : 409);
-      return json(r);
+      const r = await assign.offerByToken(bot, url.searchParams.get("token") || "");
+      return r.ok ? json(r) : json({ error: r.error, code: r.code }, r.code === "closed" ? 409 : 404);
     }
 
-    // Kurye: QR onayı → paket atanır
-    if (path === "/kurye/atama-onayla" && method === "POST") {
+    // Kurye: QR veya 4 haneli kod ile paketi al (atomik — ilk alan kazanır)
+    if (path === "/kurye/atama-al" && method === "POST") {
       if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
       const body = await readBody(request);
       const token = String(body.token ?? "").trim();
-      if (!token) return fail("Kod belirtilmedi.", 422, "invalid");
-      if (await hizAsildi(bot, user.id, 60)) return fail("Çok hızlı işlem. Birkaç saniye bekleyin.", 429, "rate_limited");
-      const r = await assign.approveByToken(bot, user.id, token);
+      const code = String(body.code ?? "").trim();
+      if (!token && !code) return fail("QR veya kod gerekli.", 422, "invalid");
+      if (await hizAsildi(bot, user.id, 60)) return fail("Çok hızlı deneme. Birkaç saniye bekleyin.", 429, "rate_limited");
+      const r = await assign.claim(bot, user.id, { token, code });
       if (r.ok) return json({ ok: true, package_id: r.package_id, req_no: r.req_no });
-      return json({ error: r.error, code: r.code }, r.code === "wrong_courier" ? 403 : 409);
+      const durum = r.code === "locked" ? 423 : (r.code === "wrong_code" || r.code === "invalid" ? 422 : 409);
+      return json({ error: r.error, code: r.code }, durum);
     }
+
 
     if (path === "/restoran/paketlerim" && method === "GET") {
       if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");

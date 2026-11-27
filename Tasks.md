@@ -50,6 +50,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] **QR/PIN self-claim (v153)**: kurye seçimi kalktı; restoran satırda anahtar → QR+4 hane; kurye QR okutur veya "Kod ile paket al" der, paket atomik olarak ona geçer; restoran ekranında görünür onay/iptal kartları. e2e 113/113.
 - [x] **QR onay (v150)**: restoran QR gösterir, kurye okutup onaylar (startapp token) + 4 haneli PIN yedeği; tek kullanım, 15 dk, başka kurye 403. e2e 120/120.
 - [x] **Şema kuralı**: yeni tablo → `schema.sql` + `npm run db:remote` (canlıda `notifications/notif_targets/notif_read` de eklendi).
 - [x] **v148**: Sipariş Ekle Bölge/Ödeme/Kurye seçimleri native `<select>` yerine dokunmatik seçim penceresi (Telegram WebView'de liste açılmama sorunu).

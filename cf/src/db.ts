@@ -17,6 +17,7 @@ const NEW_COLUMNS: Record<string, [string, string][]> = {
     ["busy", "INTEGER NOT NULL DEFAULT 0"],
     ["busy_reason", "TEXT"],
     ["assign_lock_until", "REAL NOT NULL DEFAULT 0"],
+    ["assign_fail", "INTEGER NOT NULL DEFAULT 0"],
   ],
   packages: [
     ["tenant_id", "INTEGER NOT NULL DEFAULT 1"],

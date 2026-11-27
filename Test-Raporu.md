@@ -491,3 +491,19 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | Yetki | ✔ başka kurye teklifi göremez/onaylayamaz (403) |
 | PIN yedeği | ✔ eski akış korunuyor (3 hata → 30 dk kilit) |
 | e2e | **120/120 PASS** · deploy `40e09d9b` (v150) |
+
+### QR/PIN self-claim — kurye seçimi kaldırıldı (2026-11-27, v153)
+
+| Test | Sonuç |
+|---|---|
+| Restoran satır popup'ı | ✔ Bölge · Ödeme · **"Kurye QR/PIN ile alsın" anahtarı** · Not (kurye listesi yok) |
+| Gönderim | ✔ QR'lı satır → claim (`claim_id`, `code`, `qr_token`); diğerleri havuza |
+| Kurye: kod ile al | ✔ Havuz → 🔑 Kod ile paket al → 4 hane → "Paket alındı" |
+| Kurye: QR | ✔ `startapp=atama_<token>` → paket kartı → **Kabul et** |
+| Atomik yarış | ✔ iki kurye aynı QR: **tek kazanan** |
+| Alınmış kod | ✔ 409 "zaten alındı" (deneme hakkı harcanmaz) |
+| 3 hatalı kod | ✔ 423 + kurye 30 dk kilit |
+| Restoran kartları | ✔ `🔑 QR/PIN bekliyor · kod` · `✅ Kurye QR/PIN ile aldı` · `⛔ QR iptal edildi` |
+| İptal | ✔ claim kapanır, kod kullanılamaz |
+| Yetki | ✔ kurye atama açamaz/listeleyemez (403) |
+| e2e | **113/113 PASS** · deploy `63e86ebe` (v153) |

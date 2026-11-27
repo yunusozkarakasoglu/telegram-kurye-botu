@@ -693,3 +693,37 @@ header h1{display:inline}
 .qrzon{display:flex;justify-content:center;background:#fff;border-radius:14px;padding:10px;margin:4px 0 6px}
 .qrzon svg{width:200px;height:200px;display:block}
 @media (prefers-color-scheme:dark){.qrzon{background:#fff}}
+
+/* Kurye: restoran atama popup'ı (görseldeki kart) */
+.atampop{text-align:center}
+.atampop-ic{font-size:44px;line-height:1;margin-bottom:6px}
+.atampop h2{margin:0 0 6px}
+.atampop p{color:var(--t2);font-size:14px;margin:0 0 16px}
+.atamrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.atamrow .g,.atamrow .p{min-height:46px;border-radius:12px;font-weight:700}
+.atamrow .p.ok{background:#22c55e;border-color:#22c55e;color:#fff}
+.atam-l{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;font-size:14px}
+.atam-l span{color:var(--t2)}
+/* Restoran: atama hareket kartları */
+.atanotlar{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.atakart{border-radius:10px;padding:10px 12px;border:1px solid var(--ln);background:var(--card)}
+.atakart b{display:block;font-size:13px}
+.atakart small{color:var(--t2);font-size:11px}
+.atakart.ok{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.10)}
+.atakart.ok b{color:#178a44}
+.atakart.no{border-color:rgba(229,72,77,.45);background:rgba(229,72,77,.08)}
+.atakart.no b{color:#c0353a}
+
+/* QR/PIN anahtarı (satır popup'ı) */
+.swbtn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;font:inherit;font-size:15px;
+  padding:11px 12px;border:1px solid var(--ln);border-radius:10px;background:var(--card);color:var(--tx)}
+.swbtn em{font-style:normal;font-weight:700;font-size:12px;color:var(--t2)}
+.swbtn i.sw{width:40px;height:22px;border-radius:99px;background:var(--ln);position:relative;flex:none;transition:.15s}
+.swbtn i.sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s}
+.swbtn.on{border-color:#22c55e;background:rgba(34,197,94,.10)}
+.swbtn.on em{color:#178a44}
+.swbtn.on i.sw{background:#22c55e}
+.swbtn.on i.sw::after{left:20px}
+.qrtoggle{display:flex;align-items:center;gap:10px}
+.qrtoggle label{flex:0 0 auto;font-size:13px;color:var(--t2)}
+.qrtoggle .swbtn{flex:1}
