@@ -810,8 +810,20 @@
       var knote = ($('knote') && $('knote').value ? $('knote').value : '').trim();
       eylem('km', { id: p.id, km: v, note: knote }).then(function (r) {
         if (r && r.queued) { UI.closeSheet(); S.kmPending = false; render(); return; }
+        // Anında yerel güncelleme: sayfa yenilemeden tutar/mesafe görünsün
+        var satir = ((S.mine && S.mine.packages) || []).filter(function (x) { return x.id === p.id; })[0];
+        if (satir && r && !r.queued) {
+          satir.distance_km = r.distance_km;
+          satir.fee_tl = r.fee_tl;
+          satir.picked_up_at = r.picked_up_at || satir.picked_up_at;
+          satir.status = 'Kuryede / Yolda';
+        }
         UI.closeSheet();
+        S.kmPending = false;
+        S.damga = '';                                  // yoklamayı zorla tazele
+        if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
         UI.toast((duzenle ? 'Kilometre güncellendi: ' : 'Kazanç hesaplandı: ') + money(r.fee_tl), 'success');
+        render();                                      // ekran hemen tazelenir
         refresh(true);
       }).catch(function (e) { err.textContent = e.message || 'Kaydedilemedi'; });
     };

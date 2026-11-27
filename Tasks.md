@@ -50,6 +50,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] **v167**: km gir/güncelle sonrası tutar **anında** güncelleniyor (sayfa yenilemeye gerek yok). e2e 165/165.
 - [x] **v165-166**: header (+) butonu küçültüldü ve gerçek daire yapıldı (min-height 44 tuzağı); zil ile aynı hizada.
 - [x] **v164**: kurye header (+) → "Paket Ekle" menüsü (QR Okut / Kod Gir) · tuş takımlı 4 hane girişi · **bekleyen kodlar benzersiz** (partial unique index). e2e 162/162.
 - [x] **v163**: QR kabul ekranındaki otomatik kapanma geri sayımı **10 sn → 5 sn**.

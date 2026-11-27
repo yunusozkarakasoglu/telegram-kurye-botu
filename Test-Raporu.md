@@ -661,3 +661,13 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | Sebep: global `button{min-height:44px}` | `.ico{min-height:36px}` + `.ico-plus{min-height:34px}` |
 
 Doğrulama: ölçüm `plus [34,34]` / `bell [36,36]`, `border-radius:50%` · e2e **162/162** · deploy `639a6346` (v166).
+
+### km sonrası anlık tutar (2026-11-27, v167)
+
+| Test | Sonuç |
+|---|---|
+| Km güncelle (4 → 7 km) | ✔ toast "Kilometre güncellendi: **300 TL**" |
+| Paket satırı (yenilemeden) | ✔ `#910046-1 · Nakit · **7 km** · **300 TL**` |
+| Sunucu doğrulaması | ✔ `paketlerim` anında `fee_tl=240` / `distance_km=5.5` |
+| Sebep | Yoklama guard'ı (`document.activeElement` INPUT) erken dönüyordu → `blur()` + yerel güncelleme + `render()` |
+| e2e | **165/165 PASS** · deploy v167 |

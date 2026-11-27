@@ -279,6 +279,10 @@ def senaryo_restoran_kurye(api: Api, o: dict[str, Oturum]) -> dict:
     # teslimden ÖNCE km düzenlenebilir
     km2 = api.cagir("POST", f"/api/paket/{hedef['id']}/km", {"km": "5,5"}, token=k1.token)
     T.esit("teslimden önce km güncellenebilir (5,5 km → 240 TL)", 240, km2.get("fee_tl"))
+    anlik = paket_bul(paketlerim(api, k1), hedef["id"])
+    T.esit("paketlerim anında yeni tutarı gösteriyor", 240, anlik.get("fee_tl"))
+    T.ok("paketlerim anında yeni km'yi gösteriyor", float(anlik.get("distance_km") or 0) == 5.5,
+         str(anlik.get("distance_km")))
 
     teslim = api.cagir("POST", f"/api/paket/{hedef['id']}/teslim", {"paid": True}, token=k1.token)
     T.ok("teslim edildi", bool(teslim.get("ok")))
@@ -770,7 +774,7 @@ def senaryo_on_yuz(api: Api) -> None:
     T.esit("aynı fonksiyon iki kez tanımlı değil", [], cift)
 
     # menü / atama kodu akışının işaretleri
-    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "atamaDurum", "ak-okundu", "rp-card", "rp-bchip", "restoranRapor", "rp-yenile", "rp-all", "paketEkleSheet", "kg-tuslar", "hdr-plus", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
+    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "atamaDurum", "ak-okundu", "rp-card", "rp-bchip", "restoranRapor", "rp-yenile", "rp-all", "paketEkleSheet", "kg-tuslar", "hdr-plus", "satir.fee_tl", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
         T.ok(f"yüzeyde '{iz}' var", iz in js)
 
     with urllib.request.urlopen(f"{api.base}/admin.js", timeout=30) as y:
