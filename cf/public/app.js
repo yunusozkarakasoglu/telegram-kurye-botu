@@ -7,6 +7,7 @@
 
   var DURUM_KILIT_MSG = 'Üzerinizde paket varken meşgul/offline seçimi yapılamaz. Üzerinizdeki paketleri havuza/kuryeye aktardıktan sonra durum değişimi yapılabilir.';
 
+  var MESGUL_SEBEPLERI = ['Mola', 'Arıza', 'Kaza', 'İhtiyaç'];
   var ODemeTipleri = ['Nakit', 'Kart', 'Ödendi', 'Yemek Çeki', 'Cihaz hatası (ödemesiz)'];
 
   var S = {
@@ -1357,15 +1358,19 @@
     return sonraki().then(function () { qBadge(); });
   }
 
-  function setKuryeDurum(st, reason) {
+  function setKuryeDurum(st, reason, menudeKal) {
     if (!S.session || !S.session.user) return;
     API.durum(st, reason).then(function (r) {
-      S.session.user.online = st === 'online';
-      S.session.user.busy = !!r.busy;
-      S.session.user.busy_reason = r.reason || null;
-      UI.toast(st === 'online' ? 'Çevrimiçi oldunuz' : st === 'busy' ? 'Meşgul olarak işaretlendiniz' : 'Çevrimdışı oldunuz', 'success');
-      closeDrawer();
+      // ÖNEMLİ: meşgul = çevrimiçi + busy. Burada online'ı st==='online' yapmak
+      // meşgul kuryeyi "Offline" gösteriyordu.
+      S.session.user.online = st !== 'offline';
+      S.session.user.busy = st === 'busy';
+      S.session.user.busy_reason = st === 'busy' ? (r.reason || reason || 'Mola') : null;
+      UI.toast(st === 'online' ? 'Çevrimiçi oldunuz' : st === 'busy' ? ('Meşgul: ' + (r.reason || reason || 'Mola')) : 'Çevrimdışı oldunuz', 'success');
+      if (st !== 'busy') S.durumAcik = false;
+      if (!menudeKal) closeDrawer();
       render();
+      if (menudeKal) renderDrawer();
     }).catch(function (e) {
       if (e && e.code === 'has_active') { bilgiSheet('Durum değiştirilemedi', e.message); return; }
       UI.toast(e.message || 'Durum değişmedi', 'error');
@@ -1381,7 +1386,7 @@
   function mesgulSebepSheet() {
     var sh = UI.openSheet('<h2>Meşgul sebebi</h2>' +
       '<p>Bu süre boyunca yeni paket almazsınız.</p>' +
-      '<div class="seg two">' + ['Mola', 'Arıza', 'Kaza', 'İhtiyaç'].map(function (r) {
+      '<div class="seg two">' + MESGUL_SEBEPLERI.map(function (r) {
         return '<button data-br2="' + r + '">' + r + '</button>';
       }).join('') + '</div>' +
       '<button class="d" id="br-cancel" style="width:100%;margin-top:10px">Vazgeç</button>');
@@ -1780,13 +1785,22 @@
 
     // Durum yalnız kuryede; sayfa sekmeleri (Havuz/Açık Paketler/Geçmiş) alt menüde olduğu için burada YOK.
     if (role !== 'restoran') {
+      var sebepler = MESGUL_SEBEPLERI;
+      var seciliSebep = u.busy ? (u.busy_reason || 'Mola') : null;
       h += '<h3 class="dw-h">Durum</h3><div class="dw-status">' +
         [['online', 'Online'], ['busy', 'Meşgul'], ['offline', 'Offline']].map(function (x) {
           var secili = durum === x[0];
+          var sag = '';
+          if (x[0] === 'busy' && durum === 'busy') sag = '<em class="dw-why">' + esc(seciliSebep || 'Mola') + '</em>';
+          else if (secili) sag = '<em class="dw-tick">✓</em>';
           return '<button class="dw-st ' + x[0] + (secili ? ' on' : '') + '" data-dst="' + x[0] + '">' +
-            '<i class="dw-dot ' + x[0] + '"></i><span>' + x[1] + '</span>' +
-            (secili ? '<em class="dw-tick">✓</em>' : '') + '</button>';
-        }).join('') + '</div>';
+            '<i class="dw-dot ' + x[0] + '"></i><span>' + x[1] + '</span>' + sag + '</button>';
+        }).join('') +
+        // Meşgul seçilince sebepler satırın ALTINDA açılır (ayrı pencere değil)
+        (S.durumAcik ? '<div class="dw-why-list">' + sebepler.map(function (r) {
+          return '<button class="dw-why-opt' + (seciliSebep === r ? ' on' : '') + '" data-why="' + esc(r) + '">' +
+            esc(r) + (seciliSebep === r ? ' ✓' : '') + '</button>';
+        }).join('') + '</div>' : '') + '</div>';
     }
 
     h += '<div class="dw-bottom">' +
@@ -1809,9 +1823,25 @@
           setTimeout(function () { bilgiSheet('Durum değiştirilemedi', DURUM_KILIT_MSG); }, 120);
           return;
         }
+        if (st === 'busy') {
+          if (!S.durumAcik) { S.durumAcik = true; renderDrawer(); return; }
+          S.durumAcik = false;
+          renderDrawer();
+          return;
+        }
         closeDrawer();
-        if (st === 'busy') { setTimeout(function () { mesgulSebepSheet(); }, 120); return; }
         setKuryeDurum(st, null);
+      };
+    });
+    Array.prototype.forEach.call(d.querySelectorAll('[data-why]'), function (b) {
+      b.onclick = function () {
+        var aktif = (S.mine && S.mine.packages) ? S.mine.packages.length : 0;
+        if (aktif > 0) {
+          closeDrawer();
+          setTimeout(function () { bilgiSheet('Durum değiştirilemedi', DURUM_KILIT_MSG); }, 120);
+          return;
+        }
+        setKuryeDurum('busy', b.getAttribute('data-why'), true);
       };
     });
     Array.prototype.forEach.call(d.querySelectorAll('[data-da]'), function (b) {

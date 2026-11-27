@@ -419,3 +419,14 @@ Doğrulama: 390 px viewport ekran görüntüsü — tek satır, çakışma yok �
 | Restoranda DURUM yok | ✔ |
 
 Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · deploy `18da9369` (v144).
+
+### Meşgul sebebi + durum düzeltmesi (2026-11-27, v145)
+
+| Test | Sonuç |
+|---|---|
+| Meşgul'e bas → sebepler satırın **altında** | ✔ Mola · Arıza · Kaza · İhtiyaç |
+| Sebep seç (Arıza) | ✔ Meşgul satırı sağında **`Arıza`** rozeti, satır **amber vurgulu** |
+| Profil kartı | ✔ `Meşgul · Arıza` (offline değil) |
+| Hata (düzeltildi) | `setKuryeDurum` `online=false` yapıyordu → meşgul = **Offline** görünüyordu |
+| Paket varken meşgul | ✔ kilit uyarısı korunuyor |
+| e2e | **85/85** · deploy `479a061e` (v145) |

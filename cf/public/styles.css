@@ -654,3 +654,12 @@ header h1{display:inline}
   padding:14px 8px;border-radius:12px;border:1px solid var(--ln);background:var(--el);font-size:13px;font-weight:600}
 .drawer .dw-bottom button i{font-style:normal;font-size:19px;line-height:1}
 .drawer .dw-bottom .dw-exit{color:#ff5b60;border-color:rgba(255,91,96,.35)}
+
+/* Meşgul sebep listesi — menü içinde satırın altında açılır */
+.dw-why{margin-left:auto;font-style:normal;font-size:12px;font-weight:700;color:#f59e0b;
+  background:rgba(245,158,11,.14);border-radius:8px;padding:3px 8px;white-space:nowrap}
+.drawer .dw-st.on.busy .dw-why{background:rgba(245,158,11,.22)}
+.dw-why-list{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px}
+.drawer .dw-why-opt{display:flex;align-items:center;justify-content:center;gap:4px;padding:10px 6px;
+  border-radius:10px;border:1px solid var(--ln);background:var(--el);font-size:13px;font-weight:600}
+.drawer .dw-why-opt.on{background:rgba(245,158,11,.16);border-color:#f59e0b;color:#ffd79a}
