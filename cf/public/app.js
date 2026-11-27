@@ -898,6 +898,23 @@
     };
   }
 
+  /** Liste seçimi: native <select> yerine dokunmatik güvenli pencere. */
+  function secimSheet(baslik, secenekler, secili, cb) {
+    var sh = UI.openSheet(
+      '<h2>' + esc(baslik) + '</h2>' +
+      '<div class="picklist">' + secenekler.map(function (x) {
+        var deger = (x && typeof x === 'object') ? x.value : x;
+        var ad = (x && typeof x === 'object') ? x.label : x;
+        var on = String(secili || '') === String(deger) ? ' on' : '';
+        return '<button class="pick' + on + '" data-v="' + esc(deger) + '">' + esc(ad) + '<em>✓</em></button>';
+      }).join('') + '</div>' +
+      '<button class="g" id="pick-x" style="margin-top:8px">Vazgeç</button>');
+    Array.prototype.forEach.call(sh.querySelectorAll('.pick'), function (b) {
+      b.onclick = function () { UI.closeSheet(); cb(b.getAttribute('data-v')); };
+    });
+    sh.querySelector('#pick-x').onclick = function () { UI.closeSheet(); };
+  }
+
   /* ---------------- RESTORAN ---------------- */
   function renderTalep() {
     setHeader('Sipariş Ekle', '');
@@ -917,22 +934,22 @@
     }).join('');
     main.innerHTML =
       '<div class="card addcard">' +
-        '<div style="display:flex;flex-wrap:nowrap;align-items:center;gap:10px;margin-bottom:10px;width:100%"><label style="flex:0 0 84px;font-size:13px;color:#888;white-space:nowrap">Bölge</label><select id="ar" style="flex:1;min-width:0;width:auto;font:inherit;font-size:15px;padding:11px 10px;border:1px solid #ccc;border-radius:10px;background:transparent;color:inherit">' +
-          '<option value="">— seçin —</option>' +
-          regions.map(function (r) { return '<option' + (d.region === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
-        '</select></div>' +
-        '<div style="display:flex;flex-wrap:nowrap;align-items:center;gap:10px;margin-bottom:10px;width:100%"><label style="flex:0 0 84px;font-size:13px;color:#888;white-space:nowrap">Ödeme tipi</label><select id="ap" style="flex:1;min-width:0;width:auto;font:inherit;font-size:15px;padding:11px 10px;border:1px solid #ccc;border-radius:10px;background:transparent;color:inherit">' +
-          '<option value="">— seçin —</option>' +
-          payments.map(function (r) { return '<option' + (d.payment === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
-        '</select></div>' +
+        '<div class="prow"><label>Bölge</label>' +
+          '<button class="pbtn" id="ar">' + esc(d.region || '— seçin —') + '<i>▾</i></button></div>' +
+        '<div class="prow"><label>Ödeme tipi</label>' +
+          '<button class="pbtn" id="ap">' + esc(d.payment || '— seçin —') + '<i>▾</i></button></div>' +
         '<div class="fld"><label>Not (opsiyonel)</label><textarea id="an" rows="2" placeholder="Siparişe özel not (kurye görür)">' + esc(d.note || '') + '</textarea></div>' +
         '<button class="p addbtn" id="addbtn">＋ Paket Ekle</button>' +
       '</div>' +
       '<div class="reqlist">' + (rows || '<p class="note" style="margin:4px 0">Listeniz boş. Bölge ve ödeme seçip “Paket Ekle”ye basın.</p>') + '</div>' +
       '<p class="hint" style="margin:6px 0 10px">Satıra dokunun: bölge/ödeme/not düzenleyin, isterseniz kurye seçin. Kurye seçilirse paket havuza düşmez.</p>';
 
-    main.querySelector('#ar').onchange = function (e) { S.reqDraft.region = e.target.value; };
-    main.querySelector('#ap').onchange = function (e) { S.reqDraft.payment = e.target.value; };
+    main.querySelector('#ar').onclick = function () {
+      secimSheet('Bölge', regions, S.reqDraft.region, function (v) { S.reqDraft.region = v; render(); });
+    };
+    main.querySelector('#ap').onclick = function () {
+      secimSheet('Ödeme tipi', payments, S.reqDraft.payment, function (v) { S.reqDraft.payment = v; render(); });
+    };
     main.querySelector('#an').oninput = function (e) { S.reqDraft.note = e.target.value; };
     main.querySelector('#addbtn').onclick = function () {
       if (S.reqItems.length >= 10) { UI.toast('En fazla 10 paket eklenebilir', 'error'); return; }
@@ -980,36 +997,38 @@
     if (!it) return;
     var sh = UI.openSheet(
       '<h2>Sipariş #' + (i + 1) + '</h2>' +
-      '<div class="fld"><label>Bölge</label><select id="er">' +
-        '<option value="">— seçin —</option>' +
-        regions.map(function (r) { return '<option' + (it.region === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
-      '</select></div>' +
-      '<div class="fld"><label>Ödeme</label><select id="ep">' +
-        '<option value="">— seçin —</option>' +
-        payments.map(function (r) { return '<option' + (it.payment === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') +
-      '</select></div>' +
-      '<div class="fld"><label>Kurye</label><select id="ek"><option value="">— seçin —</option></select></div>' +
+      '<div class="fld"><label>Bölge</label><button class="pbtn w" id="er">' + esc(it.region || '— seçin —') + '<i>▾</i></button></div>' +
+      '<div class="fld"><label>Ödeme</label><button class="pbtn w" id="ep">' + esc(it.payment || '— seçin —') + '<i>▾</i></button></div>' +
+      '<div class="fld"><label>Kurye</label><button class="pbtn w" id="ek">' + esc(it.courier_name || '— seçin —') + '<i>▾</i></button></div>' +
       '<div class="fld"><label>Not</label><textarea id="en" rows="2" placeholder="Siparişe özel not (kurye görür)">' + esc(it.note || '') + '</textarea></div>' +
       '<button class="p" id="esave">Kaydet</button><button class="d" id="edel">Sil</button><button class="g" id="ecancel">Vazgeç</button>');
-    var sel = sh.querySelector('#ek');
-    API.restoranKuryeler().then(function (r) {
-      var list = (r && r.couriers) || [];
-      sel.innerHTML = '<option value="">— seçin —</option>' + list.map(function (c) {
-        var ek = c.online && !c.busy ? '' : (c.busy ? ' (meşgul)' : ' (çevrimdışı)');
-        return '<option value="' + c.id + '"' + (String(it.courier) === String(c.id) ? ' selected' : '') + '>' + esc(c.name) + ek + '</option>';
-      }).join('');
-      if (sel.value && !list.some(function (c) { return String(c.id) === String(sel.value); })) sel.value = '';
-    }).catch(function () { sel.innerHTML = '<option value="">— seçin —</option>'; });
+
+    sh.querySelector('#er').onclick = function () {
+      UI.closeSheet();
+      secimSheet('Bölge', regions, it.region, function (v) { it.region = v; reqItemSheet(i, regions, payments); });
+    };
+    sh.querySelector('#ep').onclick = function () {
+      UI.closeSheet();
+      secimSheet('Ödeme', payments, it.payment, function (v) { it.payment = v; reqItemSheet(i, regions, payments); });
+    };
+    sh.querySelector('#ek').onclick = function () {
+      UI.closeSheet();
+      API.restoranKuryeler().then(function (r) {
+        var list = [{ value: '', label: '— kurye yok (havuza)' }].concat(((r && r.couriers) || []).map(function (c) {
+          var ek = c.assign_locked ? ' (atama kilitli)' : (!c.online ? ' (çevrimdışı)' : (c.busy ? ' (meşgul)' : ''));
+          return { value: String(c.id), label: c.name + ek, ad: c.name };
+        }));
+        secimSheet('Kurye', list, it.courier, function (v) {
+          var secili = list.filter(function (x) { return String(x.value) === String(v); })[0] || {};
+          it.courier = v;
+          it.courier_name = v ? (secili.ad || '') : '';
+          reqItemSheet(i, regions, payments);
+        });
+      }).catch(function (e) { UI.toast(e.message || 'Kurye listesi alınamadı', 'error'); });
+    };
     sh.querySelector('#esave').onclick = function () {
-      var cid = sel.value;
-      var secili = sel.options[sel.selectedIndex];
-      S.reqItems[i] = {
-        region: sh.querySelector('#er').value,
-        payment: sh.querySelector('#ep').value,
-        note: (sh.querySelector('#en').value || '').trim(),
-        courier: cid,
-        courier_name: cid ? (secili ? secili.textContent.replace(/\s*\(.*\)$/, '') : '') : '',
-      };
+      it.note = (sh.querySelector('#en').value || '').trim();
+      S.reqItems[i] = it;
       UI.closeSheet();
       render();
     };
@@ -1019,154 +1038,6 @@
       render();
     };
     sh.querySelector('#ecancel').onclick = function () { UI.closeSheet(); };
-  }
-
-  /** Atama onayı: kuryeye giden 4 haneli kodun girilmesi (en fazla 3 deneme). */
-  function atamaKodSheet(requestId, kod, kuryeAdi) {
-    var sh = UI.openSheet(
-      '<h2>Kurye onayı</h2>' +
-      '<p><b>' + esc(kuryeAdi || 'Kurye') + '</b> kişisine atama için <b>4 haneli kod</b> gönderildi. ' +
-        'Kurye kodu size söyler; buraya girin.</p>' +
-      (kod ? '<div class="kodbox"><small>Kuryeye giden kod</small><b>' + esc(kod) + '</b></div>' : '') +
-      '<div class="fld"><label>4 haneli kod</label>' +
-        '<input id="akod" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="one-time-code"></div>' +
-      '<div class="err" id="aerr"></div>' +
-      '<button class="p" id="aok">Onayla ve Ata</button>' +
-      '<button class="g" id="aiptal" style="margin-top:6px">Vazgeç (atamayı iptal et)</button>');
-
-    var inp = sh.querySelector('#akod');
-    var err = sh.querySelector('#aerr');
-    var btn = sh.querySelector('#aok');
-    inp.oninput = function () { inp.value = inp.value.replace(/\D/g, '').slice(0, 4); };
-    btn.onclick = function () {
-      var v = (inp.value || '').trim();
-      err.textContent = '';
-      if (!/^\d{4}$/.test(v)) { err.textContent = 'Kod 4 haneli olmalı'; return; }
-      btn.disabled = true;
-      API.atamaDogrula(requestId, v).then(function (r) {
-        UI.closeSheet();
-        UI.toast('Onaylandı · paket kuryeye atandı', 'success');
-        S.restFilter = 'open';
-        refresh(true);
-      }).catch(function (e) {
-        btn.disabled = false;
-        if (e.code === 'locked') {
-          err.textContent = e.message || 'Kilitlendi';
-          btn.disabled = true;
-          setTimeout(function () { UI.closeSheet(); refresh(true); }, 1800);
-          return;
-        }
-        err.textContent = (e.message || 'Kod doğrulanamadı') + (e.kalan != null ? '' : '');
-      });
-    };
-    sh.querySelector('#aiptal').onclick = function () {
-      API.atamaIptal(requestId).catch(function () {}).then(function () {
-        UI.closeSheet();
-        UI.toast('Atama iptal edildi', 'success');
-        refresh(true);
-      });
-    };
-  }
-
-  function renderRestRapor() {
-    setHeader('Rapor', 'Bugünün paketleri');
-    var main = $('mn');
-    var items = (S.restItems && S.restItems.items) || [];
-    var day0 = new Date(); day0.setHours(0, 0, 0, 0);
-    var day1 = new Date(day0); day1.setDate(day1.getDate() + 1);
-    var t0 = Math.floor(day0.getTime() / 1000), t1 = Math.floor(day1.getTime() / 1000);
-    var rows = items.filter(function (p) { return p.created_at && p.created_at >= t0 && p.created_at < t1; });
-    var hm = function (sec) {
-      if (sec == null || sec < 0) return '—';
-      var m = Math.floor(sec / 60), h = Math.floor(m / 60);
-      return h ? (h + ' sa ' + (m % 60) + ' dk') : (m + ' dk');
-    };
-    var delivered = rows.filter(function (p) { return !!p.delivered_at; });
-    var durs = rows.filter(function (p) { return p.created_at && p.delivered_at; })
-      .map(function (p) { return p.delivered_at - p.created_at; });
-    var ortSure = durs.length ? Math.round(durs.reduce(function (a, b) { return a + b; }, 0) / durs.length) : null;
-    var kms = rows.filter(function (p) { return p.distance_km != null; });
-    var ortKm = kms.length ? (kms.reduce(function (a, p) { return a + Number(p.distance_km); }, 0) / kms.length) : null;
-    var kpi = '<div class="kpis">' +
-      '<div class="kpi"><b>' + rows.length + '</b><small>Bugün paket</small></div>' +
-      '<div class="kpi"><b>' + (ortSure == null ? '—' : hm(ortSure)) + '</b><small>Ort. süre</small></div>' +
-      '<div class="kpi"><b>' + (ortKm == null ? '—' : (ortKm.toFixed(1).replace('.', ',') + ' km')) + '</b><small>Ort. mesafe</small></div>' +
-      '</div>';
-    main.innerHTML = kpi + '<div class="card" style="padding:10px 12px;margin-bottom:8px"><b>' + rows.length + ' paket</b>' +
-      '<small style="color:var(--t2)"> · ' + day0.toLocaleDateString('tr-TR') + (delivered.length ? ' · ' + delivered.length + ' teslim' : '') + '</small></div>' +
-      (rows.length ? '<div class="tblwrap"><table class="rtbl"><thead><tr>' +
-        '<th>Tarih</th><th>Talep</th><th>Kurye</th><th>Süre</th><th>Km</th><th>Tutar</th><th>Öd</th>' +
-        '</tr></thead><tbody>' + rows.map(function (p) {
-          var sure = p.created_at && p.delivered_at ? p.delivered_at - p.created_at : null;
-          return '<tr data-rp="' + p.id + '">' +
-            '<td>' + (p.created_at ? new Date(p.created_at * 1000).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '—') + '</td>' +
-            '<td>#' + p.batch + '-' + p.number + '</td>' +
-            '<td>' + esc(p.courier_name || '—') + '</td>' +
-            '<td>' + hm(sure) + '</td>' +
-            '<td>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</td>' +
-            '<td>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</td>' +
-            '<td>' + (p.payment_received === true ? '<span class="pcheck on">✓</span>' : p.payment_received === false ? '<span class="pcheck off">✕</span>' : '—') + '</td>' +
-          '</tr>';
-        }).join('') + '</tbody></table></div>' : '<div class="empty"><b>Bugün paket yok</b>Bugün oluşturulan sipariş bulunmuyor.</div>');
-    Array.prototype.forEach.call(main.querySelectorAll('[data-rp]'), function (tr) {
-      tr.onclick = function () {
-        var id = Number(tr.getAttribute('data-rp'));
-        var p = rows.filter(function (x) { return x.id === id; })[0];
-        if (p) restPkgSheet(p);
-      };
-    });
-    $('cta').innerHTML = '';
-    nav(restaurantTabs(), {});
-  }
-
-  function renderRestPaketlerim() {
-    setHeader('Paketlerim', '');
-    var filters = [['all', 'Tümü'], ['open', 'Açık'], ['closed', 'Kapalı']];
-    var main = $('mn');
-    var items = (S.restItems && S.restItems.items) || [];
-    main.innerHTML = '<div class="seg three">' + filters.map(function (f) {
-      return '<button data-f="' + f[0] + '" class="' + (S.restFilter === f[0] ? 'on' : '') + '">' + f[1] + '</button>';
-    }).join('') + '</div>' +
-    (function () {
-      var n = restAdvCount();
-      return (S.atamalar && S.atamalar.length ? '<div class="assignbar">' + S.atamalar.map(function (a) {
-        return '<button data-atama="' + a.id + '">⏳ ' + esc(a.courier_name || 'Kurye') + ' · kurye onayı bekliyor' +
-          (a.tries ? ' (' + a.tries + ' hatalı)' : '') + '</button>';
-      }).join('') + '</div>' : '') +
-        '<div class="filterbar"><button id="rf-open">⚙ Filtre' + (n ? ' (' + n + ')' : '') + '</button>' +
-        (n ? '<button id="rf-clear-page">✕ Temizle</button>' : '') + '</div>';
-    })() +
-    (function () {
-      var list = restApplyAdv(items);
-      return list.length ? list.map(function (p) {
-      var st = String(p.status || '');
-      var cls = /İptal/i.test(st) ? 'cancelled' : /Teslim/i.test(st) ? 'delivered' : /Yolda/i.test(st) ? 'onway'
-        : /Kabul/i.test(st) ? 'accepted' : 'waiting';
-      return '<button class="rrow ' + cls + '" data-pkg="' + p.id + '">' +
-        '<span class="rl"><b>Talep #' + p.batch + '-' + p.number + '</b>' +
-          '<small>' + esc(p.region || 'Bölge yok') + ' · ' + esc(p.payment || 'Ödeme yok') + '</small></span>' +
-        '<span class="rr"><em class="stg">' + esc(st || '—') + '</em>' + restSure(p) + '</span></button>';
-      }).join('') : '<div class="empty"><b>Kayıt yok</b>Bu filtrede paket bulunmuyor.</div>';
-    })();
-    Array.prototype.forEach.call(main.querySelectorAll('button[data-f]'), function (b) {
-      b.onclick = function () { S.restFilter = b.getAttribute('data-f'); loadRest(); };
-    });
-    Array.prototype.forEach.call(main.querySelectorAll('[data-pkg]'), function (b) {
-      b.onclick = function () {
-        var id = Number(b.getAttribute('data-pkg'));
-        var p = items.filter(function (x) { return x.id === id; })[0];
-        if (p) restPkgSheet(p);
-      };
-    });
-    Array.prototype.forEach.call(main.querySelectorAll('[data-atama]'), function (b) {
-      b.onclick = function () { atamaKodSheet(Number(b.getAttribute('data-atama')), null, ''); };
-    });
-    var rf = main.querySelector('#rf-open');
-    if (rf) rf.onclick = restFilterSheet;
-    var rc = main.querySelector('#rf-clear-page');
-    if (rc) rc.onclick = function () { S.restAdv = null; loadRest(); };
-    $('cta').innerHTML = '';
-    nav(restaurantTabs(), {});
   }
 
   /** Paketlerim süresi: teslim edilmişse sabit (yeşil), iptalde yok, açıkta canlı sayar. */

@@ -672,3 +672,19 @@ header h1{display:inline}
 .assignbar{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
 .assignbar button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;font:inherit;font-size:13px;
   padding:10px 12px;border-radius:10px;border:1px solid rgba(245,158,11,.45);background:rgba(245,158,11,.12);color:var(--tx)}
+
+/* Sipariş Ekle: dokunmatik güvenli seçim satırları (native select yerine) */
+.prow{display:flex;align-items:center;gap:10px;width:100%;margin-bottom:10px}
+.prow label{flex:0 0 84px;font-size:13px;color:var(--t2);white-space:nowrap}
+.pbtn{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font:inherit;font-size:15px;padding:11px 12px;border:1px solid var(--ln);border-radius:10px;
+  background:var(--card);color:var(--tx);text-align:left;cursor:pointer}
+.pbtn.w{width:100%}
+.pbtn i{font-style:normal;color:var(--t3);font-size:13px}
+.pbtn:active{background:var(--el)}
+.picklist{display:flex;flex-direction:column;gap:6px}
+.pick{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;
+  font:inherit;font-size:15px;padding:13px 14px;border-radius:11px;border:1px solid var(--ln);background:var(--card);color:var(--tx)}
+.pick em{display:none;font-style:normal;color:#22c55e;font-weight:700}
+.pick.on{border-color:#22c55e;background:rgba(34,197,94,.10)}
+.pick.on em{display:inline}

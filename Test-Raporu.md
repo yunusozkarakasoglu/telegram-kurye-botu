@@ -469,3 +469,12 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | İptal | ✔ `atama-iptal` → istek kapanır, kod kullanılamaz |
 | Yetki | ✔ kurye bu uçları kullanamıyor (403) |
 | e2e | **97/97 PASS** · deploy `6b950322` (v147) |
+
+### Seçim penceresi (2026-11-27, v148)
+
+| Sorun | Çözüm | Test |
+|---|---|---|
+| Sipariş Ekle'de Bölge/Ödeme açılır listesi dokununca açılmıyor (Telegram WebView native select) | `secimSheet()` — buton + `.pick` listesi | Bölge → Ataşehir ✔, Ödeme → Yemek Çeki ✔ |
+| Satır popup'ındaki 3 alan | Aynı pencere (Kurye listesi `assign_locked` etiketiyle) | Popup: Ataşehir / Yemek Çeki / — seçin — ✔ |
+| Gönderim | Değişmedi | "Gönderildi: 1 havuza" ✔ |
+| e2e | — | **97/97** · deploy `29fa23e8` (v148) |
