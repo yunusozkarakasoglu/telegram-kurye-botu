@@ -296,12 +296,22 @@
 
     var actions = '';
     if (duzenlenebilir) {
-      actions += picked
-        ? '<button class="p w" data-a="teslim" data-i="' + p.id + '">Teslim ettim</button>'
-        : '<button class="p w" data-a="km" data-i="' + p.id + '">Km gir · teslim aldım</button>';
-      if (mapBtn) actions += mapBtn.replace('class="btn"', 'class="btn w"');
-      if (callBtn) actions += callBtn.replace('class="btn"', 'class="btn w"');
-      actions += '<button class="w" data-a="aktar" data-i="' + p.id + '">Aktar</button>' +
+      // 1. satır: Km gir (3/4) + Harita aç (1/4)
+      if (picked) {
+        actions += '<div class="act-row"><button class="p ga-3" data-a="teslim" data-i="' + p.id + '">Teslim ettim</button>' +
+          '<button class="btn ga-1" data-a="haritaApp" data-i="' + p.id + '">Harita aç</button></div>';
+      } else {
+        actions += '<div class="act-row"><button class="p ga-3" data-a="km" data-i="' + p.id + '">Km gir</button>' +
+          '<button class="btn ga-1" data-a="haritaApp" data-i="' + p.id + '">Harita aç</button></div>';
+      }
+      // 2. satır: Restoran Konumu + Restoranı Ara (yan yana)
+      if (mapBtn || callBtn) {
+        actions += '<div class="act-row">' +
+          (mapBtn ? '<button class="btn ga-1-2" data-a="harita" data-i="' + p.id + '">Restoran Konumu</button>' : '') +
+          (callBtn ? callBtn.replace('class="btn"', 'class="btn ga-1-2"') : '') +
+          '</div>';
+      }
+      actions += '<button class="w act-aktar" data-a="aktar" data-i="' + p.id + '">⇄ Aktar</button>' +
                  '<button class="d w" data-a="iptal" data-i="' + p.id + '">Paketi iptal et</button>';
     }
     if (opts.pay && !cancelled && delivered && p.payment_received !== true) {
@@ -351,6 +361,12 @@
         var a = b.getAttribute('data-a'), id = b.getAttribute('data-i');
         var p = (list || []).filter(function (x) { return String(x.id) === String(id); })[0] || findPkg(id);
         if (a === 'kapat') { UI.closeSheet(); return; }
+        if (a === 'haritaApp') {
+          var pk = p || ((S.mine && S.mine.packages) || []).concat((S.pool && S.pool.packages) || [])
+            .filter(function (x) { return String(x.id) === String(id); })[0];
+          if (pk) haritaAc(pk); else UI.toast('Restoran konumu bulunamadı', 'error');
+          return;
+        }
         if (a === 'harita') {
           if (p && p.map_url) TG.openLink(p.map_url);
           else if (p) TG.map((p.restaurant || '') + ' ' + (p.region || ''));
@@ -1580,6 +1596,28 @@
       }).then(sonraki);
     }
     return sonraki().then(function () { qBadge(); });
+  }
+
+  /** Cihazın varsayılan harita uygulamasını açar (koordinat varsa). */
+  function haritaAc(p) {
+    var lat = p.restaurant_lat, lng = p.restaurant_lng;
+    var ad = encodeURIComponent(p.restaurant || 'Restoran');
+    if (lat == null || lng == null) {
+      UI.toast('Restoranın konumu kayıtlı değil', 'error');
+      return;
+    }
+    var ua = navigator.userAgent || '';
+    var android = /Android/i.test(ua);
+    var ios = /iPhone|iPad|iPod/i.test(ua);
+    var url = android
+      ? 'geo:' + lat + ',' + lng + '?q=' + lat + ',' + lng + '(' + ad + ')'
+      : (ios ? 'maps://?daddr=' + lat + ',' + lng + '&q=' + ad
+             : 'https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng);
+    try {
+      var tg = window.Telegram && Telegram.WebApp;
+      if (tg && typeof tg.openLink === 'function') { tg.openLink(url); return; }
+    } catch (e) { /* normal pencere */ }
+    window.open(url, '_blank');
   }
 
   function setKuryeDurum(st, reason, menudeKal) {

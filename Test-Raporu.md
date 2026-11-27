@@ -671,3 +671,13 @@ Doğrulama: ölçüm `plus [34,34]` / `bell [36,36]`, `border-radius:50%` · e2e
 | Sunucu doğrulaması | ✔ `paketlerim` anında `fee_tl=240` / `distance_km=5.5` |
 | Sebep | Yoklama guard'ı (`document.activeElement` INPUT) erken dönüyordu → `blur()` + yerel güncelleme + `render()` |
 | e2e | **165/165 PASS** · deploy v167 |
+
+### Sipariş kartı: Harita aç (2026-11-27, v168)
+
+| Test | Sonuç |
+|---|---|
+| Buton yerleşimi | ✔ `[Km gir ███][Harita aç]` · `[Restoran Konumu][Restoranı Ara]` · `[⇄ Aktar]` · `[Paketi iptal et]` · `[Çıkış]` |
+| Harita aç | ✔ `https://www.google.com/maps/dir/?api=1&destination=40.9923,29.1244` açıldı (mobilde `geo:` / `maps://`) |
+| Koordinat yoksa | ✔ "Restoranın konumu kayıtlı değil" uyarısı |
+| DTO | ✔ `restaurant_lat/lng` alanları eklendi |
+| e2e | **168/168 PASS** · deploy `4ca71003` (v168) |

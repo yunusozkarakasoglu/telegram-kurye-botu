@@ -804,3 +804,11 @@ header h1{display:inline}
 .kg-tus:active{background:var(--el2)}
 .kg-tus.sil{font-size:18px}
 .kg-bos{display:block}
+
+/* Sipariş kartı buton yerleşimi: Km gir (3/4) + Harita aç (1/4), Konum/Ara yan yana */
+.act-row{display:flex;gap:6px;width:100%;margin-bottom:6px}
+.act-row > button,.act-row > a{flex:1 1 0;min-width:0;min-height:40px;margin:0}
+.act-row .ga-3{flex:3 1 0}
+.act-row .ga-1{flex:1 1 0;padding:0 6px;font-size:12px;white-space:nowrap}
+.act-row .ga-1-2{flex:1 1 0}
+.act-aktar{min-height:40px}
