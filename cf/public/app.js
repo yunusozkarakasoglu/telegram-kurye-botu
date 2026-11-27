@@ -7,7 +7,7 @@
 
   var DURUM_KILIT_MSG = 'Üzerinizde paket varken meşgul/offline seçimi yapılamaz. Üzerinizdeki paketleri havuza/kuryeye aktardıktan sonra durum değişimi yapılabilir.';
 
-  var MESGUL_SEBEPLERI = ['Mola', 'Arıza', 'Kaza', 'İhtiyaç'];
+  var MESGUL_SEBEPLERI = ['Mola', 'Arıza', 'Kaza', 'Diğer'];
   var ODemeTipleri = ['Nakit', 'Kart', 'Ödendi', 'Yemek Çeki', 'Cihaz hatası (ödemesiz)'];
 
   var S = {
@@ -1367,7 +1367,7 @@
       S.session.user.busy = st === 'busy';
       S.session.user.busy_reason = st === 'busy' ? (r.reason || reason || 'Mola') : null;
       UI.toast(st === 'online' ? 'Çevrimiçi oldunuz' : st === 'busy' ? ('Meşgul: ' + (r.reason || reason || 'Mola')) : 'Çevrimdışı oldunuz', 'success');
-      if (st !== 'busy') S.durumAcik = false;
+      S.durumAcik = false;
       if (!menudeKal) closeDrawer();
       render();
       if (menudeKal) renderDrawer();
@@ -1787,20 +1787,23 @@
     if (role !== 'restoran') {
       var sebepler = MESGUL_SEBEPLERI;
       var seciliSebep = u.busy ? (u.busy_reason || 'Mola') : null;
+      var satir = function (kod, ad, sag) {
+        var secili = durum === kod;
+        return '<button class="dw-st ' + kod + (secili ? ' on' : '') + '" data-dst="' + kod + '">' +
+          '<i class="dw-dot ' + kod + '"></i><span>' + ad + '</span>' + (sag || '') + '</button>';
+      };
+      var sebeplerGrid = '<div class="dw-why-list">' + sebepler.map(function (r) {
+        return '<button class="dw-why-opt' + (seciliSebep === r ? ' on' : '') + '" data-why="' + esc(r) + '">' + esc(r) + '</button>';
+      }).join('') + '</div>';
+
       h += '<h3 class="dw-h">Durum</h3><div class="dw-status">' +
-        [['online', 'Online'], ['busy', 'Meşgul'], ['offline', 'Offline']].map(function (x) {
-          var secili = durum === x[0];
-          var sag = '';
-          if (x[0] === 'busy' && durum === 'busy') sag = '<em class="dw-why">' + esc(seciliSebep || 'Mola') + '</em>';
-          else if (secili) sag = '<em class="dw-tick">✓</em>';
-          return '<button class="dw-st ' + x[0] + (secili ? ' on' : '') + '" data-dst="' + x[0] + '">' +
-            '<i class="dw-dot ' + x[0] + '"></i><span>' + x[1] + '</span>' + sag + '</button>';
-        }).join('') +
-        // Meşgul seçilince sebepler satırın ALTINDA açılır (ayrı pencere değil)
-        (S.durumAcik ? '<div class="dw-why-list">' + sebepler.map(function (r) {
-          return '<button class="dw-why-opt' + (seciliSebep === r ? ' on' : '') + '" data-why="' + esc(r) + '">' +
-            esc(r) + (seciliSebep === r ? ' ✓' : '') + '</button>';
-        }).join('') + '</div>' : '') + '</div>';
+        satir('online', 'Online') +
+        satir('busy', 'Meşgul', S.durumAcik || durum === 'busy'
+          ? (durum === 'busy' && !S.durumAcik ? '<em class="dw-why">' + esc(seciliSebep) + '</em>' : '<em class="dw-tick">✓</em>')
+          : '') +
+        (S.durumAcik ? sebeplerGrid : '') +   // sebepler Meşgul ile Offline ARASINDA açılır
+        satir('offline', 'Offline') +
+        '</div>';
     }
 
     h += '<div class="dw-bottom">' +
@@ -1841,6 +1844,7 @@
           setTimeout(function () { bilgiSheet('Durum değiştirilemedi', DURUM_KILIT_MSG); }, 120);
           return;
         }
+        S.durumAcik = false;
         setKuryeDurum('busy', b.getAttribute('data-why'), true);
       };
     });

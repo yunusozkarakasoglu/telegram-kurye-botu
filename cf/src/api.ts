@@ -392,7 +392,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
       const body = await readBody(request);
       const status = ["online", "offline", "busy"].includes(String(body.status)) ? String(body.status) : (body.online ? "online" : "offline");
-      const reason = ["Mola", "Arıza", "Kaza", "İhtiyaç"].includes(String(body.reason)) ? String(body.reason) : null;
+      const reason = ["Mola", "Arıza", "Kaza", "Diğer", "İhtiyaç"].includes(String(body.reason)) ? String(body.reason) : null;
       if (status !== "online") {
         const aktif = await bot.activeCount(user.id);
         if (aktif > 0) {

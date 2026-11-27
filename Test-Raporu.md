@@ -430,3 +430,15 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | Hata (düzeltildi) | `setKuryeDurum` `online=false` yapıyordu → meşgul = **Offline** görünüyordu |
 | Paket varken meşgul | ✔ kilit uyarısı korunuyor |
 | e2e | **85/85** · deploy `479a061e` (v145) |
+
+### Meşgul sebep yerleşimi (2026-11-27, v146)
+
+| Beklenen (tasarım) | Sonuç |
+|---|---|
+| Meşgul'e bas → sebepler **Meşgul ile Offline arasında** 2×2 | ✔ Mola · Arıza / Kaza · Diğer |
+| Meşgul satırı bu sırada vurgulu + ✓ | ✔ amber çerçeve + ✓ |
+| Sebep seçilince liste **kapanır** | ✔ `.dw-why-list` sayısı 0 |
+| Seçilen sebep Meşgul satırının **sağında** rozet | ✔ `Mola` / `Arıza` |
+| Profil kartı | ✔ `Meşgul · Mola` |
+| Sunucu | `Diğer` sebebi kabul ediliyor (İhtiyaç geriye uyum için duruyor) |
+| e2e | **85/85** · deploy `7e23eb06` (v146) |
