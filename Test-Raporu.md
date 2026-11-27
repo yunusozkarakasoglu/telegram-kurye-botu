@@ -539,3 +539,17 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | Alınan claim | ✔ açık listeden düşer |
 | API `/api/restoran/atamalar` | ✔ yalnız `{items}` (recent yok) |
 | e2e | **119/119 PASS** · deploy `44b2c243` (v156) |
+
+### İptal bildirimi + hakediş (2026-11-27, v157)
+
+| Test | Sonuç |
+|---|---|
+| Paket alınmadan | ✔ hakediş **0** |
+| 0–10 dk (km girildi) | ✔ hakediş **0** ("0 dk (<10) — hakediş yok") |
+| 25 dk sonra restoran iptali | ✔ **120 TL (taban)** · kurye bildirimi: "Geçen süre 25 dk · Hakedişiniz 120 TL" |
+| Kurye kendi iptal etti | ✔ **tam ücret** (240 TL) |
+| Kurye ekranı | ✔ TAMAM'a kadar kapanmayan pencere (dışına dokunma kapatmıyor) |
+| TAMAM | ✔ bildirim kapanır, listeden düşer |
+| Restoran iptal ekranı | ✔ "Kurye hakedişi: 120 TL · 15 dk · taban ücret" |
+| Header QR ikonu | ✔ SVG (köşe çerçeveli QR) |
+| e2e | **133/133 PASS** · deploy `8c7e327d` (v157) |

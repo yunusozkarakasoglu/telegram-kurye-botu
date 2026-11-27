@@ -7,6 +7,19 @@
 
   var DURUM_KILIT_MSG = 'Üzerinizde paket varken meşgul/offline seçimi yapılamaz. Üzerinizdeki paketleri havuza/kuryeye aktardıktan sonra durum değişimi yapılabilir.';
 
+  /** QR okut ikonu (satır içi SVG — görseldeki köşe çerçeveli QR). */
+  var QR_IKON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">' +
+    '<path d="M3 8V5a2 2 0 0 1 2-2h3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M21 16v3a2 2 0 0 1-2 2h-3" ' +
+      'fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>' +
+    '<rect x="7" y="7" width="3.4" height="3.4" rx=".6" fill="currentColor"/>' +
+    '<rect x="13.6" y="7" width="3.4" height="3.4" rx=".6" fill="currentColor"/>' +
+    '<rect x="7" y="13.6" width="3.4" height="3.4" rx=".6" fill="currentColor"/>' +
+    '<rect x="13.6" y="13.6" width="1.6" height="1.6" fill="currentColor"/>' +
+    '<rect x="15.6" y="11.4" width="1.6" height="1.6" fill="currentColor"/>' +
+    '<rect x="11.4" y="15.6" width="1.6" height="1.6" fill="currentColor"/>' +
+    '<rect x="15.6" y="15.6" width="1.6" height="1.6" fill="currentColor"/>' +
+    '</svg>';
+
   var MESGUL_SEBEPLERI = ['Mola', 'Arıza', 'Kaza', 'Diğer'];
   var ODemeTipleri = ['Nakit', 'Kart', 'Ödendi', 'Yemek Çeki', 'Cihaz hatası (ödemesiz)'];
 
@@ -821,7 +834,8 @@
         eylem('iptal', { id: p.id, reason: reason }).then(function (r) {
           UI.closeSheet();
           if (r && r.queued) { render(); return; }
-          UI.toast(r.fee_tl ? 'İptal edildi · ücret: ' + money(r.fee_tl) : 'Sipariş iptal edildi', 'success');
+          if (r.fee_tl) UI.toast('İptal edildi · hakedişiniz: ' + money(r.fee_tl), 'success');
+          else UI.toast('Sipariş iptal edildi · hakediş yok', 'success');
           refresh(true);
         }).catch(function (e) { UI.toast(e.message || 'İşlem başarısız', 'error'); });
       };
@@ -1380,9 +1394,17 @@
     if (cb) cb.onclick = function () {
       var s2 = UI.openSheet(
         '<h2>İptal gerekçesi</h2>' +
+        '<div id="rr-hak" class="hakbox">Kurye hakedişi hesaplanıyor…</div>' +
         '<div class="fld"><label>Gerekçe</label><select id="rr">' + CANCEL_REASONS.map(function (r) { return '<option>' + esc(r) + '</option>'; }).join('') + '</select></div>' +
         '<button class="d" id="rr-ok" style="width:100%">İptali Onayla</button>' +
         '<button class="d" id="rr-back" style="width:100%;margin-top:6px">Vazgeç</button>');
+      API.iptalOnizleme(p.id).then(function (r) {
+        var k = s2.querySelector('#rr-hak');
+        if (!k) return;
+        var dk = r.minutes == null ? 'paket alınmamış' : (r.minutes + ' dk');
+        k.innerHTML = '<b>Kurye hakedişi: ' + (r.fee ? money(r.fee) : 'yok') + '</b>' +
+          '<small>' + esc(dk) + ' · ' + esc(r.reason || '') + '</small>';
+      }).catch(function () { var k = s2.querySelector('#rr-hak'); if (k) k.textContent = ''; });
       s2.querySelector('#rr-back').onclick = function () { UI.closeSheet(); };
       s2.querySelector('#rr-ok').onclick = function () {
         eylem('iptal', { id: p.id, reason: s2.querySelector('#rr').value }).then(function () {
@@ -1818,7 +1840,7 @@
     if (role === 'yonetici') { hr.innerHTML = ''; return; }
     var unread = (S.notifs && S.notifs.unread) || 0;
     hr.innerHTML = '<span class="hicons">' +
-      (role === 'kurye' ? '<button class="ico" id="hdr-qr" title="QR okut">📷</button>' : '') +
+      (role === 'kurye' ? '<button class="ico ico-qr" id="hdr-qr" title="QR okut">' + QR_IKON + '</button>' : '') +
       '<button class="ico" id="hdr-bell" title="Bildirimler">🔔' + (unread ? '<em>' + unread + '</em>' : '') + '</button></span>';
     $('hdr-bell').onclick = notifSheet;
     var hq = $('hdr-qr');
@@ -2003,6 +2025,45 @@
     } catch (e) { return ''; }
   }
 
+  /** Kurye: restoran/yönetici iptal ettiğinde TAMAM'a kadar açık kalan bildirim. */
+  function iptalBildirim() {
+    if (S.iptalAcik) return;
+    API.iptaller().then(function (r) {
+      var it = (r && r.items && r.items[0]) || null;
+      if (!it || S.iptalAcik) return;
+      S.iptalAcik = it.id;
+      var dk = it.minutes == null ? '—' : (it.minutes + ' dk');
+      var ucret = it.fee ? money(it.fee) : 'hakediş yok';
+      var sh = UI.openSheet(
+        '<div class="iptalpop">' +
+          '<div class="atampop-ic">🔴</div>' +
+          '<h2>Sipariş iptal edildi</h2>' +
+          '<p><b>' + esc(it.restaurant || 'Restoran') + '</b> siparişi iptal etti. Paket üzerinizden alındı.</p>' +
+          '<div class="card" style="padding:12px;margin-bottom:10px;text-align:left">' +
+            '<div class="atam-l"><span>Talep</span><b>#' + it.batch + '-' + it.number + '</b></div>' +
+            '<div class="atam-l"><span>Bölge</span><b>' + esc(it.region || '—') + '</b></div>' +
+            '<div class="atam-l"><span>Ödeme</span><b>' + esc(it.payment || '—') + '</b></div>' +
+            '<div class="atam-l"><span>Geçen süre</span><b>' + dk + '</b></div>' +
+            '<div class="atam-l"><span>Hakedişiniz</span><b class="hakedis">' + ucret + '</b></div>' +
+            '<div class="atam-l"><span>İptal eden</span><b>' + esc(it.by_name || '—') + '</b></div>' +
+            (it.reason ? '<div class="atam-l"><span>Neden</span><b>' + esc(it.reason) + '</b></div>' : '') +
+          '</div>' +
+          '<button class="p" id="ip-tamam">Tamam</button>' +
+        '</div>');
+      // Sabit ekran: dışına dokununca kapanmasın
+      var ovl = document.getElementById('ovl');
+      if (ovl) ovl.onclick = null;
+      sh.querySelector('#ip-tamam').onclick = function () {
+        API.iptalTamam(it.id).catch(function () {}).then(function () {
+          S.iptalAcik = null;
+          UI.closeSheet();
+          S.damga = '';
+          refresh(true);
+        });
+      };
+    }).catch(function () {});
+  }
+
   function renderDrawer() {
     var d = $('drawer-nav');
     if (!d) return;
@@ -2166,6 +2227,7 @@
       if (curRole() === 'kurye' && (S.offers || []).length && !UI.sheetOpen()) offersPopup();
       var assigns = ((S.notifs && S.notifs.items) || []).filter(function (n) { return n.kind === 'assign' && n.id > ((S.notifs && S.notifs.last_read) || 0); });
       if (curRole() === 'kurye' && assigns.length && !UI.sheetOpen()) assignmentPopup(assigns);
+      if (curRole() === 'kurye' && !S.iptalAcik) iptalBildirim();
     }).catch(function (e) {
       // Sessiz yutma ekranı "Bağlanıyor…"da bırakıyordu → artık loglanır ve ekrana yazılır.
       try { API.log('REFRESH HATA: ' + ((e && e.message) || e)); } catch (x) {}

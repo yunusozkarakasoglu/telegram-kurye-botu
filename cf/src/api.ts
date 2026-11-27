@@ -11,6 +11,7 @@ import { dialNumber, validFullName, validPhone } from "./util";
 import { checkPinHash, loginToken, makePinHash, pinToken, validLoginToken, validPin, validPinToken } from "./pin";
 import { CANCEL_REASONS, PAYMENTS, MAX_PACKAGES, UNSPECIFIED } from "./constants";
 import * as assign from "./assign";
+import * as ops from "./ops";
 
 /**
  * Mini App JSON API'si.
@@ -640,6 +641,18 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       return json(await assign.claimsForOwner(bot, user.id));
     }
 
+    // Restoran: iptal öncesi kurye hakedişi (dakika kuralı)
+    if (path === "/restoran/iptal-onizleme" && method === "GET") {
+      if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const pkgId = Number(url.searchParams.get("paket") || 0);
+      const rows = await bot.packages("p.id=? AND b.owner=?", [pkgId, user.id]);
+      if (!rows.length) return fail("Paket bulunamadı.", 404, "not_found");
+      const pkg: any = rows[0];
+      const hesap = await ops.cancelEarning(bot, pkg, "restoran");
+      return json({ ok: true, minutes: hesap.minutes, fee: hesap.fee, reason: hesap.reason,
+        courier_name: pkg.courier_name || null, package: pkgId });
+    }
+
     // Restoran: claim'i iptal et
     if (path === "/restoran/atama-iptal" && method === "POST") {
       if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
@@ -669,6 +682,29 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       return json({ error: r.error, code: r.code }, durum);
     }
 
+
+    // Kurye: restoran/yönetici iptallerinde "TAMAM"a kadar duran bildirim
+    if (path === "/kurye/iptaller" && method === "GET") {
+      if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const rows = await bot.db.all<any>(
+        `SELECT n.id, n.package, n.by_role, n.by_name, n.reason, n.minutes, n.fee, n.at,
+                p.batch, p.number, p.region, p.payment, p.courier_note, r.name AS restaurant
+         FROM cancel_notices n
+         JOIN packages p ON p.id=n.package
+         LEFT JOIN batches b ON b.id=p.batch
+         LEFT JOIN accounts r ON r.id=b.owner
+         WHERE n.courier=? AND n.seen=0 ORDER BY n.id LIMIT 5`, user.id);
+      return json({ items: rows });
+    }
+
+    if (path === "/kurye/iptal-tamam" && method === "POST") {
+      if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const body = await readBody(request);
+      const id = Number(body.notice_id || 0);
+      if (!id) return fail("Bildirim belirtilmedi.", 422, "invalid");
+      await bot.db.run("UPDATE cancel_notices SET seen=1 WHERE id=? AND courier=?", id, user.id);
+      return json({ ok: true });
+    }
 
     if (path === "/restoran/paketlerim" && method === "GET") {
       if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");

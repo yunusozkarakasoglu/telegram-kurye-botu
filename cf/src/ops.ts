@@ -193,16 +193,33 @@ export async function cancelReason(bot: Bot, user: Account, index: number): Prom
 
 async function confirmPrompt(bot: Bot, user: Account, packageId: number, reason: string) {
   const pkg = (await bot.packages("p.id=?", [packageId]))[0];
-  const fee = await previewFee(bot, pkg);
+  const fee = await previewFee(bot, pkg, user.role);
   await bot.send(user.id, `${pkg.batch}-${pkg.number} · ${pkg.restaurant}\nNeden : ${reason}\nDurum : ${await packageStatus(bot.db, pkg)}\nKurye ücreti : ${fee}\n\nİptali onaylıyor musunuz?`,
     keyboard([[["Evet, İptal Et", "cxy"], ["Vazgeç", "cxv"]]]));
 }
 
-async function previewFee(bot: Bot, pkg: PackageRow): Promise<string> {
-  if (!pkg.picked_up_at || pkg.courier_fee == null) return "ödenmez";
-  const minutes = (bot.now() - pkg.picked_up_at) / 60;
-  if (minutes < CANCEL_BASE_FEE_MINUTES) return `taban ücret ${(await bot.tariff())[0]} TL (alımdan ${Math.floor(minutes)} dk)`;
-  return `tam ücret ${pkg.courier_fee} TL (alımdan ${Math.floor(minutes)} dk)`;
+async function previewFee(bot: Bot, pkg: PackageRow, byRole = "restoran"): Promise<string> {
+  const h = await cancelEarning(bot, pkg, byRole);
+  if (h.minutes == null) return "hakediş yok (paket alınmadı)";
+  return h.fee ? `${h.fee} TL — ${h.reason}` : `hakediş yok — ${h.reason}`;
+}
+
+/**
+ * İptalde kurye hakedişi (dakika kuralı):
+ * - alınmadan (picked_up_at yok) → 0
+ * - 0–10 dk → hakediş yok (0)
+ * - 10 dk ve üzeri → taban ücret (tarife[0])
+ * Kurye kendisi iptal ederse müşteri yanında tam ücret ödenir (courier_fee).
+ */
+export async function cancelEarning(bot: Bot, pkg: any, byRole: string): Promise<{ minutes: number | null; fee: number; reason: string }> {
+  if (!pkg?.picked_up_at) return { minutes: null, fee: 0, reason: "paket alınmadan" };
+  const minutes = Math.floor((bot.now() - pkg.picked_up_at) / 60);
+  const taban = (await bot.tariff())[0];
+  if (byRole === "kurye") {
+    return { minutes, fee: Number(pkg.courier_fee ?? taban), reason: "kurye iptal etti — tam ücret" };
+  }
+  if (minutes < CANCEL_BASE_FEE_MINUTES) return { minutes, fee: 0, reason: `${minutes} dk (<10) — hakediş yok` };
+  return { minutes, fee: taban, reason: `${minutes} dk (10+) — taban ücret` };
 }
 
 export async function confirmCancel(bot: Bot, user: Account): Promise<any> {
@@ -215,11 +232,8 @@ export async function confirmCancel(bot: Bot, user: Account): Promise<any> {
     (user.role === "restoran" && pkg.owner === user.id) ||
     (user.role === "kurye" && pkg.courier === user.id);
   if (!allowed || pkg.delivered_at || pkg.cancelled_at) return "Bu paket artık iptal edilemez.";
-  let fee: number | null = null;
-  if (pkg.picked_up_at && pkg.courier_fee != null) {
-    const minutes = (bot.now() - pkg.picked_up_at) / 60;
-    fee = minutes < CANCEL_BASE_FEE_MINUTES ? (await bot.tariff())[0] : pkg.courier_fee;
-  }
+  const hesap = await cancelEarning(bot, pkg, user.role);
+  const fee = hesap.minutes == null ? null : hesap.fee;
   await bot.db.run(`UPDATE packages SET cancelled_at=?,cancel_reason=?,cancelled_by=?,courier_fee=?,
     incoming=0,incoming_from=NULL,incoming_at=NULL WHERE id=?`, bot.now(), flow.reason, user.id, fee, pkg.id);
   await bot.db.run("DELETE FROM pending_distance WHERE package=?", pkg.id);
@@ -239,6 +253,13 @@ export async function confirmCancel(bot: Bot, user: Account): Promise<any> {
     await bot.send(pkg.courier, summary);
     const fresh = (await bot.packages("p.id=?", [pkg.id]))[0];
     await bot.send(pkg.courier, await details(bot.db, fresh, true), undefined, "HTML");
+    // Kurye ekranında TAMAM'a basılana kadar duran iptal bildirimi
+    if (user.id !== pkg.courier) {
+      await bot.db.run(
+        `INSERT INTO cancel_notices(courier,package,by_role,by_name,reason,minutes,fee,at,seen)
+         VALUES (?,?,?,?,?,?,?,?,0)`,
+        pkg.courier, pkg.id, user.role, user.name, flow.reason, hesap.minutes, hesap.fee, bot.now());
+    }
   }
   return "Sipariş iptal edildi.";
 }

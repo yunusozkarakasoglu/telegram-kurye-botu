@@ -616,6 +616,59 @@ def senaryo_durum_yetki(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
     T.esit("yoklama kuryeyi çevrimdışı yapmıyor", True, bool((kurye_durum.get("user") or {}).get("online")))
 
 
+def senaryo_iptal_bildirimi(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
+    """Restoran iptal ettiğinde kurye ekranında hakedişli sabit bildirim."""
+    T.bolum("İPTAL BİLDİRİMİ · HAKEDİŞ (dakika kuralı)")
+    rest, k2 = o["rest"], o["k2"]
+
+    for p_ in paketlerim(api, k2):
+        if not p_.get("picked_up_at"):
+            api.cagir("POST", f"/api/paket/{p_['id']}/km", {"km": "2"}, token=k2.token)
+        api.cagir("POST", f"/api/paket/{p_['id']}/teslim", {"paid": False}, token=k2.token)
+
+    ac = api.cagir("POST", "/api/restoran/atama-ac",
+                   {"region": baglam["bolge"], "payment": "Nakit", "note": "İptal hakediş"}, token=rest.token)
+    al = api.cagir("POST", "/api/kurye/atama-al", {"code": str(ac.get("code"))}, token=k2.token)
+    pk = al.get("package_id")
+    T.ok("iptal testi için paket kuryede", bool(pk), f"paket={pk}")
+
+    # paket alınmadan → hakediş yok
+    on1 = api.cagir("GET", f"/api/restoran/iptal-onizleme?paket={pk}", token=rest.token)
+    T.esit("alınmadan hakediş 0", 0, on1.get("fee"))
+
+    # km gir (alım) → 0-10 dk → hakediş yok
+    api.cagir("POST", f"/api/paket/{pk}/km", {"km": "5"}, token=k2.token)
+    on2 = api.cagir("GET", f"/api/restoran/iptal-onizleme?paket={pk}", token=rest.token)
+    T.esit("0–10 dk hakediş yok", 0, on2.get("fee"))
+
+    # 25 dk önce alınmış gibi yap → taban ücret
+    sql(f"UPDATE packages SET picked_up_at=picked_up_at-1500 WHERE id={pk}")
+    on3 = api.cagir("GET", f"/api/restoran/iptal-onizleme?paket={pk}", token=rest.token)
+    T.ok("10+ dk taban ücret", int(on3.get("fee") or 0) > 0, f"fee={on3.get('fee')} · {on3.get('reason')}")
+    T.ok("süre dakika olarak dönüyor", int(on3.get("minutes") or 0) >= 20, str(on3.get("minutes")))
+
+    # restoran iptal eder → kurye bildirimi
+    api.cagir("POST", f"/api/paket/{pk}/iptal", {"reason": "Gecikme"}, token=rest.token)
+    bildirim = api.cagir("GET", "/api/kurye/iptaller", token=k2.token).get("items") or []
+    kayit = next((x for x in bildirim if x["package"] == pk), None)
+    T.ok("kurye iptal bildirimi aldı", bool(kayit), f"{len(bildirim)} bildirim")
+    T.ok("bildirimde hakediş tutarı var", kayit and int(kayit.get("fee") or 0) > 0, str(kayit and kayit.get("fee")))
+    T.esit("bildirimde iptal eden restoran", "restoran", (kayit or {}).get("by_role"))
+
+    okundu = api.cagir("POST", "/api/kurye/iptal-tamam", {"notice_id": (kayit or {}).get("id")}, token=k2.token)
+    T.ok("TAMAM deyince bildirim kapanıyor", bool(okundu.get("ok")))
+    kalan = api.cagir("GET", "/api/kurye/iptaller", token=k2.token).get("items") or []
+    T.ok("kapandıktan sonra listede yok", not any(x["package"] == pk for x in kalan))
+
+    # kurye kendi iptal ederse tam ücret
+    ac2 = api.cagir("POST", "/api/restoran/atama-ac",
+                    {"region": baglam["bolge"], "payment": "Nakit", "note": "Kurye iptali"}, token=rest.token)
+    pk2 = api.cagir("POST", "/api/kurye/atama-al", {"code": str(ac2.get("code"))}, token=k2.token).get("package_id")
+    api.cagir("POST", f"/api/paket/{pk2}/km", {"km": "6"}, token=k2.token)
+    kendi = api.cagir("POST", f"/api/paket/{pk2}/iptal", {"reason": "Müşteriye ulaşılamadı"}, token=k2.token)
+    T.ok("kurye iptalinde tam ücret hakediş", int(kendi.get("fee_tl") or 0) > 0, f"fee={kendi.get('fee_tl')}")
+
+
 def senaryo_on_yuz(api: Api) -> None:
     """Statik yüzey testi: app.js'te kritik fonksiyonlar var ve tekil.
     Blok değiştirirken bir fonksiyonun silinmesi `node --check`ten kaçar; bu test yakalar."""
@@ -638,7 +691,7 @@ def senaryo_on_yuz(api: Api) -> None:
     T.esit("aynı fonksiyon iki kez tanımlı değil", [], cift)
 
     # menü / atama kodu akışının işaretleri
-    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "hdr-qr", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
+    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "hdr-qr", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
         T.ok(f"yüzeyde '{iz}' var", iz in js)
 
     with urllib.request.urlopen(f"{api.base}/admin.js", timeout=30) as y:
@@ -666,6 +719,7 @@ def main() -> int:
     senaryo_restoran_kuryeye_gonder(api, oturumlar, baglam)
     senaryo_admin_kullanici_ekleme(api, oturumlar)
     senaryo_durum_yetki(api, oturumlar, baglam)
+    senaryo_iptal_bildirimi(api, oturumlar, baglam)
     senaryo_on_yuz(api)
     return T.ozet()
 

@@ -430,6 +430,9 @@
     atamaIptal: function (claimId) { return req('POST', '/api/restoran/atama-iptal', { claim_id: claimId }); },
     atamaTeklif: function (token) { return req('GET', '/api/kurye/atama-teklif?token=' + encodeURIComponent(token)); },
     atamaAl: function (veri) { return req('POST', '/api/kurye/atama-al', veri || {}); },
+    iptaller: function () { return req('GET', '/api/kurye/iptaller'); },
+    iptalTamam: function (noticeId) { return req('POST', '/api/kurye/iptal-tamam', { notice_id: noticeId }); },
+    iptalOnizleme: function (paketId) { return req('GET', '/api/restoran/iptal-onizleme?paket=' + encodeURIComponent(paketId)); },
     paketlerimRestoran: function (filter) { return req('GET', '/api/restoran/paketlerim?filter=' + encodeURIComponent(filter || 'all')); },
     profil: function (data) { return req('PATCH', '/api/profil', data); },
     durum: function (status, reason) { return req('POST', '/api/durum', { status: status, reason: reason || null }); },
@@ -529,7 +532,7 @@
     }
   };
   ['oturum', 'havuz', 'kabul', 'atamaKarar', 'notEkle', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
-    'kazanc', 'talepVer', 'kuryeTalep', 'restoranKuryeler', 'atamalar', 'atamaAc', 'atamaIptal', 'atamaTeklif', 'atamaAl', 'paketlerimRestoran', 'profil', 'durum', 'durumOzet', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'girisKullanicilar', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
+    'kazanc', 'talepVer', 'kuryeTalep', 'restoranKuryeler', 'atamalar', 'atamaAc', 'atamaIptal', 'atamaTeklif', 'atamaAl', 'iptaller', 'iptalTamam', 'iptalOnizleme', 'paketlerimRestoran', 'profil', 'durum', 'durumOzet', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'girisKullanicilar', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);
         var target = mode === 'real' ? real : mock;

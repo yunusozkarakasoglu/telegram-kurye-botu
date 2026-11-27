@@ -108,3 +108,10 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 CREATE TABLE IF NOT EXISTS notif_targets (notif INTEGER NOT NULL, account INTEGER NOT NULL, PRIMARY KEY(notif, account));
 CREATE TABLE IF NOT EXISTS notif_read (account INTEGER PRIMARY KEY, last_id INTEGER NOT NULL);
+
+CREATE TABLE IF NOT EXISTS cancel_notices (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, courier INTEGER NOT NULL, package INTEGER NOT NULL,
+  by_role TEXT, by_name TEXT, reason TEXT, minutes INTEGER, fee INTEGER,
+  at REAL NOT NULL, seen INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS cancel_notices_courier ON cancel_notices(courier, seen);

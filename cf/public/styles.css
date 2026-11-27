@@ -727,3 +727,17 @@ header h1{display:inline}
 .qrtoggle{display:flex;align-items:center;gap:10px}
 .qrtoggle label{flex:0 0 auto;font-size:13px;color:var(--t2)}
 .qrtoggle .swbtn{flex:1}
+
+/* Header QR ikonu (SVG) */
+.ico-qr{padding:0;color:var(--tx)}
+.ico-qr svg{display:block;margin:0 auto}
+/* İptal bildirimi (kurye) — TAMAM'a kadar açık */
+.iptalpop{text-align:center}
+.iptalpop h2{margin:0 0 6px;color:#ff5b60}
+.iptalpop p{color:var(--t2);font-size:14px;margin:0 0 12px}
+.iptalpop .hakedis{color:#ffd79a}
+/* Restoran iptal ekranı: kurye hakedişi kutusu */
+.hakbox{display:flex;flex-direction:column;gap:2px;border:1px solid var(--ln);border-radius:10px;
+  padding:10px 12px;margin-bottom:10px;background:var(--el);font-size:13px}
+.hakbox b{font-size:14px}
+.hakbox small{color:var(--t2);font-size:11px}
