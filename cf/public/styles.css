@@ -825,7 +825,9 @@ a.pk-map:active{filter:brightness(.94)}
 /* Kart 2. satırı: 3 sütun (Ara · Aktar · İptal) */
 .act-row.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .act-row.three > *{min-height:40px}
-.act-sm{min-height:40px;font-size:13px;padding:6px 4px;border-radius:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.act-sm{min-height:40px;font-size:13px;padding:6px 4px;border-radius:10px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;border:1px solid var(--ln2, rgba(148,163,184,.45));background:var(--card)}
+.act-sm:active{background:var(--el)}
 
 /* Restoran konumu: mavi kesikli kutu (tasarım) */
 .pk-fields dd .pk-loc{display:flex;align-items:center;gap:6px;width:100%;

@@ -752,3 +752,13 @@ Doğrulama: `href=https://maps.google.com/?q=40.9851,29.1244` · `a.btn.act-sm` 
 | Butonlar | ✔ `Km gir`/`Teslim ettim` (tam) · `Restoranı Ara · ⇄ Aktar · Paketi iptal et` · `Çıkış` |
 | **Harita aç butonu** | ✔ **kaldırıldı** (yalnız 📍 Haritada aç linki) |
 | e2e | **174/174 PASS** · deploy v179 |
+
+### Kart butonlarına kenarlık (2026-11-27, v180)
+
+| Buton | Kenarlık |
+|---|---|
+| Restoranı Ara | ✔ `1px rgba(148,163,184,.45)` |
+| ⇄ Aktar | ✔ aynı |
+| Paketi iptal et | ✔ aynı (kırmızı yazı korunuyor) |
+
+Zemin `var(--card)`, aktifken `var(--el)`. e2e **174/174** · deploy v180.
