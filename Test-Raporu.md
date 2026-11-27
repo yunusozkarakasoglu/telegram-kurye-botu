@@ -652,3 +652,12 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | Aynı kod 2. kez | ✔ 409 (ikinci paket verilmez) |
 | Kilit (3 hata) | ✔ korunuyor |
 | e2e | **162/162 PASS** · deploy `87f65434` (v164) |
+
+### Header (+) butonu düzeltmesi (2026-11-27, v165–v166)
+
+| Önce | Sonra |
+|---|---|
+| `36×44` + `border-radius:50%` → **oval**, zilden büyük | **34×34 daire**; zil 36×36 ile aynı hizada |
+| Sebep: global `button{min-height:44px}` | `.ico{min-height:36px}` + `.ico-plus{min-height:34px}` |
+
+Doğrulama: ölçüm `plus [34,34]` / `bell [36,36]`, `border-radius:50%` · e2e **162/162** · deploy `639a6346` (v166).

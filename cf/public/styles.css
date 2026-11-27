@@ -264,7 +264,7 @@ header{position:relative}
 .offeritem .act{display:flex;gap:6px;margin-top:6px}
 
 .hicons{display:flex;gap:6px;align-items:center}
-.ico{position:relative;border:1px solid var(--ln);background:var(--el);border-radius:10px;width:36px;height:36px;font-size:17px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.ico{position:relative;border:1px solid var(--ln);background:var(--el);border-radius:10px;width:36px;height:36px;min-height:36px;font-size:17px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .ico em{position:absolute;top:-4px;right:-4px;background:var(--er);color:#fff;font-style:normal;font-size:11px;font-weight:700;border-radius:99px;padding:1px 5px}
 .notif{border-bottom:1px solid var(--ln);padding:8px 0}
 .notif small{color:var(--t2);display:block;font-size:11px}
@@ -775,8 +775,9 @@ header h1{display:inline}
   background:transparent;color:var(--t2);font:inherit;font-size:12px;cursor:pointer}
 
 /* ---------- Kurye: header (+) ve "Paket Ekle" menüsü (v164) ---------- */
-.ico-plus{background:#22c55e;border-color:#22c55e;color:#fff;font-size:24px;font-weight:700;
-  line-height:1;border-radius:50%;width:36px;height:36px}
+.ico-plus{background:#22c55e;border-color:#22c55e;color:#fff;font-weight:700;
+  width:34px;height:34px;min-width:34px;min-height:34px;padding:0;border-radius:50%;
+  font-size:20px;line-height:32px;display:inline-flex;align-items:center;justify-content:center}
 .ico-plus:active{background:#1ea24f}
 .pkadd{text-align:center}
 .pkadd h2{margin:2px 0 14px;font-size:16px}
