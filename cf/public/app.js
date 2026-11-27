@@ -1105,21 +1105,82 @@
     var kod = claim && claim.code ? claim.code : '';
     var link = claim && claim.qr_link ? claim.qr_link : '';
     var qr = link ? qrSvg(link, 220) : null;
+    var zaman = null;
+    var sayac = null;
+
+    var temizle = function () {
+      if (zaman) { clearInterval(zaman); zaman = null; }
+      if (sayac) { clearInterval(sayac); sayac = null; }
+    };
+
     var sh = UI.openSheet(
       '<h2>Kurye onayı</h2>' +
       (qr
-        ? '<p>Kurye QR’ı <b>kendi telefonuyla okutup</b> paketi alır — size seçim yapmak kalmaz.</p>' +
-          '<div class="qrzon">' + qr + '</div>' +
-          '<p class="note" style="text-align:center;margin-top:-4px">QR okutamazsa: kurye uygulamasında “Kod ile al”a basıp aşağıdaki kodu girer.</p>'
-        : '<p>Kurye kodu uygulamasına girerek paketi alır.</p>') +
+        ? '<p id="ak-durum">Kurye QR’ı <b>kendi telefonuyla okutup</b> paketi alır — size seçim yapmak kalmaz.</p>' +
+          '<div class="qrzon">' + qr + '</div>'
+        : '<p id="ak-durum">Kurye kodu uygulamasına girerek paketi alır.</p>') +
+      '<div id="ak-okundu" hidden class="ak-okundu">' +
+        '<b>✔ Kurye kabul etti</b>' +
+        '<small>Ekranın kapanmasına kalan süre: <b id="ak-sayac">10</b></small>' +
+      '</div>' +
+      '<p class="note" style="text-align:center;margin-top:-4px" id="ak-ipucu">QR okutamazsa: kurye uygulamasında “Kod ile al”a basıp aşağıdaki kodu girer.</p>' +
       (kod ? '<div class="kodbox"><small>Kurye kodu (uygulamasına girecek)</small><b>' + esc(kod) + '</b></div>' : '') +
       '<button class="p" id="ak-tamam">Tamam</button>' +
-      '<button class="g" id="ak-iptal" style="margin-top:6px">QR’ı iptal et</button>');
+      '<button class="g" id="ak-iptal" style="margin-top:6px">QR’ı iptal et</button>',
+      { onClose: function () { temizle(); } });
 
-    sh.querySelector('#ak-tamam').onclick = function () { UI.closeSheet(); refresh(true); };
+    sh.querySelector('#ak-tamam').onclick = function () { temizle(); UI.closeSheet(); refresh(true); };
+
+    var kapatVeListeye = function () {
+      temizle();
+      UI.closeSheet();
+      UI.toast('Kurye paketi aldı · Paketlerim’e eklendi', 'success');
+      S.tab = 'paketlerim';
+      S.restFilter = 'open';
+      refresh(true);
+    };
+
+    // Kurye kabul etti mi? 2 sn'de bir bak (ekran açıkken)
+    var kabulSonrasi = false;
+    var kabulEdildi = function (d) {
+      temizle();
+      kabulSonrasi = true;
+      var ok = sh.querySelector('#ak-okundu');
+      if (ok) ok.hidden = false;
+      var durum = sh.querySelector('#ak-durum');
+      if (durum) durum.hidden = true;
+      // (Tasarım gereği kod kutusu ve “QR’ı iptal et” görünür kalır)
+      var ipt = sh.querySelector('#ak-iptal');
+      if (ipt) ipt.textContent = 'Kapat';
+      var kalan = 10;
+      var el = sh.querySelector('#ak-sayac');
+      if (el) el.textContent = String(kalan);
+      sayac = setInterval(function () {
+        kalan--;
+        var e2 = document.querySelector('#ak-sayac');
+        if (e2) e2.textContent = String(Math.max(0, kalan));
+        if (kalan <= 0) kapatVeListeye();
+      }, 1000);
+      if (d && d.courier_name) {
+        var n = sh.querySelector('#ak-okundu b');
+        if (n) n.textContent = '✔ ' + d.courier_name + ' kabul etti';
+      }
+    };
+
+    if (claim && claim.claim_id) {
+      zaman = setInterval(function () {
+        if (!document.querySelector('#ov .sh')) { temizle(); return; }
+        API.atamaDurum(claim.claim_id).then(function (d) {
+          if (d && d.state === 'done') kabulEdildi(d);
+        }).catch(function () {});
+      }, 2000);
+    }
+
     sh.querySelector('#ak-iptal').onclick = function () {
-      if (!claim || !claim.claim_id) { UI.closeSheet(); return; }
+      if (kabulSonrasi) { temizle(); UI.closeSheet(); refresh(true); return; }
+      if (!claim || !claim.claim_id) { temizle(); UI.closeSheet(); return; }
       API.atamaIptal(claim.claim_id).then(function () {
+        temizle();
         var geri = (S.bekleyenSatirlar || {})[claim.claim_id];
         if (geri) {
           delete S.bekleyenSatirlar[claim.claim_id];

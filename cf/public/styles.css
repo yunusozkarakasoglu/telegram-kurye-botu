@@ -741,3 +741,12 @@ header h1{display:inline}
   padding:10px 12px;margin-bottom:10px;background:var(--el);font-size:13px}
 .hakbox b{font-size:14px}
 .hakbox small{color:var(--t2);font-size:11px}
+
+/* Restoran QR ekranı: kurye kabul etti → yeşil mesaj + geri sayım */
+.ak-okundu{display:flex;flex-direction:column;align-items:center;gap:2px;margin:2px 0 8px}
+.ak-okundu b{color:#22c55e;font-size:15px;font-weight:800}
+.ak-okundu small{color:var(--t2);font-size:12px}
+.ak-okundu small b{color:var(--tx);font-size:13px}
+
+/* hidden özniteliği, display:flex kurallarını ezsin (sheet içi) */
+.sh [hidden]{display:none !important}

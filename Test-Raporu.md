@@ -553,3 +553,16 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | Restoran iptal ekranı | ✔ "Kurye hakedişi: 120 TL · 15 dk · taban ücret" |
 | Header QR ikonu | ✔ SVG (köşe çerçeveli QR) |
 | e2e | **133/133 PASS** · deploy `8c7e327d` (v157) |
+
+### QR ekranı kabul geri bildirimi (2026-11-27, v159)
+
+| Test | Sonuç |
+|---|---|
+| Kabul öncesi | ✔ `state=pending` |
+| Kurye kabul etti | ✔ `state=done` + `courier_name` döndü |
+| Restoran ekranı | ✔ Yeşil **“✔ Boş Kurye kabul etti”** + **“Ekranın kapanmasına kalan süre: 8”** |
+| Geri sayım | ✔ 10→0 sonra otomatik kapanır, Paketlerim/Açık açılır |
+| Manuel | ✔ **Tamam** hemen kapatır · **Kapat** elle kapatır (kabul sonrası) |
+| Paket | ✔ restoranın **açık/havuz** listesine düşer (5 açık paket testi) |
+| Yetki | ✔ kurye `atama-durum` ucunu kullanamaz (403) |
+| e2e | **140/140 PASS** · deploy `89902ce5` (v159) |

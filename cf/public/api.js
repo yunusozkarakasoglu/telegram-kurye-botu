@@ -427,6 +427,7 @@
     restoranKuryeler: function () { return req('GET', '/api/restoran/kuryeler'); },
     atamalar: function () { return req('GET', '/api/restoran/atamalar'); },
     atamaAc: function (veri) { return req('POST', '/api/restoran/atama-ac', veri || {}); },
+    atamaDurum: function (claimId) { return req('GET', '/api/restoran/atama-durum?claim_id=' + encodeURIComponent(claimId)); },
     atamaIptal: function (claimId) { return req('POST', '/api/restoran/atama-iptal', { claim_id: claimId }); },
     atamaTeklif: function (token) { return req('GET', '/api/kurye/atama-teklif?token=' + encodeURIComponent(token)); },
     atamaAl: function (veri) { return req('POST', '/api/kurye/atama-al', veri || {}); },
@@ -532,7 +533,7 @@
     }
   };
   ['oturum', 'havuz', 'kabul', 'atamaKarar', 'notEkle', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
-    'kazanc', 'talepVer', 'kuryeTalep', 'restoranKuryeler', 'atamalar', 'atamaAc', 'atamaIptal', 'atamaTeklif', 'atamaAl', 'iptaller', 'iptalTamam', 'iptalOnizleme', 'paketlerimRestoran', 'profil', 'durum', 'durumOzet', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'girisKullanicilar', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
+    'kazanc', 'talepVer', 'kuryeTalep', 'restoranKuryeler', 'atamalar', 'atamaAc', 'atamaDurum', 'atamaIptal', 'atamaTeklif', 'atamaAl', 'iptaller', 'iptalTamam', 'iptalOnizleme', 'paketlerimRestoran', 'profil', 'durum', 'durumOzet', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'girisKullanicilar', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);
         var target = mode === 'real' ? real : mock;

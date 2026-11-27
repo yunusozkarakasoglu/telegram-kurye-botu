@@ -142,6 +142,26 @@ export async function claim(
   return { ok: true, package_id: r.package_id, req_no: r.req_no };
 }
 
+/** Restoran QR ekranı: claim'in güncel durumu (kurye kabul etti mi?). */
+export async function claimState(bot: Bot, owner: number, claimId: number) {
+  const row = await bot.db.first<any>(
+    `SELECT a.id, a.state, a.courier, c.name AS courier_name, a.region, a.payment
+     FROM assign_codes a LEFT JOIN accounts c ON c.id=a.courier
+     WHERE a.id=? AND a.owner=?`, claimId, owner);
+  if (!row) return null;
+  let pkg: any = null;
+  if (row.state === "done") {
+    pkg = await bot.db.first<any>(
+      `SELECT p.id, p.batch, p.number FROM packages p WHERE p.courier=? AND p.note IS NOT NULL
+       ORDER BY p.id DESC LIMIT 1`, row.courier);
+  }
+  return {
+    claim_id: row.id, state: row.state, courier_name: row.courier_name || null,
+    region: row.region || null, payment: row.payment || null,
+    package_id: pkg?.id ?? null, batch: pkg?.batch ?? null, number: pkg?.number ?? null,
+  };
+}
+
 /** Restoran: açık claim'i iptal et. */
 export async function cancelClaim(bot: Bot, owner: number, claimId: number): Promise<boolean> {
   const degisen = await bot.db.run(

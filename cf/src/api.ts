@@ -653,6 +653,14 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         courier_name: pkg.courier_name || null, package: pkgId });
     }
 
+    // Restoran: QR ekranı canlı durum (kurye kabul etti mi?)
+    if (path === "/restoran/atama-durum" && method === "GET") {
+      if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const id = Number(url.searchParams.get("claim_id") || 0);
+      const d = await assign.claimState(bot, user.id, id);
+      return d ? json(d) : fail("Kayıt bulunamadı.", 404, "not_found");
+    }
+
     // Restoran: claim'i iptal et
     if (path === "/restoran/atama-iptal" && method === "POST") {
       if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");

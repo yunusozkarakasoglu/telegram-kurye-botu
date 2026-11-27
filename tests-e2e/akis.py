@@ -616,6 +616,36 @@ def senaryo_durum_yetki(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
     T.esit("yoklama kuryeyi çevrimdışı yapmıyor", True, bool((kurye_durum.get("user") or {}).get("online")))
 
 
+def senaryo_qr_durum(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
+    """Restoran QR ekranı kurye kabulünü görüyor mu (yeşil mesaj + geri sayım verisi)?"""
+    T.bolum("QR EKRANI · KURYE KABULÜ CANLI DURUM")
+    rest, k2 = o["rest"], o["k2"]
+
+    for p_ in paketlerim(api, k2):
+        if not p_.get("picked_up_at"):
+            api.cagir("POST", f"/api/paket/{p_['id']}/km", {"km": "2"}, token=k2.token)
+        api.cagir("POST", f"/api/paket/{p_['id']}/teslim", {"paid": False}, token=k2.token)
+
+    ac = api.cagir("POST", "/api/restoran/atama-ac",
+                   {"region": baglam["bolge"], "payment": "Nakit", "note": "durum testi"}, token=rest.token)
+    cid = ac.get("claim_id")
+    once = api.cagir("GET", f"/api/restoran/atama-durum?claim_id={cid}", token=rest.token)
+    T.esit("kabul öncesi durum pending", "pending", once.get("state"))
+
+    api.cagir("POST", "/api/kurye/atama-al", {"code": str(ac.get("code"))}, token=k2.token)
+    sonra = api.cagir("GET", f"/api/restoran/atama-durum?claim_id={cid}", token=rest.token)
+    T.esit("kabul sonrası durum done", "done", sonra.get("state"))
+    T.ok("kurye adı dönüyor (yeşil mesaj)", bool(sonra.get("courier_name")), str(sonra.get("courier_name")))
+
+    # paket restoranın açık listesine düştü
+    acik = api.cagir("GET", "/api/restoran/paketlerim?filter=open", token=rest.token).get("items") or []
+    T.ok("paket restoran havuzunda (açık)", any(p_.get("note") == "durum testi" for p_ in acik),
+         f"{len(acik)} açık paket")
+
+    yasak = api.cagir("GET", f"/api/restoran/atama-durum?claim_id={cid}", token=k2.token, bekle_hata=True)
+    T.esit("kurye bu ucu kullanamıyor", 403, yasak.get("_status"))
+
+
 def senaryo_iptal_bildirimi(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
     """Restoran iptal ettiğinde kurye ekranında hakedişli sabit bildirim."""
     T.bolum("İPTAL BİLDİRİMİ · HAKEDİŞ (dakika kuralı)")
@@ -691,7 +721,7 @@ def senaryo_on_yuz(api: Api) -> None:
     T.esit("aynı fonksiyon iki kez tanımlı değil", [], cift)
 
     # menü / atama kodu akışının işaretleri
-    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "hdr-qr", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
+    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "hdr-qr", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "atamaDurum", "ak-okundu", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
         T.ok(f"yüzeyde '{iz}' var", iz in js)
 
     with urllib.request.urlopen(f"{api.base}/admin.js", timeout=30) as y:
@@ -719,6 +749,7 @@ def main() -> int:
     senaryo_restoran_kuryeye_gonder(api, oturumlar, baglam)
     senaryo_admin_kullanici_ekleme(api, oturumlar)
     senaryo_durum_yetki(api, oturumlar, baglam)
+    senaryo_qr_durum(api, oturumlar, baglam)
     senaryo_iptal_bildirimi(api, oturumlar, baglam)
     senaryo_on_yuz(api)
     return T.ozet()

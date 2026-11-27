@@ -15,7 +15,7 @@
 |---|---|
 | Durum | **Legacy / frozen** — yeni özellik eklenmez |
 | Plan | **Workers Paid $5/ay** (26.11.2026) |
-| Aktif sürüm | Cloudflare `8c7e327d…` · asset `v157` |
+| Aktif sürüm | Cloudflare `89902ce5…` · asset `v159` |
 | Yayın | `https://kurye.packonexpress.com/` (yönetici `/admin`) |
 | Yeni proje | `~/Masaüstü/Kurye-Flow-Mobil` — **PackOn Express** (çok bölgeli SaaS + Android) |
 | Geri alma | tenant fazı `28c9837` → `8c55b6c` ile çıkarıldı; `cf/` = `676f01d` |
