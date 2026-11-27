@@ -711,3 +711,12 @@ Doğrulama: `href=https://www.google.com/maps/dir/?api=1&destination=40.9923,29.
 | Kurye kartı | ✔ `📍 Haritada aç` satırı (teslim edilene kadar) · `restaurant_lat` + `restaurant_map_url` |
 | Harita URL sırası | koordinat → admin linki → harita **araması** (her durumda çalışır) |
 | e2e | **176/176 PASS** · deploy v173 |
+
+### Harita aç — app-first + maps.google.com (2026-11-27, v174)
+
+| Değişiklik | Detay |
+|---|---|
+| https biçimi | `https://maps.google.com/?q=lat,lng` (Android'de harita uygulamasını açar) |
+| Tıklama | önce `geo:` (Android) / `maps://` (iOS), **1,2 sn** içinde sayfa gizlenmezse **https**'e düşer |
+| Konum yok | `https://maps.google.com/?q=<restoran> <bölge>` |
+| e2e | **176/176 PASS** · deploy `7284bc5f` (v174) |

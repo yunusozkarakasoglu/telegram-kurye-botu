@@ -1615,16 +1615,37 @@
     var lat = p.restaurant_lat, lng = p.restaurant_lng;
     var ios = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
     if (lat != null && lng != null) {
+      // maps.google.com/?q=lat,lng → Android'de kurulu harita uygulamasını açar (evrensel bağlantı)
       return ios
         ? 'https://maps.apple.com/?daddr=' + lat + ',' + lng + '&q=' + encodeURIComponent(p.restaurant || 'Restoran')
-        : 'https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng;
+        : 'https://maps.google.com/?q=' + lat + ',' + lng;
     }
     // Yöneticinin girdiği konum bağlantısı (varsa) doğrudan kullanılır
     if (p.restaurant_map_url) return p.restaurant_map_url;
     if (p.map_url) return p.map_url;
-    // Hiç konum yoksa bile çalışan bağlantı: restoran adı + bölge ile harita araması
+    // Hiç konum yoksa: harita araması (her ortamda açılır)
     var q = encodeURIComponent(((p.restaurant || '') + ' ' + (p.region || '')).trim() || 'Restoran');
-    return 'https://www.google.com/maps/search/?api=1&query=' + q;
+    return 'https://maps.google.com/?q=' + q;
+  }
+
+  /** Cihaz şeması (varsayılan harita uygulaması) — Telegram engellerse https'e düşer. */
+  function haritaAcDene(p) {
+    var lat = p.restaurant_lat, lng = p.restaurant_lng;
+    var ua = navigator.userAgent || '';
+    var ad = encodeURIComponent(p.restaurant || 'Restoran');
+    var https = haritaUrl(p);
+    if (lat == null || lng == null) { window.location.href = https; return; }
+    var sema = /Android/i.test(ua)
+      ? 'geo:' + lat + ',' + lng + '?q=' + lat + ',' + lng + '(' + ad + ')'
+      : 'maps://?daddr=' + lat + ',' + lng + '&q=' + ad;
+    var zaman = setTimeout(function () {
+      if (!document.hidden) window.location.href = https;   // uygulama açılmadıysa web'e düş
+    }, 1200);
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) clearTimeout(zaman);
+    }, { once: true });
+    try { window.location.href = sema; }
+    catch (e) { clearTimeout(zaman); window.location.href = https; }
   }
 
   /** Gerçek <a> bağlantısı — Telegram'da custom şema engellendiği için https kullanılır. */
@@ -1637,19 +1658,12 @@
 
   /** PWA/tarayıcıda cihazın varsayılan harita uygulaması; Telegram'da <a> linki kullanılır. */
   function haritaLinkTikla(ev) {
-    var tg = window.Telegram && Telegram.WebApp;
-    if (tg && typeof tg.openLink === 'function') return;   // Telegram: https link güvenilir
     var id = ev.currentTarget.getAttribute('data-i');
     var p = ((S.mine && S.mine.packages) || []).concat((S.pool && S.pool.packages) || [])
       .filter(function (x) { return String(x.id) === String(id); })[0];
-    if (!p) return;
-    var lat = p.restaurant_lat, lng = p.restaurant_lng;
-    if (lat == null || lng == null) return;
+    if (!p) return;                       // paket bulunamazsa <a href> varsayılanı çalışsın
     ev.preventDefault();
-    var ua = navigator.userAgent || '';
-    var ad = encodeURIComponent(p.restaurant || 'Restoran');
-    if (/Android/i.test(ua)) window.location.href = 'geo:' + lat + ',' + lng + '?q=' + lat + ',' + lng + '(' + ad + ')';
-    else window.location.href = 'maps://?daddr=' + lat + ',' + lng + '&q=' + ad;
+    haritaAcDene(p);                      // önce varsayılan harita uygulaması, olmazsa https
   }
 
   /**
