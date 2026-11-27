@@ -388,8 +388,9 @@ def senaryo_restoran_kuryeye_gonder(api: Api, o: dict[str, Oturum], baglam: dict
     T.ok("restoran 'kurye aldı' kartını görüyor",
          any(x.get("state") == "done" for x in (son_hareket.get("recent") or [])),
          f"{len(son_hareket.get('recent') or [])} hareket")
-    T.ok("restoran 'iptal' kartını görüyor",
-         any(x.get("state") == "cancelled" for x in (son_hareket.get("recent") or [])))
+    T.ok("iptal edilenler listede GÖRÜNMÜYOR (kirletmesin)",
+         not any(x.get("state") == "cancelled" for x in (son_hareket.get("recent") or [])),
+         f"{(son_hareket.get('recent') or [])[:2]}")
 
     # 9) Yetki: kurye restoran uçlarını kullanamıyor
     yasak = api.cagir("POST", "/api/restoran/atama-ac", {"region": baglam["bolge"]}, token=k1.token, bekle_hata=True)
@@ -640,7 +641,7 @@ def senaryo_on_yuz(api: Api) -> None:
     T.esit("aynı fonksiyon iki kez tanımlı değil", [], cift)
 
     # menü / atama kodu akışının işaretleri
-    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
+    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "hdr-qr", "sonAtamaToken", "showScanQrPopup", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
         T.ok(f"yüzeyde '{iz}' var", iz in js)
 
     with urllib.request.urlopen(f"{api.base}/admin.js", timeout=30) as y:

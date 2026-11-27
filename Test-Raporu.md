@@ -507,3 +507,13 @@ Doğrulama: 390×760 ekran görüntüsü tasarımla birebir · e2e **85/85** · 
 | İptal | ✔ claim kapanır, kod kullanılamaz |
 | Yetki | ✔ kurye atama açamaz/listeleyemez (403) |
 | e2e | **113/113 PASS** · deploy `63e86ebe` (v153) |
+
+### QR düzeltmeleri (2026-11-27, v154)
+
+| Sorun | Çözüm | Test |
+|---|---|---|
+| İptal edilen QR'lar Paketlerim listesini kirletiyordu | `recent` yalnız `done`/`expired`, **son 30 dk**, en fazla **3** kayıt | ✔ iptaller listede yok |
+| Telefon kamerasıyla okutunca "hiçbir şey olmadı" (Mini App açıkken `start_param` yenilenmiyor) | `sonAtamaToken` + **1,5 sn izleyici** + `visibilitychange` → yeni token'da paket kartı açılır | ✔ `history.replaceState` ile simüle edildi → "📦 Paket kartı" açıldı |
+| Uygulama içi QR okutma yok | Header'a **📷** ikonu → `Telegram.WebApp.showScanQrPopup` (Bot API 6.4+) | ✔ tarayıcıda nazik fallback ("kodu elle girin") + kod penceresi |
+| QR metni çeşitli biçimlerde | `atama_<token>`, tam URL, 32 hex → regex ile ayrıştırma | ✔ |
+| e2e | — | **116/116** · deploy `43b16a1f` (v154) |

@@ -1796,8 +1796,11 @@
     if (role === 'yonetici') { hr.innerHTML = ''; return; }
     var unread = (S.notifs && S.notifs.unread) || 0;
     hr.innerHTML = '<span class="hicons">' +
+      (role === 'kurye' ? '<button class="ico" id="hdr-qr" title="QR okut">📷</button>' : '') +
       '<button class="ico" id="hdr-bell" title="Bildirimler">🔔' + (unread ? '<em>' + unread + '</em>' : '') + '</button></span>';
     $('hdr-bell').onclick = notifSheet;
+    var hq = $('hdr-qr');
+    if (hq) hq.onclick = atamaQrOku;
     renderDrawer();
   }
 
@@ -1867,20 +1870,29 @@
   /** QR okut (Telegram yerel tarayıcı) — yoksa kod girme penceresi açılır. */
   function atamaQrOku() {
     var tg = window.Telegram && Telegram.WebApp;
-    if (tg && typeof tg.showScanQrPopup === 'function') {
-      try {
-        tg.showScanQrPopup({ text: 'Restoranın ekranındaki QR\'ı okutun' }, function (veri) {
-          var v = String(veri || '');
-          var token = v.indexOf('atama_') >= 0 ? v.split('atama_').pop() : v;
-          if (!/^[0-9a-f]{32}$/i.test(token)) return false;   // farklı QR ise taramaya devam
-          try { tg.closeScanQrPopup(); } catch (e) {}
-          atamaTeklifSheet(token);
-          return true;
-        });
-        return;
-      } catch (e) { /* tarayıcı yoksa kod penceresi */ }
+    if (!tg || typeof tg.showScanQrPopup !== 'function') {
+      UI.toast('QR tarayıcı yalnız Telegram uygulamasında çalışır; kodu elle girin', 'error');
+      atamaKodSor();
+      return;
     }
-    atamaKodSor();
+    try {
+      tg.showScanQrPopup({ text: 'Restoranın ekranındaki QR\'ı okutun' }, function (veri) {
+        var v = String(veri || '').trim();
+        // Tam URL de gelebilir: ...?startapp=atama_<token>
+        var eslesme = v.match(/atama[_-]?([0-9a-f]{32})/i);
+        var token = eslesme ? eslesme[1] : (/^[0-9a-f]{32}$/i.test(v) ? v : '');
+        if (!token) {
+          UI.toast('Bu QR bir paket kodu değil', 'error');
+          return false;   // taramaya devam
+        }
+        try { tg.closeScanQrPopup(); } catch (e) {}
+        atamaTeklifSheet(token);
+        return true;
+      });
+    } catch (e) {
+      UI.toast('QR tarayıcı açılamadı; kodu elle girin', 'error');
+      atamaKodSor();
+    }
   }
 
   /** QR yoksa/okutulamıyorsa: 4 haneli kodu kurye kendi uygulamasına girer. */
@@ -1955,7 +1967,13 @@
       var sp = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
       if (!sp) sp = (window.TG && TG.startParam && TG.startParam()) || '';
       if (!sp) sp = new URLSearchParams(location.search).get('atama') || '';
+      if (!sp) {
+        var m = String(location.hash || '').match(/atama[_-]([0-9a-f]{32})/i);
+        if (m) sp = m[1];
+      }
       sp = String(sp || '').trim();
+      var mm = sp.match(/atama[_-]?([0-9a-f]{32})/i);
+      if (mm) return mm[1];
       if (!sp) return '';
       if (sp.indexOf('atama_') === 0) return sp.slice(6);   // startapp=atama_<token>
       if (sp.indexOf('atama=') === 0) return sp.slice(6);
@@ -2370,8 +2388,18 @@
       }
       refresh(true);
       // QR ile gelen atama isteği (kurye onayı)
-      var at = atamaToken();
-      if (at) setTimeout(function () { atamaTeklifSheet(at); }, 500);
+      S.sonAtamaToken = atamaToken();
+      if (S.sonAtamaToken) setTimeout(function () { atamaTeklifSheet(S.sonAtamaToken); }, 500);
+      // Uygulama açıkken Telegram yeni start_param ile geri dönerse (yeniden boot olmaz) yakala
+      var tokenBekle = function () {
+        var t = atamaToken();
+        if (t && t !== S.sonAtamaToken) {
+          S.sonAtamaToken = t;
+          if (!UI.sheetOpen()) atamaTeklifSheet(t);
+        }
+      };
+      setInterval(tokenBekle, 1500);
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) tokenBekle(); });
       // Faz A2: 15 sn ± %20 jitter (senkron dalgayı kırar), sekme gizliyken durur
       (function dongu() {
         var gecikme = (window.API && API.jitter) ? API.jitter(15000, 0.2) : 15000;
