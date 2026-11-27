@@ -821,3 +821,8 @@ a.pk-map{display:flex;align-items:center;justify-content:center;text-decoration:
 a.pk-map.btn{background:var(--card);color:var(--tx);border-color:var(--ln);font-weight:400}
 a.pk-map:active{filter:brightness(.94)}
 .maplink{color:var(--ac);text-decoration:none;font-weight:600}
+
+/* Kart 2. satırı: 3 sütun (Ara · Aktar · İptal) */
+.act-row.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.act-row.three > *{min-height:40px}
+.act-sm{min-height:40px;font-size:13px;padding:6px 4px;border-radius:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

@@ -289,30 +289,21 @@
     // Eylemler durum etiketine değil kayıt alanlarına göre belirlenir (etiket sunucudan gelir).
     var cancelled = !!p.cancelled_at, delivered = !!p.delivered_at, picked = !!p.picked_up_at;
     var duzenlenebilir = opts.own && !cancelled && !delivered;
-    var mapBtn = duzenlenebilir && !picked
-      ? haritaLink(p, 'btn', 'Restoran Konumu', 'harita') : '';
     var callBtn = !delivered && !cancelled && p.restaurant_phone
       ? '<a class="btn" href="tel:' + esc(p.restaurant_phone) + '">Restoranı Ara</a>' : '';
 
     var actions = '';
     if (duzenlenebilir) {
       // 1. satır: Km gir (3/4) + Harita aç (1/4)
-      if (picked) {
-        actions += '<div class="act-row"><button class="p ga-3" data-a="teslim" data-i="' + p.id + '">Teslim ettim</button>' +
-          haritaLink(p, 'ga-1 p', 'Harita aç', 'haritaApp') + '</div>';
-      } else {
-        actions += '<div class="act-row"><button class="p ga-3" data-a="km" data-i="' + p.id + '">Km gir</button>' +
-          haritaLink(p, 'ga-1 p', 'Harita aç', 'haritaApp') + '</div>';
-      }
-      // 2. satır: Restoran Konumu + Restoranı Ara (yan yana)
-      if (mapBtn || callBtn) {
-        actions += '<div class="act-row">' +
-          (mapBtn ? haritaLink(p, 'btn ga-1-2', 'Restoran Konumu', 'harita') : '') +
-          (callBtn ? callBtn.replace('class="btn"', 'class="btn ga-1-2"') : '') +
-          '</div>';
-      }
-      actions += '<button class="w act-aktar" data-a="aktar" data-i="' + p.id + '">⇄ Aktar</button>' +
-                 '<button class="d w" data-a="iptal" data-i="' + p.id + '">Paketi iptal et</button>';
+      actions += picked
+        ? '<button class="p w" data-a="teslim" data-i="' + p.id + '">Teslim ettim</button>'
+        : '<button class="p w" data-a="km" data-i="' + p.id + '">Km gir</button>';
+      // 2. satır: Restoranı Ara · ⇄ Aktar · Paketi iptal et (3 sütun)
+      actions += '<div class="act-row three">' +
+        (callBtn ? callBtn.replace('class="btn"', 'class="btn act-sm"') : '<span></span>') +
+        '<button class="act-sm" data-a="aktar" data-i="' + p.id + '">⇄ Aktar</button>' +
+        '<button class="act-sm d" data-a="iptal" data-i="' + p.id + '">Paketi iptal et</button>' +
+        '</div>';
     }
     if (opts.pay && !cancelled && delivered && p.payment_received !== true) {
       actions += '<button class="p w" data-a="odeme" data-i="' + p.id + '">Ödeme Aldım</button>';
@@ -359,10 +350,7 @@
   }
 
   function bindPkgActions(root, list) {
-    Array.prototype.forEach.call(root.querySelectorAll('a.pk-map'), function (a) {
-      a.onclick = haritaLinkTikla;
-    });
-    Array.prototype.forEach.call(root.querySelectorAll('button[data-a], a[data-a]'), function (b) {
+    Array.prototype.forEach.call(root.querySelectorAll('button[data-a]'), function (b) {
       b.onclick = function () {
         var a = b.getAttribute('data-a'), id = b.getAttribute('data-i');
         var p = (list || []).filter(function (x) { return String(x.id) === String(id); })[0] || findPkg(id);
@@ -371,15 +359,7 @@
           UI.toast('Restoranın konumu kayıtlı değil — yönetici konum eklemeli', 'error');
           return;
         }
-        if (a === 'haritaYok') {
-          UI.toast('Restoranın konumu kayıtlı değil — yönetici konum eklemeli', 'error');
-          return;
-        }
-        if (a === 'haritaApp') { if (p) haritaAc(p); return; }
-        if (a === 'harita') {
-          if (p && p.map_url) TG.openLink(p.map_url);
-          else if (p) TG.map((p.restaurant || '') + ' ' + (p.region || ''));
-        } else if (a === 'not') kuryeNotSheet(p, function () { openPkg(p.id); });
+        if (a === 'not') kuryeNotSheet(p, function () { openPkg(p.id); });
         else if (a === 'km') kmSheet(findPkg(id));
         else if (a === 'teslim') deliverConfirm(p);
         else if (a === 'odeme') {
@@ -1610,100 +1590,19 @@
     return sonraki().then(function () { qBadge(); });
   }
 
-  /** Harita https bağlantısı (Telegram WebView'de en güvenilir yol). */
+  /** Harita https bağlantısı (koordinat → admin linki → harita araması). */
   function haritaUrl(p) {
     var lat = p.restaurant_lat, lng = p.restaurant_lng;
     var ios = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
     if (lat != null && lng != null) {
-      // maps.google.com/?q=lat,lng → Android'de kurulu harita uygulamasını açar (evrensel bağlantı)
       return ios
         ? 'https://maps.apple.com/?daddr=' + lat + ',' + lng + '&q=' + encodeURIComponent(p.restaurant || 'Restoran')
         : 'https://maps.google.com/?q=' + lat + ',' + lng;
     }
-    // Yöneticinin girdiği konum bağlantısı (varsa) doğrudan kullanılır
     if (p.restaurant_map_url) return p.restaurant_map_url;
     if (p.map_url) return p.map_url;
-    // Hiç konum yoksa: harita araması (her ortamda açılır)
     var q = encodeURIComponent(((p.restaurant || '') + ' ' + (p.region || '')).trim() || 'Restoran');
     return 'https://maps.google.com/?q=' + q;
-  }
-
-  /** Cihaz şeması (varsayılan harita uygulaması) — Telegram engellerse https'e düşer. */
-  function haritaAcDene(p) {
-    var lat = p.restaurant_lat, lng = p.restaurant_lng;
-    var ua = navigator.userAgent || '';
-    var ad = encodeURIComponent(p.restaurant || 'Restoran');
-    var https = haritaUrl(p);
-    if (lat == null || lng == null) { window.location.href = https; return; }
-    var sema = /Android/i.test(ua)
-      ? 'geo:' + lat + ',' + lng + '?q=' + lat + ',' + lng + '(' + ad + ')'
-      : 'maps://?daddr=' + lat + ',' + lng + '&q=' + ad;
-    var zaman = setTimeout(function () {
-      if (!document.hidden) window.location.href = https;   // uygulama açılmadıysa web'e düş
-    }, 1200);
-    document.addEventListener('visibilitychange', function () {
-      if (document.hidden) clearTimeout(zaman);
-    }, { once: true });
-    try { window.location.href = sema; }
-    catch (e) { clearTimeout(zaman); window.location.href = https; }
-  }
-
-  /** Gerçek <a> bağlantısı — Telegram'da custom şema engellendiği için https kullanılır. */
-  function haritaLink(p, sinif, etiket) {
-    var url = haritaUrl(p);
-    if (!url) return '<button class="' + sinif + '" data-a="haritaYok" data-i="' + p.id + '">' + etiket + '</button>';
-    return '<a class="' + sinif + ' pk-map" href="' + esc(url) + '" target="_blank" rel="noopener" data-i="' +
-      p.id + '">' + etiket + '</a>';
-  }
-
-  /** PWA/tarayıcıda cihazın varsayılan harita uygulaması; Telegram'da <a> linki kullanılır. */
-  function haritaLinkTikla(ev) {
-    var id = ev.currentTarget.getAttribute('data-i');
-    var p = ((S.mine && S.mine.packages) || []).concat((S.pool && S.pool.packages) || [])
-      .filter(function (x) { return String(x.id) === String(id); })[0];
-    if (!p) return;                       // paket bulunamazsa <a href> varsayılanı çalışsın
-    ev.preventDefault();
-    haritaAcDene(p);                      // önce varsayılan harita uygulaması, olmazsa https
-  }
-
-  /**
-   * Haritayı açar (koordinat varsa).
-   * ÖNEMLİ: Telegram WebView'de `geo:` / `maps://` şemaları **sessizce engellenir** →
-   * Telegram içinde her zaman **https** evrensel bağlantı kullanılır (kurulu harita uygulamasını açar).
-   */
-  function haritaAc(p) {
-    var lat = p.restaurant_lat, lng = p.restaurant_lng;
-    var ad = encodeURIComponent(p.restaurant || 'Restoran');
-    if ((lat == null || lng == null) && p.map_url) {
-      var tg0 = window.Telegram && Telegram.WebApp;
-      try { if (tg0 && tg0.openLink) { tg0.openLink(p.map_url, { try_instant_view: false }); return; } } catch (e) {}
-      window.open(p.map_url, '_blank');
-      return;
-    }
-    if (lat == null || lng == null) {
-      UI.toast('Restoranın konumu kayıtlı değil — yönetici restoran profiline konum eklemeli', 'error');
-      return;
-    }
-    var ua = navigator.userAgent || '';
-    var android = /Android/i.test(ua);
-    var ios = /iPhone|iPad|iPod/i.test(ua);
-    var gmaps = 'https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng;
-    var apple = 'https://maps.apple.com/?daddr=' + lat + ',' + lng + '&q=' + ad;
-    var geo = 'geo:' + lat + ',' + lng + '?q=' + lat + ',' + lng + '(' + ad + ')';
-    var tg = window.Telegram && Telegram.WebApp;
-
-    if (tg && typeof tg.openLink === 'function') {
-      // Telegram: https evrensel bağlantı (custom şema engellenir)
-      try { tg.openLink(ios ? apple : gmaps, { try_instant_view: false }); return; }
-      catch (e) { /* aşağıdaki yedeklere düş */ }
-    }
-    try {
-      if (android && !tg) { window.location.href = geo; return; }   // PWA/tarayıcı: varsayılan harita
-      if (ios && !tg) { window.location.href = 'maps://?daddr=' + lat + ',' + lng + '&q=' + ad; return; }
-      window.open(ios ? apple : gmaps, '_blank');
-    } catch (e) {
-      UI.toast('Harita açılamadı', 'error');
-    }
   }
 
   function setKuryeDurum(st, reason, menudeKal) {

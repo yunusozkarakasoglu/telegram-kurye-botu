@@ -720,3 +720,14 @@ Doğrulama: `href=https://www.google.com/maps/dir/?api=1&destination=40.9923,29.
 | Tıklama | önce `geo:` (Android) / `maps://` (iOS), **1,2 sn** içinde sayfa gizlenmezse **https**'e düşer |
 | Konum yok | `https://maps.google.com/?q=<restoran> <bölge>` |
 | e2e | **176/176 PASS** · deploy `7284bc5f` (v174) |
+
+### Harita: buton kaldırıldı, saf link (2026-11-27, v176)
+
+| Sorun | Çözüm |
+|---|---|
+| `geo:` / `maps://` → **ERR_UNKNOWN_URL_SCHEME** | Bu şemalar hiç denenmiyor; buton kaldırıldı |
+| Harita erişimi | Kartta **`📍 Haritada aç`** = saf `<a href="https://maps.google.com/?q=lat,lng" target=_blank>` (JS yok) |
+| Kart 2. satırı | **Restoranı Ara · ⇄ Aktar · Paketi iptal et** (3 sütun, 40 px) |
+| Konum yok | `https://maps.google.com/?q=<Restoran> <Bölge>` |
+
+Doğrulama: `href=https://maps.google.com/?q=40.9851,29.1244` · `a.btn.act-sm` (alt çizgi yok, koyu buton) · e2e **174/174** · deploy `1cd5ce07` (v176).
