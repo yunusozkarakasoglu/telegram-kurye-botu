@@ -18,6 +18,31 @@ async function readBody(request: Request): Promise<any> {
 }
 
 /** Eşleşen yönetici ucu yoksa null döner. */
+
+/** "40.99,29.02" veya Google Maps linkinden konum çıkarır. */
+export function parseKonum(girdi: string): { lat: number | null; lng: number | null; url: string | null } {
+  const metin = String(girdi || "").trim();
+  if (!metin) return { lat: null, lng: null, url: null };
+  const ondalik = "(-?\\d{1,3}(?:[.,]\\d{1,10})?)";
+  const desenler = [
+    new RegExp(`@${ondalik},${ondalik}`),                  // .../@40.99,29.02,17z
+    new RegExp(`[?&](?:q|daddr|destination|ll|center)=${ondalik},${ondalik}`),
+    new RegExp(`^${ondalik}\\s*,\\s*${ondalik}$`),        // 40.99,29.02
+    new RegExp(`!3d${ondalik}!4d${ondalik}`),              // data=!3d..!4d..
+  ];
+  for (const d of desenler) {
+    const m = metin.match(d);
+    if (m) {
+      const lat = Number(String(m[1]).replace(",", "."));
+      const lng = Number(String(m[2]).replace(",", "."));
+      if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+        return { lat, lng, url: /^https?:\/\//i.test(metin) ? metin : null };
+      }
+    }
+  }
+  return { lat: null, lng: null, url: /^https?:\/\//i.test(metin) ? metin : null };
+}
+
 export async function adminRoutes(
   request: Request, bot: Bot, user: Account, url: URL,
 ): Promise<Response | null> {
@@ -87,7 +112,8 @@ export async function adminRoutes(
     return json({
       restaurants: rows.map((r) => ({
         id: r.id, name: r.name, phone: r.phone || null, contact_name: r.contact_name || null,
-        latitude: r.latitude, longitude: r.longitude, active: !!r.active, deleted: !!r.deleted,
+        latitude: r.latitude, longitude: r.longitude, map_url: r.map_url || null,
+        active: !!r.active, deleted: !!r.deleted,
       })),
     });
   }
@@ -244,8 +270,9 @@ export async function adminRoutes(
     const phone = String(body.phone ?? "").trim().replace(/[ ()\-]/g, "");
     if (phone && !/^\+?[0-9]{10,13}$/.test(phone)) return fail("Telefon geçersiz. Örnek: 05462089900", 422, "invalid");
     const contact = String(body.contact_name ?? "").trim();
-    await bot.db.run("UPDATE accounts SET name=?, phone=?, contact_name=? WHERE id=?",
-      name, phone || null, contact || null, id);
+    const konum = parseKonum(String(body.location ?? ""));
+    await bot.db.run("UPDATE accounts SET name=?, phone=?, contact_name=?, latitude=?, longitude=?, map_url=? WHERE id=?",
+      name, phone || null, contact || null, konum.lat, konum.lng, konum.url, id);
     return json({ ok: true });
   }
 
@@ -402,15 +429,18 @@ export async function adminRoutes(
     await bot.db.run("INSERT INTO settings(key,value) VALUES ('accounts_id_floor',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", id);
 
     const hash = await makePinHash(pin);
-    const lat = body.latitude == null || body.latitude === "" ? null : Number(body.latitude);
-    const lng = body.longitude == null || body.longitude === "" ? null : Number(body.longitude);
+    // Konum: serbest metin (Google Maps linki veya "lat,lng") ya da ayrı lat/lng
+    const konum = parseKonum(String(body.location ?? ""));
+    const lat = body.latitude == null || body.latitude === "" ? konum.lat : Number(body.latitude);
+    const lng = body.longitude == null || body.longitude === "" ? konum.lng : Number(body.longitude);
+    const mapUrl = konum.url;
     if ((lat != null && !Number.isFinite(lat)) || (lng != null && !Number.isFinite(lng))) {
       return fail("Konum koordinatları geçersiz.", 422, "invalid");
     }
-    await bot.db.run(`INSERT INTO accounts(id,role,name,phone,contact_name,latitude,longitude,
+    await bot.db.run(`INSERT INTO accounts(id,role,name,phone,contact_name,latitude,longitude,map_url,
         pin_hash,pin_plain,pin_must_change,active,deleted)
-      VALUES (?,?,?,?,?,?,?,?,?,1,1,0)`,
-      id, role, name, phone, contact ? contact : null, lat, lng, hash, pin);
+      VALUES (?,?,?,?,?,?,?,?,?,?,1,1,0)`,
+      id, role, name, phone, contact ? contact : null, lat, lng, mapUrl, hash, pin);
 
     const username = bot.env.BOT_USERNAME || "";
     return json({

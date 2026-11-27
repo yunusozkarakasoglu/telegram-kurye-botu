@@ -471,11 +471,13 @@
     }).catch(showError);
   }
 
-  function accountEdit(id, role, name, phone, contact) {
+  function accountEdit(id, role, name, phone, contact, konum) {
     var sh = UI.openSheet(
       '<h2>Düzenle · ' + esc(name) + '</h2>' +
       '<div class="fld"><label>Ad</label><input id="e-name" value="' + esc(name) + '"></div>' +
       (role === 'restoran' ? '<div class="fld"><label>Yetkili adı</label><input id="e-contact" value="' + esc(contact || '') + '"></div>' : '') +
+      (role === 'restoran' ? '<div class="fld"><label>Restoran konumu (Maps linki veya lat,lng)</label>' +
+        '<input id="e-loc" value="' + esc(konum || '') + '" placeholder="https://maps.app.goo.gl/…"></div>' : '') +
       '<div class="fld"><label>Telefon</label><input id="e-phone" inputmode="tel" value="' + esc(phone || '') + '"></div>' +
       '<div class="err" id="e-err"></div>' +
       '<button class="p" id="e-save">Kaydet</button>' +
@@ -483,7 +485,10 @@
     sh.querySelector('#e-cancel').onclick = function () { UI.closeSheet(); };
     sh.querySelector('#e-save').onclick = function () {
       var body = { id: id, name: sh.querySelector('#e-name').value.trim(), phone: sh.querySelector('#e-phone').value.trim() };
-      if (role === 'restoran') body.contact_name = sh.querySelector('#e-contact').value.trim();
+      if (role === 'restoran') {
+        body.contact_name = sh.querySelector('#e-contact').value.trim();
+        body.location = (sh.querySelector('#e-loc').value || '').trim();
+      }
       API.yonetim('hesapGuncelle', body).then(function () {
         UI.closeSheet(); UI.toast('Kaydedildi', 'success'); render();
       }).catch(function (e) { sh.querySelector('#e-err').textContent = e.message || 'Kaydedilemedi'; });
@@ -521,8 +526,10 @@
       b.onclick = function () {
         var id = Number(b.getAttribute('data-edit'));
         var row = all.filter(function (x) { return x.id === id; })[0] || {};
+        var konum = row.map_url || (row.latitude != null && row.longitude != null
+          ? String(row.latitude) + ',' + String(row.longitude) : '');
         accountEdit(id, row.latitude !== undefined || row.contact_name !== undefined ? 'restoran' : 'kurye',
-          row.name || '', row.phone || '', row.contact_name || '');
+          row.name || '', row.phone || '', row.contact_name || '', konum);
       };
     });
   }
@@ -1018,11 +1025,10 @@
       (isRest ? '<div class="fld"><label>Yetkili adı soyadı</label><input id="ku-contact" placeholder="Ali Usta"></div>' : '') +
       '<div class="fld"><label>Telefon</label><input id="ku-phone" inputmode="tel" placeholder="0546 208 99 00"></div>' +
       '<div class="fld"><label>PIN (varsayılan 1234)</label><input id="ku-pin" inputmode="numeric" maxlength="4" value="1234"></div>' +
-      (isRest ? '<div class="acts" style="gap:8px;margin-bottom:8px">' +
-        '<div class="fld" style="flex:1;margin:0"><label>Enlem</label><input id="ku-lat" inputmode="decimal" placeholder="40.9901"></div>' +
-        '<div class="fld" style="flex:1;margin:0"><label>Boylam</label><input id="ku-lng" inputmode="decimal" placeholder="29.0270"></div>' +
-      '</div>' +
-      '<p class="note" style="margin:-4px 0 8px">Konum girilirse haritada aç / yol tarifi çalışır.</p>' : '') +
+      (isRest ? '<div class="fld"><label>Restoran konumu (Google Maps linki veya 40.9901,29.0270)</label>' +
+        '<input id="ku-loc" placeholder="https://maps.app.goo.gl/… veya 40.9901,29.0270"></div>' +
+      '<p class="note" style="margin:-4px 0 8px">Linki Google Maps’te restoranı bulup <b>Paylaş → Bağlantıyı kopyala</b> ile alabilirsiniz. ' +
+        'Konum girilirse kurye kartında “Haritada aç” çalışır.</p>' : '') +
       '<button class="p" id="ku-save">' + (isRest ? 'Restoranı Kaydet' : 'Kuryeyi Kaydet') + '</button>' +
       '<div id="ku-out" style="margin-top:14px"></div>' +
       '<p class="note">Hesap yönetici tarafından açılır. Kişiye giriş bağlantısını gönderin; ilk girişte PIN değiştirmesi istenir.</p>';
@@ -1035,10 +1041,7 @@
         pin: host.querySelector('#ku-pin').value.trim() || '1234',
         contact_name: isRest ? host.querySelector('#ku-contact').value.trim() : '',
       };
-      if (isRest) {
-        body.latitude = host.querySelector('#ku-lat').value.trim();
-        body.longitude = host.querySelector('#ku-lng').value.trim();
-      }
+      if (isRest) body.location = (host.querySelector('#ku-loc').value || '').trim();
       var btn = host.querySelector('#ku-save');
       btn.disabled = true;
       API.yonetim('kullanici', body).then(function (d) {

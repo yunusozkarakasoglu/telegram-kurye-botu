@@ -701,3 +701,13 @@ Doğrulama (tarayıcı): `https://www.google.com/maps/dir/?api=1&destination=40.
 | Yükseklik uyumsuzluğu (40 vs 44) | `.act-row > * { min-height:40px }` |
 
 Doğrulama: `href=https://www.google.com/maps/dir/?api=1&destination=40.9923,29.1244`, `target=_blank`, `background: rgb(90,170,240)`, `h=40`, `text-decoration:none` · e2e **168/168** · deploy `a09ffd08` (v172).
+
+### Restoran konumu + harita (2026-11-27, v173)
+
+| Test | Sonuç |
+|---|---|
+| Admin "konum" alanı | ✔ Maps linki → `latitude=40.9851, longitude=29.1244`, `map_url` saklandı |
+| "lat,lng" biçimi | ✔ `41.0082, 28.9784` ayrıştırıldı |
+| Kurye kartı | ✔ `📍 Haritada aç` satırı (teslim edilene kadar) · `restaurant_lat` + `restaurant_map_url` |
+| Harita URL sırası | koordinat → admin linki → harita **araması** (her durumda çalışır) |
+| e2e | **176/176 PASS** · deploy v173 |

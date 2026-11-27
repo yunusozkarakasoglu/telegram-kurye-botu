@@ -29,6 +29,7 @@ export function pkgDto(pkg: PackageRow, state: string) {
     restaurant_contact: pkg.restaurant_contact || null,
     restaurant_phone: pkg.restaurant_phone || null,
     restaurant_lat: pkg.restaurant_lat ?? null,
+    restaurant_map_url: (pkg as any).restaurant_map_url ?? null,
     restaurant_lng: pkg.restaurant_lng ?? null,
     map_url: pkg.restaurant_lat != null && pkg.restaurant_lng != null
       ? `https://www.google.com/maps/dir/?api=1&destination=${pkg.restaurant_lat},${pkg.restaurant_lng}` : null,

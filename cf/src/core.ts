@@ -162,7 +162,8 @@ export class Bot {
   }
   async packages(where: string, params: unknown[] = [], suffix = ""): Promise<PackageRow[]> {
     return this.db.all<PackageRow>(`SELECT p.*, b.owner, b.created_at, r.name AS restaurant, c.name AS courier_name,
-        r.latitude AS restaurant_lat, r.longitude AS restaurant_lng, r.contact_name AS restaurant_contact,
+        r.latitude AS restaurant_lat, r.longitude AS restaurant_lng, r.map_url AS restaurant_map_url,
+        r.contact_name AS restaurant_contact,
         r.phone AS restaurant_phone, c.phone AS courier_phone, x.name AS cancelled_by_name, x.role AS cancelled_by_role
       FROM packages p JOIN batches b ON b.id=p.batch JOIN accounts r ON r.id=b.owner
       LEFT JOIN accounts c ON c.id=p.courier LEFT JOIN accounts x ON x.id=p.cancelled_by WHERE ${where} ORDER BY p.id DESC ${suffix}`, ...params);
@@ -369,7 +370,8 @@ export class Bot {
     const packages = [];
     for (const id of packageIds) {
       const row = await this.db.first<PackageRow>(`SELECT p.*, b.owner, b.created_at, r.name AS restaurant, c.name AS courier_name,
-          r.latitude AS restaurant_lat, r.longitude AS restaurant_lng, r.contact_name AS restaurant_contact,
+          r.latitude AS restaurant_lat, r.longitude AS restaurant_lng, r.map_url AS restaurant_map_url,
+        r.contact_name AS restaurant_contact,
           r.phone AS restaurant_phone, c.phone AS courier_phone, x.name AS cancelled_by_name, x.role AS cancelled_by_role FROM packages p JOIN batches b ON b.id=p.batch
           JOIN accounts r ON r.id=b.owner LEFT JOIN accounts c ON c.id=p.courier LEFT JOIN accounts x ON x.id=p.cancelled_by WHERE p.id=?`, id);
       if (row) packages.push(row);

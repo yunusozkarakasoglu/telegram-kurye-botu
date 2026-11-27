@@ -752,6 +752,44 @@ def senaryo_restoran_rapor(api: Api, o: dict[str, Oturum], baglam: dict) -> None
     T.esit("kurye raporu göremiyor", 403, yasak.get("_status"))
 
 
+def senaryo_restoran_konum(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
+    """Admin restoran konumu (link veya lat,lng) girer; kurye kartı bu veriyi kullanır."""
+    T.bolum("RESTORAN KONUMU · HARİTA")
+    admin, rest, k2 = o["admin"], o["rest"], o["k2"]
+
+    # Link ile güncelle → lat/lng + map_url çıkarılır
+    upd = api.cagir("POST", "/api/yonetim/hesap-guncelle", {
+        "id": REST, "name": "Test Restoran", "phone": PHONES[REST], "contact_name": "Yetkili",
+        "location": "https://www.google.com/maps/place/Test/@40.9851,29.1244,17z",
+    }, token=admin.token)
+    T.ok("konum linki kaydedildi", bool(upd.get("ok")))
+
+    liste = api.cagir("GET", "/api/yonetim/restoranlar", token=admin.token)
+    row = next((r for r in (liste.get("restaurants") or []) if r["id"] == REST), {})
+    T.ok("lat/lng linkten çıkarıldı", abs(float(row.get("latitude") or 0) - 40.9851) < 1e-6,
+         str(row.get("latitude")))
+    T.ok("map_url saklandı", "maps" in str(row.get("map_url")), str(row.get("map_url"))[:40])
+
+    # Kurye paket DTO'sunda konum alanları
+    talep = siparis_ver(api, rest, baglam["bolge"])
+    pk = [p_ for p_ in restoran_paketleri(api, rest) if p_["batch"] == talep["req_no"]][0]
+    api.cagir("POST", "/api/kabul", {"ids": [pk["id"]]}, token=k2.token)
+    kart = [p_ for p_ in paketlerim(api, k2) if p_["id"] == pk["id"]][0]
+    T.ok("kurye kartında koordinat var", abs(float(kart.get("restaurant_lat") or 0) - 40.9851) < 1e-6,
+         str(kart.get("restaurant_lat")))
+    T.ok("kurye kartında konum URL var", "maps" in str(kart.get("restaurant_map_url")), str(kart.get("restaurant_map_url"))[:40])
+
+    # "lat,lng" biçimi de çalışır
+    upd2 = api.cagir("POST", "/api/yonetim/hesap-guncelle", {
+        "id": REST, "name": "Test Restoran", "phone": PHONES[REST], "contact_name": "Yetkili",
+        "location": "41.0082, 28.9784",
+    }, token=admin.token)
+    liste2 = api.cagir("GET", "/api/yonetim/restoranlar", token=admin.token)
+    row2 = next((r for r in (liste2.get("restaurants") or []) if r["id"] == REST), {})
+    T.ok("lat,lng biçimi ayrıştırıldı", abs(float(row2.get("latitude") or 0) - 41.0082) < 1e-6 and bool(upd2.get("ok")),
+         str(row2.get("latitude")))
+
+
 def senaryo_on_yuz(api: Api) -> None:
     """Statik yüzey testi: app.js'te kritik fonksiyonlar var ve tekil.
     Blok değiştirirken bir fonksiyonun silinmesi `node --check`ten kaçar; bu test yakalar."""
@@ -774,7 +812,7 @@ def senaryo_on_yuz(api: Api) -> None:
     T.esit("aynı fonksiyon iki kez tanımlı değil", [], cift)
 
     # menü / atama kodu akışının işaretleri
-    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "atamaDurum", "ak-okundu", "rp-card", "rp-bchip", "restoranRapor", "rp-yenile", "rp-all", "paketEkleSheet", "kg-tuslar", "hdr-plus", "satir.fee_tl", "haritaAc", "haritaApp", "act-row", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
+    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "atamaDurum", "ak-okundu", "rp-card", "rp-bchip", "restoranRapor", "rp-yenile", "rp-all", "paketEkleSheet", "kg-tuslar", "hdr-plus", "satir.fee_tl", "haritaAc", "haritaApp", "act-row", "haritaUrl", "maplink", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
         T.ok(f"yüzeyde '{iz}' var", iz in js)
 
     with urllib.request.urlopen(f"{api.base}/admin.js", timeout=30) as y:
@@ -802,6 +840,7 @@ def main() -> int:
     senaryo_restoran_kuryeye_gonder(api, oturumlar, baglam)
     senaryo_admin_kullanici_ekleme(api, oturumlar)
     senaryo_durum_yetki(api, oturumlar, baglam)
+    senaryo_restoran_konum(api, oturumlar, baglam)
     senaryo_restoran_rapor(api, oturumlar, baglam)
     senaryo_qr_durum(api, oturumlar, baglam)
     senaryo_iptal_bildirimi(api, oturumlar, baglam)

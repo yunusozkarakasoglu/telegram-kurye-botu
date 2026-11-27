@@ -347,6 +347,9 @@
         '<dt>Durum</dt><dd>' + esc(st.t) + '</dd>' +
         (p.cancelled_at ? '<dt>İptal eden</dt><dd>' + esc((p.cancelled_by_role === 'restoran' ? 'Restoran' : p.cancelled_by_role === 'kurye' ? 'Kurye' : 'Yönetici') + ' · ' + (p.cancelled_by_name || '—')) + '</dd>' : '') +
         '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
+        (duzenlenebilir
+          ? '<dt>Restoran konumu</dt><dd><a class="maplink" href="' + esc(haritaUrl(p)) + '" target="_blank" rel="noopener">📍 Haritada aç</a></dd>'
+          : '') +
         '<dt>Restoran notu</dt><dd>' + esc(p.note || '—') + '</dd>' +
         kuryeNotuSatir +
       '</dl>' +
@@ -1480,6 +1483,9 @@
           '<dt>Teslim</dt><dd>' + dt(p.delivered_at) + '</dd>' +
           '<dt>İptal</dt><dd>' + dt(p.cancelled_at) + '</dd>' +
           '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
+          (duzenlenebilir
+            ? '<dt>Restoran konumu</dt><dd><a class="maplink" href="' + esc(haritaUrl(p)) + '" target="_blank" rel="noopener">📍 Haritada aç</a></dd>'
+            : '') +
           '<dt>Mesafe</dt><dd>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</dd>' +
           '<dt>Ücret</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +
           '<dt>Hakediş</dt><dd>' + (p.payment_received === true ? 'Alındı' : p.payment_received === false ? 'Alınmadı' : '—') + '</dd>' +
@@ -1608,10 +1614,17 @@
   function haritaUrl(p) {
     var lat = p.restaurant_lat, lng = p.restaurant_lng;
     var ios = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
-    if (lat == null || lng == null) return p.map_url || '';
-    return ios
-      ? 'https://maps.apple.com/?daddr=' + lat + ',' + lng + '&q=' + encodeURIComponent(p.restaurant || 'Restoran')
-      : 'https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng;
+    if (lat != null && lng != null) {
+      return ios
+        ? 'https://maps.apple.com/?daddr=' + lat + ',' + lng + '&q=' + encodeURIComponent(p.restaurant || 'Restoran')
+        : 'https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng;
+    }
+    // Yöneticinin girdiği konum bağlantısı (varsa) doğrudan kullanılır
+    if (p.restaurant_map_url) return p.restaurant_map_url;
+    if (p.map_url) return p.map_url;
+    // Hiç konum yoksa bile çalışan bağlantı: restoran adı + bölge ile harita araması
+    var q = encodeURIComponent(((p.restaurant || '') + ' ' + (p.region || '')).trim() || 'Restoran');
+    return 'https://www.google.com/maps/search/?api=1&query=' + q;
   }
 
   /** Gerçek <a> bağlantısı — Telegram'da custom şema engellendiği için https kullanılır. */
