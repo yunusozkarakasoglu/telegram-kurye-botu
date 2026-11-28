@@ -50,6 +50,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] **v190-193**: sipariş kartı ortak `pkHeader` (ÖDEME/BÖLGE + **MESAFE/ÜCRET/KURYE** kutuları; mesafe ✎, kurye ☎ Ara) — restoran ve kurye aynı görünüm.
 - [x] **v188-189**: restoran Paketlerim kartı yeni tasarım (bölge+durum / ödeme+tarih+süre, talep no yok) · kartta **Kurye çerçeveli + ☎ Ara** (yalnız restoran).
 - [x] **v185-187**: yönetici menüsü **sağdan açılan panel** (FAB sağ altta; panel tam boy, 2×2 aksiyonlar en altta, FAB panel açıkken gizli).
 - [x] **v182-184**: yönetici menüsü **sağ alt FAB + yüzen kart** (2 sütun sayfalar + 2×2 aksiyon: Sistem·Profil·Yenile·Çıkış).

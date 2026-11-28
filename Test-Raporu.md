@@ -817,3 +817,14 @@ Doğrulama: kart açılıyor (`SİPARİŞ KARTI` + çipler) · konsolda hata yok
 | Kurye satırı | ✔ çerçeveli kutu + **☎ Ara** → `tel:05550001122` |
 | Kapsam | ✔ **Ara yalnız restoran panelinde** (kurye kartında düz metin) |
 | e2e | **180/180 PASS** · deploy `ab4b6c6a` (v189) |
+
+### Kart: MESAFE / ÜCRET / KURYE kutuları (2026-11-27, v190–v193)
+
+| Kontrol | Sonuç |
+|---|---|
+| Restoran kartı | ✔ başlık + çipler + `MESAFE —` · `ÜCRET —` · `KURYE Boş Kurye ☎ Ara` |
+| Kurye kartı | ✔ `MESAFE ✎ 7 km` · `ÜCRET 300 TL` (2 kutu) — aynı görünüm |
+| Mesafe düzenleme | ✔ ✎ → km penceresi (teslim edilene kadar) |
+| Kutu yükseklikleri | ✔ ikisi de **57 px** (global `min-height:44px` tuzağı çözüldü) |
+| Alan listesi | ✔ Mesafe/Ücret/Kurye mükerrer satırları kaldırıldı |
+| e2e | **180/180 PASS** · deploy `f47ae0cc` (v193) |

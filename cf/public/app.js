@@ -283,6 +283,34 @@
   }
 
   /* ---------------- KURYE: AÇIK PAKETLER ---------------- */
+
+  /** Sipariş kartı başlığı: restoran + durum · ÖDEME/BÖLGE çipleri · MESAFE/ÜCRET/KURYE kutuları. */
+  function pkHeader(p, o) {
+    o = o || {};
+    var kmDeger = p.distance_km == null ? '—' : kmf(p.distance_km);
+    var ucret = p.fee_tl == null ? '—' : money(p.fee_tl);
+    var kmDuzenle = !!o.kmDuzenle;
+    var kuryeAd = o.kuryeAdi === false ? '' : (p.courier_name || '—');
+    return '<div class="pk-hd">' +
+        '<div class="pk-hd-top"><b>' + esc(p.restaurant || '') + '</b>' + UI.statusTag(p.status) + '</div>' +
+        '<div class="pk-chips">' +
+          '<div class="pk-chip od"><small>Ödeme</small><b>' + esc(p.payment || '—') + '</b></div>' +
+          '<div class="pk-chip bol"><small>Bölge</small><b>' + esc(p.region || '—') + '</b></div>' +
+        '</div>' +
+        '<div class="pk-mini' + (o.kuryeAdi === false ? ' two' : '') + '">' +
+          '<div class="pk-mbox">' +
+            '<small>Mesafe' + (kmDuzenle ? '<button class="pk-pen" data-a="km" data-i="' + p.id + '" title="Mesafeyi düzenle">✎</button>' : '') + '</small>' +
+            '<b>' + kmDeger + '</b></div>' +
+          '<div class="pk-mbox"><small>Ücret</small><b>' + ucret + '</b></div>' +
+          (o.kuryeAdi === false ? '' : '<div class="pk-mbox kurye">' +
+            '<small><span>Kurye</span>' +
+            (o.ara && p.courier_phone ? '<a class="mini-edit call" href="tel:' + esc(p.courier_phone) + '">☎ Ara</a>' : '') +
+            '</small><b>' + esc(kuryeAd) + '</b>' +
+          '</div>') +
+        '</div>' +
+      '</div>';
+  }
+
   function pkgCard(p, opts) {
     opts = opts || {};
     var st = { t: p.status };
@@ -318,28 +346,16 @@
 
     return '<div class="pk">' +
       '<div class="pk-title">SİPARİŞ KARTI</div>' +
-      '<div class="pk-hd">' +
-        '<div class="pk-hd-top"><b>' + esc(p.restaurant) + '</b>' + UI.statusTag(p.status) + '</div>' +
-        '<div class="pk-chips">' +
-          '<div class="pk-chip od"><small>Ödeme</small><b>' + esc(p.payment || '—') + '</b></div>' +
-          '<div class="pk-chip bol"><small>Bölge</small><b>' + esc(p.region || '—') + '</b></div>' +
-        '</div>' +
-      '</div>' +
+      pkHeader(p, { kmDuzenle: picked && duzenlenebilir, kuryeAdi: false }) +
       '<div class="pk-bd"><dl class="pk-fields">' +
         '<dt>Sipariş no</dt><dd>Talep #' + p.batch + '-' + p.number + '</dd>' +
         '<dt>Yetkili</dt><dd>' + esc(p.restaurant_contact || '—') + '</dd>' +
         '<dt>Kabul</dt><dd>' + dt(p.accepted_at) + '</dd>' +
         '<dt>Alım</dt><dd>' + dt(p.picked_up_at) + '</dd>' +
         '<dt>Teslim</dt><dd>' + dt(p.delivered_at) + '</dd>' +
-        '<dt>Mesafe</dt><dd>' + (picked && duzenlenebilir
-          ? '<span class="pk-edit"><span>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</span>' +
-            '<button class="mini-edit" data-a="km" data-i="' + p.id + '">Düzenle</button></span>'
-          : (p.distance_km == null ? '—' : kmf(p.distance_km))) + '</dd>' +
-        '<dt>Paket ücreti</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +
         '<dt>Ödeme (hakediş)</dt><dd>' + (p.payment_received === true ? 'Alındı' : p.payment_received === false ? 'Alınmadı' : '—') + '</dd>' +
         '<dt>Durum</dt><dd>' + esc(st.t) + '</dd>' +
         (p.cancelled_at ? '<dt>İptal eden</dt><dd>' + esc((p.cancelled_by_role === 'restoran' ? 'Restoran' : p.cancelled_by_role === 'kurye' ? 'Kurye' : 'Yönetici') + ' · ' + (p.cancelled_by_name || '—')) + '</dd>' : '') +
-        '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
         (duzenlenebilir
           ? '<dt>Restoran konumu</dt><dd><span class="pk-loc"><a class="maplink" href="' + esc(haritaUrl(p)) + '" target="_blank" rel="noopener">📍 Haritada aç</a></span></dd>'
           : '') +
@@ -1461,13 +1477,7 @@
     var sh = UI.openSheet(
       '<div class="pk">' +
         '<div class="pk-title">SİPARİŞ KARTI</div>' +
-        '<div class="pk-hd">' +
-          '<div class="pk-hd-top"><b>' + esc(p.restaurant || '') + '</b>' + UI.statusTag(p.status) + '</div>' +
-          '<div class="pk-chips">' +
-            '<div class="pk-chip od"><small>Ödeme</small><b>' + esc(p.payment || '—') + '</b></div>' +
-            '<div class="pk-chip bol"><small>Bölge</small><b>' + esc(p.region || '—') + '</b></div>' +
-          '</div>' +
-        '</div>' +
+        pkHeader(p, { ara: true }) +
         '<div class="pk-bd"><dl class="pk-fields">' +
           '<dt>Sipariş no</dt><dd>Talep #' + p.batch + '-' + p.number + '</dd>' +
           '<dt>Yetkili</dt><dd>' + esc(p.restaurant_contact || '—') + '</dd>' +
@@ -1476,16 +1486,9 @@
           '<dt>Alım</dt><dd>' + dt(p.picked_up_at) + '</dd>' +
           '<dt>Teslim</dt><dd>' + dt(p.delivered_at) + '</dd>' +
           '<dt>İptal</dt><dd>' + dt(p.cancelled_at) + '</dd>' +
-          '<dt>Kurye</dt><dd>' + (p.courier_name
-            ? '<span class="pk-courier"><span>' + esc(p.courier_name) + '</span>' +
-              (p.courier_phone ? '<a class="mini-edit call" href="tel:' + esc(p.courier_phone) + '">☎ Ara</a>' : '') +
-              '</span>'
-            : '—') + '</dd>' +
           (!p.cancelled_at && !p.delivered_at
             ? '<dt>Restoran konumu</dt><dd><span class="pk-loc"><a class="maplink" href="' + esc(haritaUrl(p)) + '" target="_blank" rel="noopener">📍 Haritada aç</a></span></dd>'
             : '') +
-          '<dt>Mesafe</dt><dd>' + (p.distance_km == null ? '—' : kmf(p.distance_km)) + '</dd>' +
-          '<dt>Ücret</dt><dd>' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</dd>' +
           '<dt>Hakediş</dt><dd>' + (p.payment_received === true ? 'Alındı' : p.payment_received === false ? 'Alınmadı' : '—') + '</dd>' +
           '<dt>Restoran notu</dt><dd>' + esc(p.note || '—') + '</dd>' +
           '<dt>Kurye notu</dt><dd>' + esc(p.courier_note || '—') + '</dd>' +
