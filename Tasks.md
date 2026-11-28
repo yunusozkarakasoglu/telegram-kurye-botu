@@ -22,6 +22,7 @@
 - [ ] **PackOn Express Faz 2 — Süper Admin paneli** (`~/Masaüstü/Kurye-Flow-Mobil`; `~/.pi/packone-d1-token` hazır).
 
 ## Son tamamlananlar
+- [x] **v204 — Cacheleme prosedürü**: `_headers` immutable (app/ui/api/theme/kurallar/styles/admin/vendor) · HTML `no-store` doğrulandı · **sürüm sigortası** `tools/surum-kontrol.py` (sha256 + `?v=` eşleşmesi, `--muhurle`) · `docs/Cacheleme.md` · e2e **CACHE** senaryosu (7 kontrol).
 - [x] **v200-203**: Rapor resimdeki tasarıma çevrildi — süre kartları kaldırıldı (3 kart), **bölge yatay çubuk grafik**, Genel'de **Son 30 gün / Tüm zamanlar**, ↻ ikon düğmesi.
 - [x] **v199**: Yönetici **Profil → Yöneticiler/Şifre** sekmeleri + yönetici ekleme (ad soyad, telefon, kart listesi); restoran/kurye **☎ Destek** sayfası (kartlar + Ara, senkron).
 - [x] **v197**: Bölge silmede **onay penceresi** (Hayır / Evet, sil) — yanlış dokunuş koruması.

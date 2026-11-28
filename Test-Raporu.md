@@ -919,3 +919,25 @@ Doğrulama: kart açılıyor (`SİPARİŞ KARTI` + çipler) · konsolda hata yok
 | Lint | `ruff check .` ✅ |
 | Kapsam | Rapor tasarımı (Paket/Ödeme · Bugün/Genel · çubuk grafik) · Destek + yönetici ekleme · Bölgeler → Sistem · bölge silme onayı · kart teması |
 | Sıradaki | PackOn Express Faz 2 (Süper Admin paneli) |
+
+### Cacheleme prosedürü (27.11.2026, v204)
+
+| Kontrol | Yerel | Canlı |
+|---|---|---|
+| HTML `cache-control` | `no-store, max-age=0` ✔ | `no-store, max-age=0` ✔ |
+| `app.js?v=204` | `public, max-age=31536000, immutable` ✔ | aynı ✔ |
+| `styles.css` | immutable ✔ | — |
+| `vendor/telegram-web-app.js?v=1` | immutable ✔ | aynı ✔ |
+| API `/api/oturum` | `no-store` ✔ | — |
+| Tüm asset'ler `?v=` ile | ✔ (0 sürümsüz çağrı) | ✔ |
+
+**Sürüm sigortası (`tools/surum-kontrol.py`) — 4 senaryo denendi**
+
+| Senaryo | Beklenen | Sonuç |
+|---|---|---|
+| İçerik değişti, sürüm aynı | HATA | ✔ `theme.js: İÇERİK DEĞİŞTİ ama sürüm artırılmadı` |
+| Sürüm artırıldı, mühür eski | HATA | ✔ `sürüm mühürü uyuşmuyor: HTML v204 · mühür v203` |
+| Mühürlendi | TEMİZ | ✔ `SÜRÜM SİGORTASI TEMİZ · v204 · 9 dosya` |
+| `?v=` olmadan çağrı | HATA | ✔ (vendor/telegram-web-app.js yakalandı → `?v=1` eklendi) |
+
+**e2e:** 223/223 PASS (yeni **CACHE** senaryosu, 7 kontrol) · deploy `8457bd17` · asset `v204`

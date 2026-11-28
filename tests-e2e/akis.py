@@ -872,6 +872,47 @@ def senaryo_bolge_senkron(api: Api, o: dict[str, Oturum]) -> None:
     T.ok("silme de senkron", ad not in ((rest2.get("settings") or {}).get("regions") or []))
 
 
+def senaryo_cache(api: Api) -> None:
+    """Cacheleme prosedürü: HTML no-store · sürümlü asset immutable · API no-store."""
+    T.bolum("CACHE · BAŞLIKLAR VE SÜRÜM SİGORTASI")
+    import re as _re
+    import urllib.request
+
+    def basliklar(yol: str) -> dict[str, str]:
+        try:
+            with urllib.request.urlopen(f"{api.base}{yol}", timeout=30) as y:
+                return {k.lower(): v for k, v in y.headers.items()}
+        except urllib.error.HTTPError as e:      # 401 de başlık taşır
+            return {k.lower(): v for k, v in e.headers.items()}
+
+    html = basliklar("/")
+    T.ok("HTML no-store", "no-store" in html.get("cache-control", ""), html.get("cache-control", "—"))
+
+    with urllib.request.urlopen(f"{api.base}/", timeout=30) as y:
+        govde = y.read().decode()
+    surumler = sorted({int(v) for v in _re.findall(r"\?v=(\d+)", govde) if int(v) > 1})
+    T.ok("HTML tek sürüm numarası taşıyor", len(surumler) == 1, str(surumler))
+    surum = surumler[0] if surumler else 0
+
+    js = basliklar(f"/app.js?v={surum}")
+    cc = js.get("cache-control", "")
+    T.ok("app.js immutable", "immutable" in cc and "max-age=31536000" in cc, cc)
+
+    css = basliklar(f"/styles.css?v={surum}")
+    T.ok("styles.css immutable", "immutable" in css.get("cache-control", ""), css.get("cache-control", "—"))
+
+    vendor = basliklar("/vendor/qrcode.min.js?v=1")
+    T.ok("vendor immutable", "immutable" in vendor.get("cache-control", ""), vendor.get("cache-control", "—"))
+
+    api_cc = basliklar("/api/oturum").get("cache-control", "")
+    T.ok("API no-store", "no-store" in api_cc, api_cc)
+
+    # Sürüm sigortası: her asset ?v= ile çağrılıyor mu (immutable cache güvenliği)
+    surumsuz = [y for y in _re.findall(r'(?:src|href)="(?!https?:)([^"?#]+\.(?:js|css))(?:"|\?)', govde)
+                if f'{y}?v=' not in govde]
+    T.esit("tüm asset'ler ?v= ile çağrılıyor", [], surumsuz)
+
+
 def senaryo_on_yuz(api: Api) -> None:
     """Statik yüzey testi: app.js'te kritik fonksiyonlar var ve tekil.
     Blok değiştirirken bir fonksiyonun silinmesi `node --check`ten kaçar; bu test yakalar."""
@@ -941,6 +982,7 @@ def main() -> int:
     senaryo_restoran_rapor(api, oturumlar, baglam)
     senaryo_qr_durum(api, oturumlar, baglam)
     senaryo_iptal_bildirimi(api, oturumlar, baglam)
+    senaryo_cache(api)
     senaryo_on_yuz(api)
     return T.ozet()
 

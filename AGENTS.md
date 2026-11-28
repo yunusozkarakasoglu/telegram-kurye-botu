@@ -29,7 +29,9 @@ Global kurallar (`~/.pi/agent/AGENTS.md`) geçerlidir; burada yalnız bu projeye
 
 ## Kalite kapısı (commit öncesi)
 
-Cloudflare tarafı (canlı): `cd cf && ./node_modules/.bin/tsc --noEmit && npx wrangler deploy` + `python3 tests-e2e/akis.py` (80/80 beklenir).
+Cloudflare tarafı (canlı): `cd cf && ./node_modules/.bin/tsc --noEmit && npx wrangler deploy` + `python3 tests-e2e/akis.py` (223/223 beklenir).
+
+Asset değişikliğinde **sürüm sigortası zorunlu** (immutable cache): HTML'de `?v=` artır → `python3 tools/surum-kontrol.py --muhurle` → `python3 tools/surum-kontrol.py` (temiz olmalı). Ayrıntı: `docs/Cacheleme.md`.
 
 ```bash
 ruff check bot.py kurye tests tools
