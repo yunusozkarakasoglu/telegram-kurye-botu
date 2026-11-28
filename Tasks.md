@@ -18,6 +18,11 @@
 - [ ] Gerçek Telegram hesaplarıyla **restoran tarafı** canlı doğrulama (kurye tarafı tamam).
 - [ ] Phase-4: iki kurye + 10 paket/limit 6 ile kurye–kurye aktarım ve 10/6/4 havuz senaryosu.
 
+### Roadmap'te (detay: `Roadmaps.md` 16–18)
+- [ ] **Yedek sunucu / kesintisiz saha** — Time Travel + restore tatbikatı (RTO ≤ 15 dk) · `MAINTENANCE` modu · `Kesinti-Runbook`. **Proje sonunda.**
+- [ ] **Optimizasyonlar** — indeks denetimi · adaptif yoklama · kota raporu · `package_events` budama · minify. **En son.**
+- [ ] **Saha kontrol** — geciken paket uyarısı · 23:00 gün sonu özeti · tek ekran "Saha".
+
 ### Yeni proje
 - [ ] **PackOn Express Faz 2 — Süper Admin paneli** (`~/Masaüstü/Kurye-Flow-Mobil`; `~/.pi/packone-d1-token` hazır).
 

@@ -22,7 +22,27 @@
 13. **Tamamlandı — Kapsamlı test turu · 2. blok (27.11):** yoğun saat doğruluk testi (`yogun.py`) · **2 saha hatası** bulundu/düzeltildi: (a) 100+ paketli havuzda `too many SQL variables` 500, (b) toplu kabulde boş dönme. Kanıt: `Test-Raporu.md`.
 14. **Tamamlandı — Yayın prosedürü (28.11):** staging Worker+D1 · `tools/yayin.sh` tek komut · `--geri-al` rollback (staging'de prova: `21cffbec…` → `/saglik` 200) · `docs/Yayin-Proseduru.md` · `CHANGELOG.md`. Kanıt: `Test-Raporu.md`.
 15. **Tamamlandı — Cacheleme prosedürü (27.11):** sürümlü asset `immutable` (`_headers`), HTML `no-store`, API `no-store`; **sürüm sigortası** (`tools/surum-kontrol.py` — içerik değişti/sürüm artmadı ise deploy blokajı) · `docs/Cacheleme.md`. Kanıt: `Test-Raporu.md` (v204).
-16. **Roadmap — Yedek sunucu / kesintisiz saha:** D1 Time Travel (RPO ≈ 0) + restore tatbikatı (RTO ≤ 15 dk) · `MAINTENANCE` bakım modu · istemci kuyruğu kalıcılığı · `docs/Kesinti-Runbook.md`. **Proje sonunda.**
-17. **Roadmap — Optimizasyonlar:** indeks denetimi (`batches(owner,created_at)`, `packages(batch)`, `packages(courier,delivered_at)`) · adaptif yoklama (10/30 sn) · minify değerlendirmesi · `tools/kota-raporu.py` · `package_events` budama. **En son.**
-18. **Roadmap — Saha kontrol (tek kişi operasyonu):** geciken paket uyarısı (Telegram) · 23:00 gün sonu özeti (hakediş + ödenmeyen) · tek ekran “Saha” (online kurye / havuz / geciken).
+16. **Roadmap — Yedek sunucu / kesintisiz saha (proje sonu; kapsamlı iş):**
+   - **RPO ≈ 0:** D1 **Time Travel** doğrula (Paid planda ~30 gün, saniye hassasiyeti) · günlük export + Time Travel iki katman.
+   - **RTO ≤ 15 dk:** `tools/geri-yukle.sh` ile **restore tatbikatı** (ayrı test D1'e) · süre ölçülür, runbook'a yazılır.
+   - **Bakım/kesinti modu:** `MAINTENANCE=1` → API'ler 503 + Mini App'te "kısa bakım" ekranı · istemci eylem kuyruğu korunur, iş kaybı yok.
+   - **İstemci dayanıklılığı:** başarısız eylem kaybolmaz; ekranda "gönderilemedi (N)" görünür + elle tekrar.
+   - **`docs/Kesinti-Runbook.md`:** belirti → ilk 5 dk → karar ağacı (rollback / restore / bakım modu) → kullanıcıya mesaj şablonu.
+   - **Alarm:** izleme 10 dk → kritik anda 1 dk (Telegram) · heartbeat + hata bütçesi.
+   - **Karar (v1):** ikinci Worker ile yazma failover'ı **yapılmaz** (veri bölünmesi riski); hedef hızlı geri dönüş + kesintisiz istemci.
+
+17. **Roadmap — Optimizasyonlar (en son; sistem şu an yükün çok altında):**
+   - **İndeks denetimi:** `batches(owner, created_at)` · `packages(batch)` · `packages(courier, delivered_at)` + `EXPLAIN QUERY PLAN` ile doğrulama (günlük 700–1000 paket, yıllık ~300 bin satır).
+   - **Adaptif yoklama:** paket varken 10 sn · boşta 30 sn · sekme gizli → dur (şu an sabit 15 sn).
+   - **Kota görünümü:** `tools/kota-raporu.py` — haftalık istek/CPU/rows_read özeti.
+   - **Budama:** `package_events` ve `app_logs` için 90 gün saklama + cron temizliği.
+   - **Kod boyutu:** `app.js` 145 KB → minify değerlendirmesi (build adımı) — önce kazanç ölçülür.
+   - **Cron bütçesi:** her dakika `tick` → erken çıkış (aktif teklif/kuyruk yoksa tek hafif sorgu) doğrulanır.
+
+18. **Roadmap — Saha kontrol (tek kişi operasyonu, 70 restoran · 30 kurye · 700–1000 paket/gün):**
+   - **Geciken paket uyarısı:** havuzda >10 dk / kuryede >30 dk → Telegram'a tek satır (sahadayken telefon).
+   - **Gün sonu özeti (23:00):** günlük paket, km, kurye bazlı hakediş, **ödenmeyen** tutar.
+   - **Tek ekran "Saha":** online/meşgul/offline kurye sayısı · havuzda bekleyen · geciken paket · açık ödeme.
+   - Ön koşul: 16–17 tamamlandıktan sonra (bildirim altyapısı + ölçüm hazır).
+
 19. **Planlanacak — Cloudflare tam parite:** gönderim kuyruğu/429, tek kart görünümü, transfer bildirimi düzeltmesi; medya ve kuyruk sözleşmesi korunarak taşıma.
