@@ -200,14 +200,18 @@ def main() -> int:
 
     # --- Doğruluk: çift atama / kayıp
     bolum("YOĞUN SAAT · DOĞRULUK")
-    cift = sql_json(f"SELECT courier, count(*) AS n FROM packages WHERE batch IN ({batch_sql}) AND courier IS NOT NULL "
-                    f"GROUP BY courier HAVING count(*) > 0")
+    # Kurye başına dağılım (kapasite aşımı kontrolü için)
+    dagilim = sql_json(f"SELECT courier, count(*) AS n FROM packages WHERE batch IN ({batch_sql}) "
+                       f"AND courier IS NOT NULL GROUP BY courier")
     atanan = sql_json(f"SELECT count(*) AS n FROM packages WHERE batch IN ({batch_sql}) AND courier IS NOT NULL")[0]["n"]
     bekleyen = sql_json(f"SELECT count(*) AS n FROM packages WHERE batch IN ({batch_sql}) AND courier IS NULL "
                         f"AND delivered_at IS NULL AND cancelled_at IS NULL")[0]["n"]
     ok("paket kaybı yok (atanan + havuzda = 20)", int(atanan) + int(bekleyen) == PAKET,
        f"{atanan} + {bekleyen}")
     ok("atanan = kabul sayısı", int(atanan) == alinan, f"{atanan} vs {alinan}")
+    limit = 3
+    ok("kurye başına kapasite aşılmadı", all(int(r["n"]) <= limit for r in dagilim),
+       f"{[(r['courier'], r['n']) for r in dagilim]}")
 
     ayni = sql_json(f"SELECT id, count(*) AS n FROM packages WHERE batch IN ({batch_sql}) GROUP BY id HAVING count(*) > 1")
     ok("aynı paket iki kez kayıtlı değil", ayni == [], str(ayni))

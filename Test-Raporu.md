@@ -986,7 +986,7 @@ Düzeltme: `assign.expireClaims()` → cron `tick` başında + `openClaim` baş�
 
 ### Kapsamlı test turu · 2. blok — yoğun saat (27.11.2026)
 
-**`tests-e2e/yogun.py` · 14/14 PASS** (9 kurye, 20 paket, eşzamanlı kabul)
+**`tests-e2e/yogun.py` · 15/15 PASS** (9 kurye, 20 paket, eşzamanlı kabul)
 
 | Test | Sonuç |
 |---|---|
@@ -998,6 +998,7 @@ Düzeltme: `assign.expireClaims()` → cron `tick` başında + `openClaim` baş�
 | Aynı paket iki kez kayıtlı değil | ✔ `[]` |
 | Atananların tamamı teslim | ✔ `18 / 18` |
 | **Ücret tarifeye birebir** | ✔ **0 hata** (km 2/3/4/5/7/9/12/15) |
+| Kurye başına kapasite aşılmadı | ✔ ≤ 3 |
 | İkinci teslim reddedildi | ✔ HTTP 409 |
 
 **Bulunan 2 saha hatası (ikisi de canlıya çıkacaktı)**
@@ -1009,4 +1010,4 @@ Düzeltme: `assign.expireClaims()` → cron `tick` başında + `openClaim` baş�
    İlk N paket başka kurye tarafından alınmışsa kurye "Alınabilecek paket yok" alıyordu (havuzda paket varken).
    *Düzeltme:* kesmeden önce `courier IS NULL …` süzgeci; atomik `UPDATE … WHERE courier IS NULL` korundu.
 
-**Doğrulama zinciri:** e2e 231/231 · cron 9/9 · yoğun 14/14 · tutarlılık (yerel + canlı) TEMİZ · deploy `ff9b90f0`
+**Doğrulama zinciri:** e2e 231/231 · cron 9/9 · yoğun 15/15 · tutarlılık (yerel + canlı) TEMİZ · deploy `ff9b90f0`
