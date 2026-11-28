@@ -771,3 +771,15 @@ Zemin `var(--card)`, aktifken `var(--el)`. e2e **174/174** · deploy v180.
 | Restoran/yönetici kartı teması | eski başlık düzeni | Kurye kartıyla aynı: çerçeveli başlık + **ÖDEME/BÖLGE çipleri** |
 
 Doğrulama: kart açılıyor (`SİPARİŞ KARTI` + çipler) · konsolda hata yok · e2e **174/174** · deploy v181.
+
+### Kapanış (27.11 · kart turu, v163–v181)
+
+| Tur | Sürüm | Özet |
+|---|---|---|
+| QR geri sayımı | v163 | 10 sn → **5 sn** |
+| (+) Paket Ekle | v164 | QR Okut / Kod Gir + **tuş takımı**; bekleyen kodlar **benzersiz** (partial unique index) |
+| Header butonu | v165-166 | 34 px **gerçek daire** (min-height tuzağı) |
+| km anlık tutar | v167 | Onayla/Güncelle sonrası **sayfa yenilemeden** |
+| Harita/konum | v168-177 | konum alanı · `📍 Haritada aç` (saf https) · **Harita aç butonu kaldırıldı** (ERR_UNKNOWN_URL_SCHEME) · mavi kesikli kutu |
+| Kart teması | v178-181 | çerçeveli başlık + **ÖDEME/BÖLGE çipleri** · 3 sütun alt butonlar (kenarlıklı) · **`duzenlenebilir` hatası düzeltildi** |
+| **Toplam kalite** | — | ruff ✅ · Python **382/382** ✅ · tsc ✅ · e2e **174/174** ✅ · canlı `67de93a4` (v181) |

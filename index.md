@@ -5,7 +5,7 @@
 | Konu | Durum |
 |---|---|
 | Canlı | `67de93a4` · asset **v181** · ana/admin/saglik 200 |
-| Arayüz | kurye: havuz/paketlerim/geçmiş + **yeni hamburger menü** (profil kartı · DURUM · 2×2 ızgara) · restoran: sipariş ekle/paketlerim/rapor |
+| Arayüz | kurye: havuz/paketlerim/geçmiş + hamburger menü + **(+) Paket Ekle** (QR/Kod tuş takımı) · **sipariş kartı tek tema** (başlık + ÖDEME/BÖLGE çipleri) · restoran: sipariş ekle/**QR ile ekle**/paketlerim/rapor |
 | Plan | **Workers Paid ($5/ay)** — CPU 503'leri bitti, deploy açık |
 | Performans | **Faz A–E bitti** · kapasite ~1.290 kurye (hatasız), p95 ~170 ms → `docs/Kapasite-Raporu.md` |
 | Yedek | yerel (systemd 03:00) + CI artifact (90 gün) + GitHub Release (son 30) — üçü de çalışıyor |

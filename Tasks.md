@@ -50,6 +50,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] **Kart teması turu (v163-181)**: QR geri sayım 5 sn · kurye header (+) → Paket Ekle (QR/Kod + tuş takımı) · bekleyen kodlar **benzersiz** · km sonrası anlık tutar · **sipariş kartı yeni tema** (başlık + çipler, kenarlıklı alt butonlar) · **restoran konumu** (admin alanı + mavi kutulu 📍 link) · `duzenlenebilir` ReferenceError düzeltmesi. e2e 174/174.
 - [x] **v181**: restoran paket kartı açılmıyordu (`duzenlenebilir` tanımsız) → düzeltildi; restoran/yönetici kartı yeni tema (başlık + çipler).
 - [x] **v180**: kart alt satırındaki 3 butona (Ara · Aktar · İptal) belirgin kenarlık (`rgba(148,163,184,.45)`).
 - [x] **v178-179**: sipariş kartı yeni tema (çerçeveli başlık + ÖDEME/BÖLGE çipleri); "Harita aç" butonu kaldırıldı (yalnız 📍 link).
