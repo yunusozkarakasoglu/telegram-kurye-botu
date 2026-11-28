@@ -29,6 +29,7 @@ import argparse
 import json
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -107,7 +108,21 @@ class Api:
 
     def cagir(self, method: str, path: str, body: dict | None = None,
               token: str | None = None, dev: tuple[str, str] | None = None,
-              bekle_hata: bool = False):
+              bekle_hata: bool = False, hiz_tekrar: bool = True):
+        """429 (30 yazma/dk) alındığında sessizce tekrar dener — istemci davranışının aynısı."""
+        for deneme in range(3 if hiz_tekrar else 1):
+            try:
+                return self._cagir(method, path, body, token, dev, bekle_hata)
+            except HttpHatasi as e:
+                if e.code == 429 and deneme < 2:
+                    time.sleep(2.2)
+                    continue
+                raise
+        raise AssertionError("ulaşılamaz")
+
+    def _cagir(self, method: str, path: str, body: dict | None = None,
+               token: str | None = None, dev: tuple[str, str] | None = None,
+               bekle_hata: bool = False):
         url = f"{self.base}{path}"
         veri = json.dumps(body).encode() if body is not None else None
         istek = urllib.request.Request(url, data=veri, method=method)
@@ -153,6 +168,20 @@ def sql(calistir: str) -> None:
     )
     if sonuc.returncode != 0:
         sys.exit(f"D1 komutu başarısız:\n{sonuc.stdout}\n{sonuc.stderr}")
+
+
+def sql_json(sorgu: str) -> str:
+    """D1 sorgusunu JSON sonuç olarak döner (assert için)."""
+    sonuc = subprocess.run(
+        ["npx", "wrangler", "d1", "execute", "kurye-db", "--local", "--json", "--command", sorgu],
+        cwd=CF_DIR, capture_output=True, text=True,
+    )
+    if sonuc.returncode != 0:
+        sys.exit(f"D1 komutu başarısız:\n{sonuc.stdout}\n{sonuc.stderr}")
+    try:
+        return json.dumps(json.loads(sonuc.stdout)[0].get("results", []))
+    except (json.JSONDecodeError, IndexError, AttributeError):
+        return "[]"
 
 
 def temizle() -> None:
@@ -872,6 +901,73 @@ def senaryo_bolge_senkron(api: Api, o: dict[str, Oturum]) -> None:
     T.ok("silme de senkron", ad not in ((rest2.get("settings") or {}).get("regions") or []))
 
 
+def senaryo_mutabakat(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
+    """Gün sonu mutabakat: DB toplamı = rapor toplamı = ödeme toplamı.
+
+    Tek kişi yönetilen sahada en kritik güven sorusu: 'rapor doğru mu?'
+    Aynı sayıyı üç ayrı yoldan okuyup karşılaştırır.
+    """
+    T.bolum("MUTABAKAT · DB = RAPOR = ÖDEME")
+    rest, k1, k2 = o["rest"], o["k1"], o["k2"]
+
+    # Kuryelerin üzerini boşalt (kapasite kilidi testi bozmasın)
+    for k in (k1, k2):
+        for p_ in paketlerim(api, k):
+            if not p_.get("picked_up_at"):
+                api.cagir("POST", f"/api/paket/{p_['id']}/km", {"km": "3"}, token=k.token)
+            api.cagir("POST", f"/api/paket/{p_['id']}/teslim", {"paid": False}, token=k.token)
+    sql(f"UPDATE accounts SET locked=0 WHERE id IN ({K1},{K2})")
+
+    adet = 4
+    talep = siparis_ver(api, rest, baglam["bolge"], adet=adet, odeme="Nakit")
+    pk_list = [p_ for p_ in restoran_paketleri(api, rest) if p_["batch"] == talep["req_no"]]
+    T.esit("mutabakat için paket oluştu", adet, len(pk_list))
+
+    # 4'ü k1, 2'si k2'ye; farklı km'ler (tarife basamakları)
+    atama = [(k1, pk_list[:3], ["2", "4", "12"]), (k2, pk_list[3:], ["1"])]
+    for k, grup, kmler in atama:
+        for p_, km in zip(grup, kmler, strict=True):
+            api.cagir("POST", "/api/kabul", {"ids": [p_["id"]]}, token=k.token)
+            api.cagir("POST", f"/api/paket/{p_['id']}/km", {"km": km}, token=k.token)
+            api.cagir("POST", f"/api/paket/{p_['id']}/teslim", {"paid": False}, token=k.token)
+
+    # 1) DB gerçeği
+    # Restoranın TÜM teslim edilmiş paketleri (rapor/ödeme uçları da tümünü toplar)
+    db = json.loads(sql_json(
+        f"SELECT count(*) AS adet, coalesce(sum(courier_fee),0) AS tl FROM packages "
+        f"WHERE batch IN (SELECT id FROM batches WHERE owner={REST}) AND delivered_at IS NOT NULL"))
+    db_tl = float((db or [{}])[0].get("tl") or 0)
+    db_adet = int((db or [{}])[0].get("adet") or 0)
+    T.ok("DB: teslim edilen paket sayısı arttı", db_adet >= adet, f"{db_adet} ≥ {adet}")
+    T.ok("DB: hakediş toplamı > 0", db_tl > 0, f"{db_tl} TL")
+
+    # 2) Ödeme analizi ucu
+    od = api.cagir("GET", "/api/restoran/odemeler?range=all", token=rest.token)
+    oo = od.get("ozet") or {}
+    T.ok("ödeme toplamı DB ile aynı", abs(float(oo.get("toplam_tl") or 0) - db_tl) <= 1,
+         f"api={oo.get('toplam_tl')} db={db_tl}")
+    T.ok("kurye bazlı toplam = genel toplam",
+         abs(sum(float(k.get("tutar") or 0) for k in (od.get("kuryeler") or [])) - float(oo.get("toplam_tl") or 0)) <= 1,
+         f"kuryeler={sum(float(k.get('tutar') or 0) for k in (od.get('kuryeler') or []))} genel={oo.get('toplam_tl')}")
+    T.esit("ödenen + ödenmeyen = teslim", int(oo.get("teslim") or 0),
+           int(oo.get("odenen_adet") or 0) + int(oo.get("odenmeyen_adet") or 0))
+
+    # 3) Rapor ucu (ciro)
+    rp = api.cagir("GET", "/api/restoran/rapor?range=all", token=rest.token)
+    ro = rp.get("ozet") or {}
+    T.ok("rapor cirosu DB ile aynı", abs(float(ro.get("ciro_tl") or 0) - db_tl) <= 1,
+         f"rapor={ro.get('ciro_tl')} db={db_tl}")
+
+    # 4) Ödemeyi işaretle → kalan düşmeli
+    idler = [p_["id"] for _, grup, _ in atama for p_ in grup]
+    api.cagir("POST", "/api/odeme", {"ids": idler}, token=k1.token)
+    od2 = api.cagir("GET", "/api/restoran/odemeler?range=all", token=rest.token)
+    oo2 = od2.get("ozet") or {}
+    T.ok("tüm ödemeler işaretlenince kalan düşer",
+         float(oo2.get("kalan_tl") or 0) < float(oo.get("kalan_tl") or 0),
+         f"{oo.get('kalan_tl')} → {oo2.get('kalan_tl')}")
+
+
 def senaryo_cache(api: Api) -> None:
     """Cacheleme prosedürü: HTML no-store · sürümlü asset immutable · API no-store."""
     T.bolum("CACHE · BAŞLIKLAR VE SÜRÜM SİGORTASI")
@@ -982,6 +1078,7 @@ def main() -> int:
     senaryo_restoran_rapor(api, oturumlar, baglam)
     senaryo_qr_durum(api, oturumlar, baglam)
     senaryo_iptal_bildirimi(api, oturumlar, baglam)
+    senaryo_mutabakat(api, oturumlar, baglam)
     senaryo_cache(api)
     senaryo_on_yuz(api)
     return T.ozet()

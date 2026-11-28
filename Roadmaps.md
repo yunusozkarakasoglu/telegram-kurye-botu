@@ -4,7 +4,7 @@
 > `~/Masaüstü/Kurye-Flow-Mobil/Roadmaps.md` (PackOn Express, Faz 2-6).
 > Burada yalnız acil düzeltmeler yapılır.
 >
-> **Durum (27.11 gece):** Performans (A–E) + arayüz turu + **QR/PIN ile atama** + Rapor (Paket/Ödeme + çubuk grafik) + **Destek/Bölgeler** + **sipariş kartı teması, konum & harita** kapandı; canlı `8457bd17` / asset **v204**, e2e **223/223**.
+> **Durum (27.11 gece):** Performans (A–E) + arayüz turu + **QR/PIN ile atama** + Rapor (Paket/Ödeme + çubuk grafik) + **Destek/Bölgeler** + **sipariş kartı teması, konum & harita** kapandı; canlı `f50721af` / asset **v204**, e2e **231/231** · cron 9/9 · tutarlılık temiz.
 > **Sıradaki odak:** PackOn Express Faz 2 (Süper Admin paneli).
 
 1. **Tamamlandı — Yerel v2 çekirdek:** kabul/öncelik, aktarım + bildirim + onay, profil/harita/arama, medya yok sayma, durum etiketleri, komut menüleri, bölge/telefon/tarife yönetimi, kendi kendine kayıt, hesap aktif/pasif/sil, iptal akışı, havuz bölge gruplama. Kanıt: `Test-Raporu.md`.
@@ -18,8 +18,9 @@
 9. **Tamamlandı — Rapor:** üst sekme **Paket | Ödeme**; Paket içinde **Bugün | Genel** · **süre kartları kaldırıldı** (3 kart) · **bölge yatay çubuk grafiği** (1. sıra yeşil, 0 adet boş çubuk) · Genel = **Son 30 gün / Tüm zamanlar** (`range=30|all`) · **↻ ikon** (otomatik yenileme yok) · Ödeme: kurye bazlı gruplama + ödenmeyenler. Kanıt: `Test-Raporu.md` (v194–v203).
 10. **Tamamlandı — Bölgeler → Sistem · Destek:** yönetici **Sistem → Bölgeler** (ekle/sil/sırala otomatik kayıt + **silme onayı**), restoran/kurye **Sistem → Bölgeler** salt okunur senkron · yönetici **Profil → Yöneticiler/Şifre** (yönetici ekle: ad soyad + telefon, kart listesi) · restoran/kurye menüsünde **☎ Destek** sayfası (yönetici kartları + **Ara**). Kanıt: `Test-Raporu.md` (v195–v199).
 11. **Sürüyor — Yedekleme ve geri yükleme:** yerel (systemd) + CI artifact + GitHub Release yedekleri **çalışıyor**; ilk geri yükleme testi geçti. Sırada: `tools/geri-yukle.sh` otomatik tatbikat, yedek tazeliği uyarısı, şifreleme (age/gpg), VPS soğuk yedek (RTO ≤ 15 dk). Ayrıntı: `Tasks.md → Altyapı / yedek`.
-12. **Tamamlandı — Cacheleme prosedürü (27.11):** sürümlü asset `immutable` (`_headers`), HTML `no-store`, API `no-store`; **sürüm sigortası** (`tools/surum-kontrol.py` — içerik değişti/sürüm artmadı ise deploy blokajı) · `docs/Cacheleme.md`. Kanıt: `Test-Raporu.md` (v204).
-13. **Roadmap — Yedek sunucu / kesintisiz saha:** D1 Time Travel (RPO ≈ 0) + restore tatbikatı (RTO ≤ 15 dk) · `MAINTENANCE` bakım modu · istemci kuyruğu kalıcılığı · `docs/Kesinti-Runbook.md`. **Proje sonunda.**
-14. **Roadmap — Optimizasyonlar:** indeks denetimi (`batches(owner,created_at)`, `packages(batch)`, `packages(courier,delivered_at)`) · adaptif yoklama (10/30 sn) · minify değerlendirmesi · `tools/kota-raporu.py` · `package_events` budama. **En son.**
-15. **Roadmap — Saha kontrol (tek kişi operasyonu):** geciken paket uyarısı (Telegram) · 23:00 gün sonu özeti (hakediş + ödenmeyen) · tek ekran “Saha” (online kurye / havuz / geciken).
-16. **Planlanacak — Cloudflare tam parite:** gönderim kuyruğu/429, tek kart görünümü, transfer bildirimi düzeltmesi; medya ve kuyruk sözleşmesi korunarak taşıma.
+12. **Tamamlandı — Kapsamlı test turu · 1. blok (27.11):** cron testleri (`__scheduled`) · tutarlılık denetçisi (6 invaryant, canlı dahil) · gün sonu mutabakat senaryosu · **bulunan gerçek hata**: bayat `assign_codes` kodu işgal ediyordu → cron süpürmesi eklendi. Kanıt: `Test-Raporu.md`.
+13. **Tamamlandı — Cacheleme prosedürü (27.11):** sürümlü asset `immutable` (`_headers`), HTML `no-store`, API `no-store`; **sürüm sigortası** (`tools/surum-kontrol.py` — içerik değişti/sürüm artmadı ise deploy blokajı) · `docs/Cacheleme.md`. Kanıt: `Test-Raporu.md` (v204).
+14. **Roadmap — Yedek sunucu / kesintisiz saha:** D1 Time Travel (RPO ≈ 0) + restore tatbikatı (RTO ≤ 15 dk) · `MAINTENANCE` bakım modu · istemci kuyruğu kalıcılığı · `docs/Kesinti-Runbook.md`. **Proje sonunda.**
+15. **Roadmap — Optimizasyonlar:** indeks denetimi (`batches(owner,created_at)`, `packages(batch)`, `packages(courier,delivered_at)`) · adaptif yoklama (10/30 sn) · minify değerlendirmesi · `tools/kota-raporu.py` · `package_events` budama. **En son.**
+16. **Roadmap — Saha kontrol (tek kişi operasyonu):** geciken paket uyarısı (Telegram) · 23:00 gün sonu özeti (hakediş + ödenmeyen) · tek ekran “Saha” (online kurye / havuz / geciken).
+17. **Planlanacak — Cloudflare tam parite:** gönderim kuyruğu/429, tek kart görünümü, transfer bildirimi düzeltmesi; medya ve kuyruk sözleşmesi korunarak taşıma.

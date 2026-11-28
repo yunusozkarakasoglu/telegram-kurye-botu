@@ -4,6 +4,8 @@ import { AUTO_OFFER_AFTER, AUTO_OFFER_RETRY, AUTO_OFFER_TTL, WAIT_WARN_SECONDS, 
 import { details, keyboard } from "./views";
 
 export async function tick(bot: Bot) {
+  const { expireClaims } = await import("./assign");
+  await expireClaims(bot);           // süresi geçen atama kodları (partial UNIQUE index temizliği)
   await expire(bot);
   await warnWaiting(bot);
   await createOffers(bot);

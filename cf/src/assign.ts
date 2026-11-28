@@ -35,10 +35,25 @@ async function bildirKisi(bot: Bot, hesap: number, text: string, kind: string) {
   }
 }
 
+/** Süresi geçmiş bekleyen claim'leri kapatır.
+ *  ÖNEMLİ: `assign_codes` üzerindeki partial UNIQUE index yalnız `state='pending'`
+ *  satırları kapsar. Süresi geçenler kapatılmazsa kod havuzunu sürekli işgal eder
+ *  (30 denemede kod bulunamama riski) ve tablo şişer. */
+export async function expireClaims(bot: Bot): Promise<number> {
+  try {
+    const res: any = await bot.db.run(
+      "UPDATE assign_codes SET state='expired' WHERE state='pending' AND expires<?", bot.nowF());
+    return Number(res?.meta?.changes ?? 0);
+  } catch {
+    return 0;
+  }
+}
+
 /** Restoran: sipariş satırı için QR/PIN claim'i aç (kurye seçilmez). */
 export async function openClaim(
   bot: Bot, owner: number, region: string | null, payment: string | null, note: string | null,
 ): Promise<{ ok: boolean; error?: string; claim_id?: number; code?: string; qr_token?: string; qr_link?: string; expires_at?: number }> {
+  await expireClaims(bot);           // kod havuzunu temizle (bayat pending'ler kodu işgal etmesin)
   const simdi = bot.nowF();
   const token = tokenUret();
   // Kod, BEKLEYEN tüm claim'lerden farklı olmalı (partial unique index + yeniden deneme).

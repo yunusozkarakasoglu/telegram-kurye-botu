@@ -31,6 +31,8 @@ Global kurallar (`~/.pi/agent/AGENTS.md`) geçerlidir; burada yalnız bu projeye
 
 Cloudflare tarafı (canlı): `cd cf && ./node_modules/.bin/tsc --noEmit && npx wrangler deploy` + `python3 tests-e2e/akis.py` (223/223 beklenir).
 
+Cron + tutarlılık (yerel): `python3 tests-e2e/cron.py` (9/9) · `python3 tools/tutarlilik.py` (temiz). Dev sunucu **`--test-scheduled`** ile başlatılmalı, yoksa `/__scheduled` 404 döner.
+
 Asset değişikliğinde **sürüm sigortası zorunlu** (immutable cache): HTML'de `?v=` artır → `python3 tools/surum-kontrol.py --muhurle` → `python3 tools/surum-kontrol.py` (temiz olmalı). Ayrıntı: `docs/Cacheleme.md`.
 
 ```bash

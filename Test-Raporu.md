@@ -941,3 +941,45 @@ Doğrulama: kart açılıyor (`SİPARİŞ KARTI` + çipler) · konsolda hata yok
 | `?v=` olmadan çağrı | HATA | ✔ (vendor/telegram-web-app.js yakalandı → `?v=1` eklendi) |
 
 **e2e:** 223/223 PASS (yeni **CACHE** senaryosu, 7 kontrol) · deploy `8457bd17` · asset `v204`
+
+### Kapsamlı test turu · 1. blok (27.11.2026)
+
+**Cron akışları — `tests-e2e/cron.py` (ilk kez test edildi) · 9/9**
+
+| Test | Sonuç |
+|---|---|
+| Cron tetiği (`/__scheduled`) | ✔ HTTP 200 |
+| Süresi geçen teklif → `expired` | ✔ |
+| Bildirim kuyruğu: 8. denemede `dead` | ✔ `tries=8`, `last_error=Telegram 401` |
+| Bekleyen paket uyarısı (`last_wait_warn`) | ✔ |
+| 20 dk bekleyen pakete otomatik teklif | ✔ `courier=910004` |
+| Süresi geçen atama kodu süpürme | ✔ `expired` |
+| İki kez tetikleme → çift kayıt yok | ✔ `1 → 1` |
+
+**Tutarlılık denetçisi — `tools/tutarlilik.py`**
+
+| İnvaryant | Yerel | Canlı |
+|---|---|---|
+| Öksüz paket | 0 ✔ | 0 ✔ |
+| Teslim + iptal çelişkisi | 0 ✔ | 0 ✔ |
+| Teslimde ücret yok/negatif | 0 ✔ | 0 ✔ |
+| Bayat bekleyen atama kodu | **598 → 0** (fix sonrası) | **4 → 0** (cron süpürdü) |
+| Sahipsiz bildirim kuyruğu | 0 ✔ | 0 ✔ |
+| Kuryeden düşmüş işaretli paket | 0 ✔ | 0 ✔ |
+
+**Bulunan gerçek hata (canlı veri):** `assign_codes` içinde süresi geçen kayıtlar hiç kapatılmıyordu.
+Partial UNIQUE index yalnız `state='pending'` satırları kapsadığı için bayat kayıtlar **4 haneli kod havuzunu kalıcı işgal ediyordu**.
+Düzeltme: `assign.expireClaims()` → cron `tick` başında + `openClaim` başında süpürme. Canlı D1'de 4 kayıt temizlendi (doğrulandı).
+
+**Gün sonu mutabakat senaryosu — `akis.py`**
+
+| Test | Sonuç |
+|---|---|
+| DB teslim sayısı | ✔ 14 |
+| Ödeme toplamı = DB toplamı | ✔ `2800 = 2800` |
+| Kurye bazlı toplam = genel toplam | ✔ `2800 = 2800` |
+| Ödenen + ödenmeyen = teslim | ✔ `14 = 14` |
+| Rapor cirosu = DB | ✔ `2800 = 2800` |
+| Ödeme işaretlenince kalan düşer | ✔ `2560 → 1150` |
+
+**e2e:** 231/231 PASS · deploy `f50721af` · asset `v204`
