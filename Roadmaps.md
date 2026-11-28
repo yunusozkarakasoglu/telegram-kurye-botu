@@ -4,7 +4,7 @@
 > `~/Masaüstü/Kurye-Flow-Mobil/Roadmaps.md` (PackOn Express, Faz 2-6).
 > Burada yalnız acil düzeltmeler yapılır.
 >
-> **Durum (27.11 gece):** Performans (A–E) + arayüz turu + **QR/PIN ile atama** + Rapor (Paket/Ödeme + çubuk grafik) + **Destek/Bölgeler** + **sipariş kartı teması, konum & harita** kapandı; canlı `a521bafb` / asset **v207**, e2e **251/251** · cron 9/9 · yoğun 15/15 · staging + rollback provalı.
+> **Durum (28.11 gece):** Performans (A–E) + arayüz turu + **QR/PIN ile atama** + Rapor (**filtre çubuğu/sheet** + **kurye ödeme dökümü**) + **Saha** ekranı + **Destek/Bölgeler** + **sipariş kartı teması** + **hesap tutarlılığı** kapandı; canlı `39645022` / asset **v211**, e2e **277/277** · cron 9/9 · yoğun 15/15 · tutarlılık temiz · staging + rollback provalı.
 > **Sıradaki odak:** PackOn Express Faz 2 (Süper Admin paneli).
 
 1. **Tamamlandı — Yerel v2 çekirdek:** kabul/öncelik, aktarım + bildirim + onay, profil/harita/arama, medya yok sayma, durum etiketleri, komut menüleri, bölge/telefon/tarife yönetimi, kendi kendine kayıt, hesap aktif/pasif/sil, iptal akışı, havuz bölge gruplama. Kanıt: `Test-Raporu.md`.
@@ -46,4 +46,12 @@
    - **Tek ekran "Saha":** online/meşgul/offline kurye sayısı · havuzda bekleyen · geciken paket · açık ödeme.
    - Ön koşul: 16–17 tamamlandıktan sonra (bildirim altyapısı + ölçüm hazır).</details>
 
-19. **Planlanacak — Cloudflare tam parite:** gönderim kuyruğu/429, tek kart görünümü, transfer bildirimi düzeltmesi; medya ve kuyruk sözleşmesi korunarak taşıma.
+19. **Tamamlandı — Hesap tutarlılığı + rapor filtreleri (28.11, v208–v211):**
+   - Ödeme tipi **“Ödendi” → “Online”** (canlıda 9 kayıt migrate).
+   - **Paket/Km = toplam km / toplam paket** (eskiden yalnız km girilmiş paketlere bölüyordu).
+   - Ödeme kartları tutarlı: **Paket(=teslim) · Ödendi · Ödenmedi** + **Toplam tutar · Kalan**.
+   - **Filtre çubuğu + sheet**: Bugün · Bu hafta · Bu ay · Tüm zamanlar · Aralık seç (`range=week|month|custom`).
+   - **Kurye ödeme dökümü**: satıra dokun → kartlar + **Ödenmeyen/Tümü** + paket listesi (`/restoran/odemeler/kurye`).
+   - Kanıt: `Test-Raporu.md` (e2e 277/277).
+
+20. **Planlanacak — Cloudflare tam parite:** gönderim kuyruğu/429, tek kart görünümü, transfer bildirimi düzeltmesi; medya ve kuyruk sözleşmesi korunarak taşıma.
