@@ -25,7 +25,7 @@
   }
 
   function nav() {
-    var KENAR = ['profil', 'ayarlar'];
+    var KENAR = ['profil', 'ayarlar', 'bolgeler'];
     // Canlı Saha tek sayfa: iç sekmeler (havuz/son talepler/iptaller) kaldırıldı.
     var GIZLI = ['ozet', 'havuz', 'sontalepler', 'iptaller'];
     var items = TABS.filter(function (t) { return KENAR.indexOf(t[0]) < 0 && GIZLI.indexOf(t[0]) < 0; });
@@ -551,10 +551,11 @@
     panel('<div class="empty"><b>Bağlantı hatası</b>' + esc(e.message || 'İstek başarısız') + '</div>');
   }
 
-  function viewBolgeler() {
-    head('Bölgeler', 'Restoran bölge listesi');
+  function viewBolgeler(sekmeIci) {
+    if (!sekmeIci) head('Bölgeler', 'Restoran bölge listesi');
+    var hedef = sekmeIci ? panelAy : panel;
     API.yonetim('bolgeler').then(function (d) {
-      panel('<div class="filters"><input id="nr" placeholder="Yeni bölge…"><button class="p sm" id="add">Ekle</button></div>' +
+      hedef('<div class="filters"><input id="nr" placeholder="Yeni bölge…"><button class="p sm" id="add">Ekle</button></div>' +
         '<div id="blist">' + (d.regions || []).map(function (r, i) {
           return '<div class="brow" data-name="' + esc(r) + '">' +
             '<span class="bname"><b>' + (i + 1) + '.</b> ' + esc(r) + '</span>' +
@@ -661,18 +662,19 @@
     });
   }
 
-  var AYARLAR = [['fiyat', 'Fiyatlandırma'], ['kurallar', 'Kurallar'], ['tanilama', 'Tanılama'], ['logs', 'Logs']];
+  var AYARLAR = [['fiyat', 'Fiyatlandırma'], ['kurallar', 'Kurallar'], ['bolgeler', 'Bölgeler'], ['tanilama', 'Tanılama'], ['logs', 'Logs']];
 
   function viewAyarlar() {
     if (!S.ayarTab) S.ayarTab = 'fiyat';
-    head('Sistem', 'Fiyatlandırma · Kurallar · Tanılama · Logs');
-    panel('<div class="seg four ayar-seg" id="ay-seg">' + AYARLAR.map(function (a) {
+    head('Sistem', 'Fiyatlandırma · Kurallar · Bölgeler · Tanılama · Logs');
+    panel('<div class="seg ayar-seg ayar-5" id="ay-seg">' + AYARLAR.map(function (a) {
       return '<button data-ay="' + a[0] + '" class="' + (S.ayarTab === a[0] ? 'on' : '') + '">' + a[1] + '</button>';
     }).join('') + '</div><div id="ay-body"></div>');
     Array.prototype.forEach.call($('ay-seg').children, function (b) {
       b.onclick = function () { S.ayarTab = b.getAttribute('data-ay'); viewAyarlar(); };
     });
     if (S.ayarTab === 'kurallar') drawKurallar();
+    else if (S.ayarTab === 'bolgeler') viewBolgeler(true);
     else if (S.ayarTab === 'tanilama') drawTanilama();
     else if (S.ayarTab === 'logs') drawLogs();
     else drawTarife();

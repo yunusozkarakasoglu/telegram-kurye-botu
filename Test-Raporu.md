@@ -841,3 +841,13 @@ Doğrulama: kart açılıyor (`SİPARİŞ KARTI` + çipler) · konsolda hata yok
 | Ödenmeyen liste | ✔ paket + kurye + tarih + tutar |
 | Tutarlılık | ✔ ödenen + ödenmeyen = teslim |
 | e2e | **187/187 PASS** · deploy `857d316a` (v194) |
+
+### Bölgeler: Sistem sekmesi + senkron (2026-11-27, v195)
+
+| Kontrol | Sonuç |
+|---|---|
+| Yönetici | ✔ **Sistem → Bölgeler** sekmesi (Ekle · ▲▼ · ✕) · menüden kaldırıldı |
+| Restoran | ✔ **Sistem → Bölgeler** salt okunur liste (1. Ataşehir …) |
+| Kurye | ✔ aynı sekme |
+| Senkron | ✔ liste `settings.regions`'tan gelir (yönetici düzenlemesi anında yansır) |
+| e2e | **191/191 PASS** · deploy `ed980037` (v195) |

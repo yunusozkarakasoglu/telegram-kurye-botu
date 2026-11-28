@@ -1867,14 +1867,14 @@
   }
 
   function renderSistem() {
-    setHeader('Sistem', 'Fiyatlandırma · Restoranlar · Kuryeler · Bölgeler · v10');
+    setHeader('Sistem', 'Fiyatlandırma · Kurallar · Bölgeler');
     var main = $('mn');
     var admin = S.session && S.session.role === 'yonetici';
     var restoran = S.session && S.session.role === 'restoran';
     var sekmeler = admin
       ? [['fiyat', 'Fiyatlandırma'], ['restoran', 'Restoranlar'], ['kurye', 'Kuryeler'], ['bolge', 'Bölgeler'], ['log', 'Tanılama']]
-      : [['fiyat', 'Fiyatlandırma'], ['kurallar', 'Kurallar']];
-    var seg = '<div class="seg four">' + sekmeler.map(function (x) {
+      : [['fiyat', 'Fiyatlandırma'], ['kurallar', 'Kurallar'], ['bolge', 'Bölgeler']];
+    var seg = '<div class="seg ' + (sekmeler.length >= 4 ? 'four' : 'three') + '">' + sekmeler.map(function (x) {
       return '<button data-st="' + x[0] + '" class="' + (S.sistemTab === x[0] ? 'on' : '') + '">' + x[1] + '</button>';
     }).join('') + '</div>';
     function bindSeg() {
@@ -1923,9 +1923,11 @@
           '<div class="card" style="padding:12px;font-size:12px;white-space:pre-wrap">' + (logs.length ? logs.map(esc).join('\n') : 'Kayıt yok.') + '</div>' +
           '<button class="p" id="log-send" style="width:100%;margin-top:8px">Sunucuya Gönder</button>';
       } else if (S.sistemTab === 'bolge') {
-        body = '<div class="card">' + ((d.settings && d.settings.regions) || []).map(function (r, i) {
+        var bolgeler = (st.regions || []);
+        body = '<div class="card">' + (bolgeler.length ? bolgeler.map(function (r, i) {
           return '<div class="row" style="cursor:default"><div><b>' + (i + 1) + '. ' + esc(r) + '</b></div></div>';
-        }).join('') + '</div>';
+        }).join('') : '<div class="empty">Bölge tanımlı değil.</div>') + '</div>' +
+          '<p class="note">Bölgeler yönetici tarafından tanımlanır; sipariş oluştururken bu listeden seçersiniz.</p>';
       } else if (S.sistemTab === 'restoran') {
         body = '<div class="card">' + ((d.restaurants || []).length ? d.restaurants.map(function (r) {
           return '<div class="row" style="cursor:default"><div><b>' + esc(r.name) + '</b><small>' + esc(r.contact_name || '—') +

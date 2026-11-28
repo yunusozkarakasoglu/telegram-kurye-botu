@@ -782,10 +782,16 @@ def senaryo_restoran_konum(api: Api, o: dict[str, Oturum], baglam: dict) -> None
     T.ok("map_url saklandı", "maps" in str(row.get("map_url")), str(row.get("map_url"))[:40])
 
     # Kurye paket DTO'sunda konum alanları
+    for p_ in paketlerim(api, k2):          # kapasiteyi boşalt (flaky olmasın)
+        if not p_.get("picked_up_at"):
+            api.cagir("POST", f"/api/paket/{p_['id']}/km", {"km": "2"}, token=k2.token)
+        api.cagir("POST", f"/api/paket/{p_['id']}/teslim", {"paid": False}, token=k2.token)
+    sql(f"UPDATE accounts SET locked=0, assign_lock_until=0 WHERE id={K2}")
     talep = siparis_ver(api, rest, baglam["bolge"])
     pk = [p_ for p_ in restoran_paketleri(api, rest) if p_["batch"] == talep["req_no"]][0]
     api.cagir("POST", "/api/kabul", {"ids": [pk["id"]]}, token=k2.token)
-    kart = [p_ for p_ in paketlerim(api, k2) if p_["id"] == pk["id"]][0]
+    kart = next((p_ for p_ in paketlerim(api, k2) if p_["id"] == pk["id"]), {})
+    T.ok("paket kuryeye geçti", bool(kart), f"paket={pk['id']}")
     T.ok("kurye kartında koordinat var", abs(float(kart.get("restaurant_lat") or 0) - 40.9851) < 1e-6,
          str(kart.get("restaurant_lat")))
     T.ok("kurye kartında konum URL var", "maps" in str(kart.get("restaurant_map_url")), str(kart.get("restaurant_map_url"))[:40])
@@ -831,6 +837,9 @@ def senaryo_on_yuz(api: Api) -> None:
     T.ok("admin.js servis ediliyor", len(admin_js) > 10000, f"{len(admin_js)} bayt")
     T.ok("admin kuyruk görünümü var", "kuyruk" in admin_js)
     T.ok("admin menü: 2 sütun sayfalar", "nav-pages" in admin_js)
+    T.ok("admin Sistem'de Bölgeler sekmesi", "['bolgeler', 'Bölgeler']" in admin_js)
+    T.ok("Bölgeler menüden çıktı", "KENAR = ['profil', 'ayarlar', 'bolgeler']" in admin_js)
+    T.ok("mini app Sistem'de Bölgeler (restoran/kurye)", "['bolge', 'Bölgeler']" in js)
     T.ok("admin menü: sayfa ızgarası + alt aksiyonlar", "nav-foot" in admin_js and "adm-refresh" in admin_js)
     with urllib.request.urlopen(f"{api.base}/admin", timeout=30) as y:
         admin_html = y.read().decode()

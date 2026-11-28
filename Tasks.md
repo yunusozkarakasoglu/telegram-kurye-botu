@@ -50,6 +50,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] **v195**: Bölgeler → yönetici **Sistem** sekmesi; restoran/kurye Sistem'de **salt okunur Bölgeler** (senkron).
 - [x] **v194**: Rapor **Paket / Ödeme** sekmeleri; Ödeme'de paket sayısı, ödendi/ödenmedi, kalan, kurye bazlı gruplama, ödenmeyen listesi; **↻ Raporu güncelle** düğmesi.
 - [x] **v190-193**: sipariş kartı ortak `pkHeader` (ÖDEME/BÖLGE + **MESAFE/ÜCRET/KURYE** kutuları; mesafe ✎, kurye ☎ Ara) — restoran ve kurye aynı görünüm.
 - [x] **v188-189**: restoran Paketlerim kartı yeni tasarım (bölge+durum / ödeme+tarih+süre, talep no yok) · kartta **Kurye çerçeveli + ☎ Ara** (yalnız restoran).
