@@ -983,3 +983,30 @@ Düzeltme: `assign.expireClaims()` → cron `tick` başında + `openClaim` baş�
 | Ödeme işaretlenince kalan düşer | ✔ `2560 → 1150` |
 
 **e2e:** 231/231 PASS · deploy `f50721af` · asset `v204`
+
+### Kapsamlı test turu · 2. blok — yoğun saat (27.11.2026)
+
+**`tests-e2e/yogun.py` · 14/14 PASS** (9 kurye, 20 paket, eşzamanlı kabul)
+
+| Test | Sonuç |
+|---|---|
+| 20 paketlik sipariş (2×10, tek sipariş limiti 10) | ✔ |
+| Havuzda 20 paket | ✔ |
+| Eşzamanlı kabul (4 paralel) | ✔ `[3,3,0,0,3,3,0,3,3]` |
+| Paket kaybı yok | ✔ `18 + 2` |
+| Atanan = kabul sayısı | ✔ `18 vs 18` |
+| Aynı paket iki kez kayıtlı değil | ✔ `[]` |
+| Atananların tamamı teslim | ✔ `18 / 18` |
+| **Ücret tarifeye birebir** | ✔ **0 hata** (km 2/3/4/5/7/9/12/15) |
+| İkinci teslim reddedildi | ✔ HTTP 409 |
+
+**Bulunan 2 saha hatası (ikisi de canlıya çıkacaktı)**
+
+1. **Havuz 100+ pakette 500** — `apidto.statesFor` tek sorguda her paket id'sini parametre olarak bağlıyordu.
+   D1 sınırı **100 bağlı değişken**; havuz 100'ü geçince `D1_ERROR: too many SQL variables`, kurye ekranı komple 500.
+   *Düzeltme:* 90'lık parçalar + claim/transfer ayrı sorgular (`STATE_CHUNK`).
+2. **Toplu kabulde boş dönme** — `accept.takePackages` aday listesini **kesme (slice)** yapıp sonra boşta olanları süzüyordu.
+   İlk N paket başka kurye tarafından alınmışsa kurye "Alınabilecek paket yok" alıyordu (havuzda paket varken).
+   *Düzeltme:* kesmeden önce `courier IS NULL …` süzgeci; atomik `UPDATE … WHERE courier IS NULL` korundu.
+
+**Doğrulama zinciri:** e2e 231/231 · cron 9/9 · yoğun 14/14 · tutarlılık (yerel + canlı) TEMİZ · deploy `ff9b90f0`

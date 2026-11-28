@@ -53,19 +53,41 @@ export function pkgDto(pkg: PackageRow, state: string) {
   };
 }
 
-/** Tek sorguda bekleyen aktarım/claim teklifleri → durum etiketi tek kaynaktan (views.statusOf). */
+/**
+ * Tek kaynak: bekleyen aktarım/claim teklifleri → durum etiketi (`views.statusOf`).
+ *
+ * 🔴 D1 parametre sınırı: `IN (...)` listesi 100 değişkeni aşınca
+ * `D1_ERROR: too many SQL variables` (yoğun saatte havuz 100+ paket olunca
+ * kurye ekranı 500 veriyordu). Bu yüzden id'ler **90'lık parçalar** hâlinde sorulur.
+ */
+const STATE_CHUNK = 90;
+
 export async function statesFor(bot: Bot, pkgs: PackageRow[]): Promise<string[]> {
   if (!pkgs.length) return [];
-  const ids = pkgs.map((p) => p.id);
-  const marks = await bot.db.all<{ package: number; kind: string }>(
-    `SELECT package, 'claim' AS kind FROM claim_offers WHERE expires>? AND package IN (${ids.map(() => "?").join(",")})
-     UNION ALL
-     SELECT package, 'transfer' AS kind FROM transfer_offers WHERE expires>? AND package IN (${ids.map(() => "?").join(",")})`,
-    bot.nowF(), ...ids, bot.nowF(), ...ids);
-  return pkgs.map((pkg) => statusOf(pkg, {
-    claim: marks.some((m) => m.package === pkg.id && m.kind === "claim"),
-    transfer: marks.some((m) => m.package === pkg.id && m.kind === "transfer"),
-  }));
+  const now = bot.nowF();
+  const isaret = new Map<number, { claim: boolean; transfer: boolean }>();
+
+  // D1 sınırı: sorgu başına en fazla 100 bağlı değişken → 1 (now) + 90 (id) = 91 ✓
+  for (let i = 0; i < pkgs.length; i += STATE_CHUNK) {
+    const ids = pkgs.slice(i, i + STATE_CHUNK).map((p) => p.id);
+    const yer = ids.map(() => "?").join(",");
+    const claim = await bot.db.all<{ package: number }>(
+      `SELECT package FROM claim_offers WHERE expires>? AND package IN (${yer})`, now, ...ids);
+    const transfer = await bot.db.all<{ package: number }>(
+      `SELECT package FROM transfer_offers WHERE expires>? AND package IN (${yer})`, now, ...ids);
+    for (const p of claim) {
+      const kayit = isaret.get(p.package) || { claim: false, transfer: false };
+      kayit.claim = true;
+      isaret.set(p.package, kayit);
+    }
+    for (const p of transfer) {
+      const kayit = isaret.get(p.package) || { claim: false, transfer: false };
+      kayit.transfer = true;
+      isaret.set(p.package, kayit);
+    }
+  }
+
+  return pkgs.map((pkg) => statusOf(pkg, isaret.get(pkg.id) || { claim: false, transfer: false }));
 }
 
 /** Yönetici tarafından yönetilen ayarlar (tarife, limit, bölgeler, gerekçeler). */

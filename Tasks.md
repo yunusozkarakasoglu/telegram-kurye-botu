@@ -22,6 +22,10 @@
 - [ ] **PackOn Express Faz 2 — Süper Admin paneli** (`~/Masaüstü/Kurye-Flow-Mobil`; `~/.pi/packone-d1-token` hazır).
 
 ## Son tamamlananlar
+- [x] **v204 test turu (2. blok) — 2 saha hatası bulundu ve düzeltildi:**
+  - **Havuz 100+ pakette 500**: `statesFor` tek sorguda 100+ parametre → `D1_ERROR: too many SQL variables`. 90'lık parçalara bölündü. (Yoğun saatte havuz büyüyünce kurye ekranı çöküyordu.)
+  - **Toplu kabulde boş dönme**: adaylar kesilmeden önce boşta olanlar süzülmüyordu → ilk N paket başkasındaysa kurye "paket yok" görüyordu. `accept.takePackages` düzeltildi.
+  - Yeni test: `tests-e2e/yogun.py` (9 kurye eşzamanlı kabul · çift atama yok · kayıp yok · ücret tarifeye birebir — **14/14**).
 - [x] **v204 test turu (1. blok)**: `tests-e2e/cron.py` (cron akışları ilk kez test edildi) · `tools/tutarlilik.py` (6 invaryant, yerel+canlı) · **MUTABAKAT** senaryosu (DB = rapor = ödeme) · e2e 429'da sessiz tekrar.
 - [x] **GERÇEK HATA (canlıda bulundu)**: süresi geçen `assign_codes` hiç `expired` olmuyordu → partial UNIQUE index kod havuzunu kirletiyordu (canlıda 4, yerelde 598 bayat kayıt). `assign.expireClaims()` + cron `tick` + `openClaim` başı süpürme → canlı D1 temizlendi.
 - [x] **v204 — Cacheleme prosedürü**: `_headers` immutable (app/ui/api/theme/kurallar/styles/admin/vendor) · HTML `no-store` doğrulandı · **sürüm sigortası** `tools/surum-kontrol.py` (sha256 + `?v=` eşleşmesi, `--muhurle`) · `docs/Cacheleme.md` · e2e **CACHE** senaryosu (7 kontrol).

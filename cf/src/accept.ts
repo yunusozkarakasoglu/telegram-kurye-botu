@@ -83,10 +83,21 @@ export async function takePackages(bot: Bot, user: Account, ids: number[]): Prom
     "SELECT package, courier FROM reservations WHERE expires>? AND package IN (" + ids.map(() => "?").join(",") + ")",
     bot.nowF(), ...ids);
   const rezerveMap = new Map(rezerve.map((r) => [r.package, r.courier]));
-  const adaylar = ids.filter((id) => {
+  // 🔴 Saha hatası: adaylar "ilk N id" olarak kesiliyordu. İlk N paket başka kurye
+  // tarafından alınmışsa kurye BOŞ dönüyordu (havuzda boş paket varken "paket yok").
+  // Artık kesme işleminden ÖNCE gerçekten boşta olanlar süzülür.
+  const aday0 = ids.filter((id) => {
     const r = rezerveMap.get(id);
     return !r || r === user.id;
-  }).slice(0, capacity);
+  });
+  let adaylar: number[] = [];
+  if (aday0.length) {
+    const bos = await bot.db.all<{ id: number }>(
+      "SELECT id FROM packages WHERE courier IS NULL AND delivered_at IS NULL AND cancelled_at IS NULL AND id IN (" +
+      aday0.map(() => "?").join(",") + ")", ...aday0);
+    const bosSet = new Set(bos.map((r) => r.id));
+    adaylar = aday0.filter((id) => bosSet.has(id)).slice(0, capacity);
+  }
   if (adaylar.length) {
     const now = bot.now();
     await bot.db.batch(adaylar.map((id) =>
