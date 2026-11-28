@@ -713,6 +713,61 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       });
     }
 
+    // Restoran: ödeme analizi — kaç paket, ödenen/ödenmeyen, kurye bazlı gruplama
+    if (path === "/restoran/odemeler" && method === "GET") {
+      if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const kapsam = url.searchParams.get("range") === "all" ? "all" : "today";
+      let start = 0;
+      if (kapsam === "today") {
+        const n = bot.now();
+        start = Math.floor((n + 3 * 3600) / 86400) * 86400 - 3 * 3600;
+      }
+      const rows = await bot.db.all<any>(
+        `SELECT p.id, p.batch, p.number, p.courier, p.courier_fee, p.payment_received,
+                p.delivered_at, p.cancelled_at, b.created_at, c.name AS courier_name
+         FROM packages p JOIN batches b ON b.id=p.batch
+         LEFT JOIN accounts c ON c.id=p.courier
+         WHERE b.owner=? AND b.created_at>=? ORDER BY p.id DESC`, user.id, start);
+
+      const teslim = rows.filter((r) => !!r.delivered_at);
+      const toplam = rows.length;
+      const tutar = (r: any) => Number(r.courier_fee || 0);
+      const odenen = teslim.filter((r) => r.payment_received === 1);
+      const odenmeyen = teslim.filter((r) => r.payment_received !== 1);
+      const toplamTutar = teslim.reduce((a, r) => a + tutar(r), 0);
+      const odenenTutar = odenen.reduce((a, r) => a + tutar(r), 0);
+
+      const kuryeMap = new Map<number, any>();
+      for (const r of teslim) {
+        const k = Number(r.courier || 0);
+        const kayit = kuryeMap.get(k) || { courier: k, ad: r.courier_name || "Kurye atanmadı", paket: 0, tutar: 0, odenen: 0, odenen_tutar: 0 };
+        kayit.paket += 1;
+        kayit.tutar += tutar(r);
+        if (r.payment_received === 1) { kayit.odenen += 1; kayit.odenen_tutar += tutar(r); }
+        kuryeMap.set(k, kayit);
+      }
+      return json({
+        range: kapsam,
+        ozet: {
+          paket: toplam,
+          teslim: teslim.length,
+          iptal: rows.filter((r) => !!r.cancelled_at).length,
+          odenen_adet: odenen.length,
+          odenmeyen_adet: odenmeyen.length,
+          toplam_tl: Math.round(toplamTutar),
+          odenen_tl: Math.round(odenenTutar),
+          kalan_tl: Math.round(toplamTutar - odenenTutar),
+        },
+        kuryeler: [...kuryeMap.values()]
+          .map((k) => ({ ...k, tutar: Math.round(k.tutar), odenen_tutar: Math.round(k.odenen_tutar) }))
+          .sort((a, b) => b.tutar - a.tutar),
+        odenmeyenler: odenmeyen.slice(0, 100).map((r) => ({
+          id: r.id, label: `#${r.batch}-${r.number}`, courier_name: r.courier_name || "—",
+          fee_tl: r.courier_fee == null ? null : Math.round(tutar(r)), delivered_at: r.delivered_at,
+        })),
+      });
+    }
+
     // Restoran: claim'i iptal et
     if (path === "/restoran/atama-iptal" && method === "POST") {
       if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");

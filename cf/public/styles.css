@@ -769,8 +769,21 @@ header h1{display:inline}
 .rp-bchip b{color:#3b82f6;font-size:14px;font-weight:800;flex:none}
 
 .rp-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.rp-yenile{width:34px;height:34px;min-height:34px;border-radius:9px;border:1px solid var(--ln);
-  background:var(--el);color:var(--tx);font-size:16px;line-height:1;cursor:pointer;margin:8px 2px 0 0}
+.rp-guncelle{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:6px 12px;border-radius:9px;
+  border:1px solid var(--ln);background:var(--el);color:var(--tx);font:inherit;font-size:12.5px;font-weight:600;
+  cursor:pointer;margin:0 2px 8px 0}
+.rp-guncelle:active{background:var(--el2)}
+/* Ödeme raporu listeleri */
+.od-list{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
+.od-row{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;
+  background:var(--card);border:1px solid var(--ln);border-radius:10px;padding:10px 12px;font-size:13px}
+.od-row.ok{border-color:rgba(34,197,94,.45)}
+.od-row.no{border-color:rgba(229,72,77,.35)}
+.od-name{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.od-state{font-size:12px;font-weight:700;text-align:right;white-space:nowrap}
+.od-row.ok .od-state{color:#25a35a}
+.od-row.no .od-state{color:#e5484d}
+.od-meta{grid-column:1/-1;font-size:11px;color:var(--t2)}
 .rp-all{width:100%;margin:2px 0 4px;padding:10px;border-radius:10px;border:1px dashed var(--ln);
   background:transparent;color:var(--t2);font:inherit;font-size:12px;cursor:pointer}
 

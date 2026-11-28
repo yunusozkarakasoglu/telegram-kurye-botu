@@ -828,3 +828,16 @@ Doğrulama: kart açılıyor (`SİPARİŞ KARTI` + çipler) · konsolda hata yok
 | Kutu yükseklikleri | ✔ ikisi de **57 px** (global `min-height:44px` tuzağı çözüldü) |
 | Alan listesi | ✔ Mesafe/Ücret/Kurye mükerrer satırları kaldırıldı |
 | e2e | **180/180 PASS** · deploy `f47ae0cc` (v193) |
+
+### Rapor: Paket / Ödeme sekmeleri (2026-11-27, v194)
+
+| Kontrol | Sonuç |
+|---|---|
+| Üst sekmeler | ✔ **Paket** · **Ödeme** (eski “Genel” kaldırıldı) |
+| İç sekmeler | ✔ Bugün / Genel (Paket içinde taşındı) |
+| Yenileme | ✔ otomatik yok · **↻ Raporu güncelle** düğmesi (ilk açılış + elle) |
+| Ödeme kartları | ✔ Paket **46** · Toplam tutar **700 TL** · Ödendi **1** · Ödenmedi **3** · Kalan **510 TL** |
+| Kurye bazlı | ✔ `Test Kurye 2 paket · 270 TL · 0/2 ödendi` · `Kaos Kurye … ✔ Ödendi` |
+| Ödenmeyen liste | ✔ paket + kurye + tarih + tutar |
+| Tutarlılık | ✔ ödenen + ödenmeyen = teslim |
+| e2e | **187/187 PASS** · deploy `857d316a` (v194) |

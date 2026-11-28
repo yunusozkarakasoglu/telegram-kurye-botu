@@ -751,6 +751,17 @@ def senaryo_restoran_rapor(api: Api, o: dict[str, Oturum], baglam: dict) -> None
     yasak = api.cagir("GET", "/api/restoran/rapor", token=o["k1"].token, bekle_hata=True)
     T.esit("kurye raporu göremiyor", 403, yasak.get("_status"))
 
+    # Ödeme analizi (yeni uç)
+    od = api.cagir("GET", "/api/restoran/odemeler?range=all", token=rest.token)
+    oo = od.get("ozet") or {}
+    T.ok("ödeme özeti geliyor", "paket" in oo and "odenen_adet" in oo, str(list(oo.keys())))
+    T.ok("ödenen + ödenmeyen = teslim", int(oo.get("odenen_adet") or 0) + int(oo.get("odenmeyen_adet") or 0) == int(oo.get("teslim") or 0),
+         f"{oo.get('odenen_adet')}+{oo.get('odenmeyen_adet')} vs {oo.get('teslim')}")
+    T.ok("kurye bazlı gruplama var", isinstance(od.get("kuryeler"), list))
+    T.ok("ödenmeyen listesi var", isinstance(od.get("odenmeyenler"), list))
+    yasak2 = api.cagir("GET", "/api/restoran/odemeler", token=o["k1"].token, bekle_hata=True)
+    T.esit("kurye ödeme raporunu göremiyor", 403, yasak2.get("_status"))
+
 
 def senaryo_restoran_konum(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
     """Admin restoran konumu (link veya lat,lng) girer; kurye kartı bu veriyi kullanır."""
@@ -812,7 +823,7 @@ def senaryo_on_yuz(api: Api) -> None:
     T.esit("aynı fonksiyon iki kez tanımlı değil", [], cift)
 
     # menü / atama kodu akışının işaretleri
-    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "atamaDurum", "ak-okundu", "rp-card", "rp-bchip", "restoranRapor", "rp-yenile", "rp-all", "paketEkleSheet", "kg-tuslar", "hdr-plus", "satir.fee_tl", "act-row", "haritaUrl", "maplink", "rrow2", "r2-bolge", "pk-mbox", "pkHeader", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
+    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "atamaDurum", "ak-okundu", "rp-card", "rp-bchip", "restoranRapor", "paketEkleSheet", "kg-tuslar", "hdr-plus", "satir.fee_tl", "act-row", "haritaUrl", "maplink", "rrow2", "r2-bolge", "pk-mbox", "pkHeader", "rp-guncelle", "odemeRaporu", "paketRaporu", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
         T.ok(f"yüzeyde '{iz}' var", iz in js)
 
     with urllib.request.urlopen(f"{api.base}/admin.js", timeout=30) as y:
