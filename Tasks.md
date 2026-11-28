@@ -50,6 +50,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] **v197**: Bölge silmede **onay penceresi** (Hayır / Evet, sil) — yanlış dokunuş koruması.
 - [x] **v196**: Bölgeler ekranına “**Değişiklikler otomatik kaydedilir**” notu; bölge senkronu e2e ile doğrulandı (ekle/sil → restoran+kurye).
 - [x] **v195**: Bölgeler → yönetici **Sistem** sekmesi; restoran/kurye Sistem'de **salt okunur Bölgeler** (senkron).
 - [x] **v194**: Rapor **Paket / Ödeme** sekmeleri; Ödeme'de paket sayısı, ödendi/ödenmedi, kalan, kurye bazlı gruplama, ödenmeyen listesi; **↻ Raporu güncelle** düğmesi.

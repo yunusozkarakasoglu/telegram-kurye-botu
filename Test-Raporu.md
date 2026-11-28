@@ -867,3 +867,13 @@ Doğrulama: kart açılıyor (`SİPARİŞ KARTI` + çipler) · konsolda hata yok
 | Kurye `Sistem` listesi | ✔ |
 | Silme senkronu | ✔ her iki taraftan da düştü |
 | e2e | **195/195 PASS** · deploy v196 |
+
+### Kapanış (27.11 · Bölgeler + onay, v195–v197)
+
+| Tur | Sürüm | Özet |
+|---|---|---|
+| Bölgeler → Sistem | v195 | yönetici sekmesi (ekle/sil/sırala) + restoran/kurye salt okunur senkron |
+| Otomatik kayıt notu | v196 | ekranda “Değişiklikler otomatik kaydedilir” + senkron e2e |
+| **Silme onayı** | v197 | **“Bölgeyi sil — <ad> silinsin mi?” · Hayır / Evet, sil** |
+| Rapor | v194 | **Paket / Ödeme** sekmeleri · ödeme analizi (kurye bazlı + ödenmeyenler) · `↻ Raporu güncelle` |
+| **Toplam kalite** | — | ruff ✅ · Python **382/382** ✅ · tsc ✅ · e2e **196/196** ✅ · canlı `06463ba7` (v197) |

@@ -859,6 +859,7 @@ def senaryo_on_yuz(api: Api) -> None:
     T.ok("admin menü: 2 sütun sayfalar", "nav-pages" in admin_js)
     T.ok("admin Sistem'de Bölgeler sekmesi", "['bolgeler', 'Bölgeler']" in admin_js)
     T.ok("Bölgeler menüden çıktı", "KENAR = ['profil', 'ayarlar', 'bolgeler']" in admin_js)
+    T.ok("bölge silme onayı var", "Bölgeyi sil" in admin_js and "bd-yes" in admin_js)
     T.ok("mini app Sistem'de Bölgeler (restoran/kurye)", "['bolge', 'Bölgeler']" in js)
     T.ok("admin menü: sayfa ızgarası + alt aksiyonlar", "nav-foot" in admin_js and "adm-refresh" in admin_js)
     with urllib.request.urlopen(f"{api.base}/admin", timeout=30) as y:

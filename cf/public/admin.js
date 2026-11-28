@@ -576,9 +576,23 @@
       bindRegionMove();
       Array.prototype.forEach.call($('adm-body').querySelectorAll('[data-del]'), function (b) {
         b.onclick = function () {
-          API.yonetim('bolge', { action: 'del', name: b.getAttribute('data-del') }).then(function () {
-            UI.toast('Bölge silindi', 'success'); render();
-          }).catch(function (e) { UI.toast(e.message || 'Silinemedi', 'error'); });
+          var ad = b.getAttribute('data-del');
+          // Silme onayı (yanlış dokunuşu önler)
+          var sh = UI.openSheet(
+            '<h2>Bölgeyi sil</h2>' +
+            '<p><b>' + esc(ad) + '</b> bölgesi silinsin mi?</p>' +
+            '<p class="note">Bölge yalnız seçim listesinden kalkar; mevcut siparişler ve kayıtlar silinmez.</p>' +
+            '<div class="acts" style="gap:8px;flex-wrap:nowrap">' +
+              '<button class="g" id="bd-no" style="flex:1">Hayır</button>' +
+              '<button class="d" id="bd-yes" style="flex:1">Evet, sil</button>' +
+            '</div>');
+          sh.querySelector('#bd-no').onclick = function () { UI.closeSheet(); };
+          sh.querySelector('#bd-yes').onclick = function () {
+            UI.closeSheet();
+            API.yonetim('bolge', { action: 'del', name: ad }).then(function () {
+              UI.toast('Bölge silindi', 'success'); render();
+            }).catch(function (e) { UI.toast(e.message || 'Silinemedi', 'error'); });
+          };
         };
       });
     }).catch(showError);
