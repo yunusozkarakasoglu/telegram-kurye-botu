@@ -19,6 +19,50 @@ import * as ops from "./ops";
  * İş kuralları: mevcut modüllerden çağrılır (accept/ops/forms/views). Burada yalnız taşıma biçimi vardır.
  */
 
+/**
+ * Rapor/ödeme aralığı çözücü (TR saat dilimi, gün sınırları).
+ * Kapsamlar: today · week (bu hafta, pazartesi) · month (bu ay) · all · custom (from/to ISO).
+ */
+function aralikCoz(url: URL, simdi: number): {
+  kapsam: string; start: number; end: number; etiket: string; from: string | null; to: string | null;
+} {
+  const TR = 3 * 3600;
+  const gunBasi = (t: number) => Math.floor((t + TR) / 86400) * 86400 - TR;
+  const iso = (t: number) => new Date((t + TR) * 1000).toISOString().slice(0, 10);
+  const kapsamHam = String(url.searchParams.get("range") || "today").toLowerCase();
+  const fromHam = String(url.searchParams.get("from") || "");
+  const toHam = String(url.searchParams.get("to") || "");
+  const gecerli = (x: string) => /^\d{4}-\d{2}-\d{2}$/.test(x);
+
+  if (fromHam || toHam) {
+    const bas = gecerli(fromHam) ? Math.floor(Date.parse(fromHam + "T00:00:00+03:00") / 1000) : 0;
+    const bit = gecerli(toHam) ? Math.floor(Date.parse(toHam + "T00:00:00+03:00") / 1000) + 86400 : simdi + 1;
+    const etiket = `${iso(bas)} – ${iso(bit - 1)}`;
+    return { kapsam: "custom", start: bas, end: bit, etiket, from: iso(bas), to: iso(bit - 1) };
+  }
+  if (kapsamHam === "all") {
+    return { kapsam: "all", start: 0, end: simdi + 1, etiket: "Tüm zamanlar", from: null, to: null };
+  }
+  if (kapsamHam === "week") {
+    const bugun = gunBasi(simdi);
+    const gunNo = new Date((bugun + TR) * 1000).getUTCDay(); // 0=pazar
+    const pazartesi = bugun - ((gunNo + 6) % 7) * 86400;
+    return { kapsam: "week", start: pazartesi, end: simdi + 1, etiket: "Bu hafta", from: null, to: null };
+  }
+  if (kapsamHam === "month") {
+    const bugun = gunBasi(simdi);
+    const ay = new Date((bugun + TR) * 1000);
+    const ayBasi = Date.UTC(ay.getUTCFullYear(), ay.getUTCMonth(), 1) / 1000 - TR;
+    return { kapsam: "month", start: ayBasi, end: simdi + 1, etiket: "Bu ay", from: null, to: null };
+  }
+  if (kapsamHam === "30" || kapsamHam === "90") {   // eski istemciler
+    const gun = Number(kapsamHam);
+    return { kapsam: kapsamHam, start: simdi - gun * 86400, end: simdi + 1, etiket: `Son ${gun} gün`, from: null, to: null };
+  }
+  const bugun = gunBasi(simdi);
+  return { kapsam: "today", start: bugun, end: simdi + 1, etiket: "Bugün", from: null, to: null };
+}
+
 async function readBody(request: Request): Promise<any> {
   try {
     return await request.json();
@@ -671,22 +715,12 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     // Restoran raporu: kartlar (paket/km/süre ortalamaları) + bölge dağılımı
     if (path === "/restoran/rapor" && method === "GET") {
       if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
-      const istenen = url.searchParams.get("range") || "today";
-      // today · 30 (Genel varsayılanı) · 90 (eski istemciler) · all (tüm zamanlar)
-      const kapsam = istenen === "all" ? "all" : istenen === "30" ? "30" : istenen === "90" ? "90" : "today";
-      let start = 0;
-      if (kapsam === "today") {
-        const n = bot.now();
-        start = Math.floor((n + 3 * 3600) / 86400) * 86400 - 3 * 3600;
-      } else if (kapsam === "30") {
-        start = bot.now() - 30 * 86400;
-      } else if (kapsam === "90") {
-        start = bot.now() - 90 * 86400;
-      }
+      const aralik = aralikCoz(url, bot.now());
+      const kapsam = aralik.kapsam;
       const rows = await bot.db.all<any>(
         `SELECT p.id, p.region, p.distance_km, b.created_at, p.accepted_at, p.delivered_at, p.cancelled_at, p.courier_fee
          FROM packages p JOIN batches b ON b.id=p.batch
-         WHERE b.owner=? AND b.created_at>=?`, user.id, start);
+         WHERE b.owner=? AND b.created_at>=? AND b.created_at<?`, user.id, aralik.start, aralik.end);
       const bolgeler = await bot.regionList();
       const paket = rows.length;
       let km = 0, kmAdet = 0, sure = 0, sureAdet = 0, ciro = 0;
@@ -702,6 +736,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const teslim = rows.filter((p) => !!p.delivered_at).length;
       return json({
         range: kapsam,
+        aralik: { kapsam, etiket: aralik.etiket, from: aralik.from, to: aralik.to },
         ozet: {
           paket, teslim, iptal: rows.filter((p) => !!p.cancelled_at).length,
           km: Math.round(km * 10) / 10,
@@ -728,18 +763,16 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     // Restoran: ödeme analizi — kaç paket, ödenen/ödenmeyen, kurye bazlı gruplama
     if (path === "/restoran/odemeler" && method === "GET") {
       if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
-      const kapsam = url.searchParams.get("range") === "all" ? "all" : "today";
-      let start = 0;
-      if (kapsam === "today") {
-        const n = bot.now();
-        start = Math.floor((n + 3 * 3600) / 86400) * 86400 - 3 * 3600;
-      }
+      const aralik = aralikCoz(url, bot.now());
+      const kapsam = aralik.kapsam;
+      // Ödeme aralığı: teslim tarihine göre (ödeme teslimden doğar)
       const rows = await bot.db.all<any>(
         `SELECT p.id, p.batch, p.number, p.courier, p.courier_fee, p.payment_received,
                 p.delivered_at, p.cancelled_at, b.created_at, c.name AS courier_name
          FROM packages p JOIN batches b ON b.id=p.batch
          LEFT JOIN accounts c ON c.id=p.courier
-         WHERE b.owner=? AND b.created_at>=? ORDER BY p.id DESC`, user.id, start);
+         WHERE b.owner=? AND coalesce(p.delivered_at, b.created_at)>=? AND coalesce(p.delivered_at, b.created_at)<?
+         ORDER BY p.id DESC`, user.id, aralik.start, aralik.end);
 
       const teslim = rows.filter((r) => !!r.delivered_at);
       const toplam = rows.length;
@@ -769,8 +802,10 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       }
       return json({
         range: kapsam,
+        aralik: { kapsam, etiket: aralik.etiket, from: aralik.from, to: aralik.to },
         ozet: {
-          paket: toplam,
+          paket: teslim.length,          // ödeme konusu olan paket = teslim edilen
+          toplam_paket: toplam,
           teslim: teslim.length,
           iptal: rows.filter((r) => !!r.cancelled_at).length,
           odenen_adet: odenen.length,
@@ -790,6 +825,39 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         odenmeyenler: odenmeyen.slice(0, 100).map((r) => ({
           id: r.id, label: `#${r.batch}-${r.number}`, courier_name: r.courier_name || "—",
           fee_tl: r.courier_fee == null ? null : Math.round(tutar(r)), delivered_at: r.delivered_at,
+        })),
+      });
+    }
+
+    // Restoran: tek kuryenin ödeme dökümü (ödeme sekmesinde satıra dokununca)
+    if (path === "/restoran/odemeler/kurye" && method === "GET") {
+      if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
+      const kuryeId = Number(url.searchParams.get("courier") || 0);
+      const aralik = aralikCoz(url, bot.now());
+      const rows = await bot.db.all<any>(
+        `SELECT p.id, p.batch, p.number, p.region, p.courier_fee, p.payment_received, p.delivered_at
+         FROM packages p JOIN batches b ON b.id=p.batch
+         WHERE b.owner=? AND p.courier=? AND p.delivered_at>=? AND p.delivered_at<? AND p.cancelled_at IS NULL
+         ORDER BY p.delivered_at DESC`, user.id, kuryeId, aralik.start, aralik.end);
+      const kurye = await bot.db.first<Account>("SELECT id, name, phone FROM accounts WHERE id=?", kuryeId);
+      const tutar = (r: any) => Number(r.courier_fee || 0);
+      const odenen = rows.filter((r) => r.payment_received === 1);
+      const odenmeyen = rows.filter((r) => r.payment_received !== 1);
+      return json({
+        aralik: { kapsam: aralik.kapsam, etiket: aralik.etiket, from: aralik.from, to: aralik.to },
+        kurye: { id: kuryeId, name: kurye?.name || "Kurye", phone: kurye?.phone || null },
+        ozet: {
+          paket: rows.length,
+          odenen: odenen.length,
+          odenmeyen: odenmeyen.length,
+          toplam_tl: Math.round(rows.reduce((a, r) => a + tutar(r), 0)),
+          odenen_tl: Math.round(odenen.reduce((a, r) => a + tutar(r), 0)),
+          kalan_tl: Math.round(odenmeyen.reduce((a, r) => a + tutar(r), 0)),
+        },
+        paketler: rows.map((r) => ({
+          id: r.id, label: `#${r.batch}-${r.number}`, region: r.region || null,
+          fee_tl: Math.round(tutar(r)), delivered_at: r.delivered_at,
+          odendi: r.payment_received === 1,
         })),
       });
     }

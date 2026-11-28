@@ -803,8 +803,9 @@ def senaryo_restoran_rapor(api: Api, o: dict[str, Oturum], baglam: dict) -> None
     T.ok("kurye bazlı gruplama var", isinstance(od.get("kuryeler"), list))
     T.esit("ödenen + ödenmedi = teslim", int(oo.get("teslim") or 0),
            int(oo.get("odenen_adet") or 0) + int(oo.get("odenmeyen_adet") or 0))
-    T.ok("teslim + iptal <= paket", int(oo.get("teslim") or 0) + int(oo.get("iptal") or 0)
-         <= int(oo.get("paket") or 0), f"{oo.get('teslim')}+{oo.get('iptal')} <= {oo.get('paket')}")
+    T.ok("teslim + iptal <= toplam paket", int(oo.get("teslim") or 0) + int(oo.get("iptal") or 0)
+         <= int(oo.get("toplam_paket") or oo.get("paket") or 0),
+         f"{oo.get('teslim')}+{oo.get('iptal')} <= {oo.get('toplam_paket') or oo.get('paket')}")
     T.ok("kalan TL = toplam - ödenen",
          abs(float(oo.get("kalan_tl") or 0) - (float(oo.get("toplam_tl") or 0) - float(oo.get("odenen_tl") or 0))) <= 1,
          f"{oo.get('kalan_tl')} vs {oo.get('toplam_tl')}-{oo.get('odenen_tl')}")
@@ -869,6 +870,49 @@ def senaryo_restoran_konum(api: Api, o: dict[str, Oturum], baglam: dict) -> None
     row2 = next((r for r in (liste2.get("restaurants") or []) if r["id"] == REST), {})
     T.ok("lat,lng biçimi ayrıştırıldı", abs(float(row2.get("latitude") or 0) - 41.0082) < 1e-6 and bool(upd2.get("ok")),
          str(row2.get("latitude")))
+
+
+def senaryo_rapor_filtre(api: Api, o: dict[str, Oturum]) -> None:
+    """Rapor filtre aralıkları (Bugün/Bu hafta/Bu ay/Tüm/Aralık) + kurye ödeme dökümü."""
+    T.bolum("RAPOR · FİLTRE ARALIKLARI + KURYE ÖDEME DÖKÜMÜ")
+    rest, k1 = o["rest"], o["k1"]
+
+    for aralik in ("today", "week", "month", "all"):
+        r = api.cagir("GET", f"/api/restoran/rapor?range={aralik}", token=rest.token)
+        et = (r.get("aralik") or {})
+        T.ok(f"rapor range={aralik}", r.get("range") == aralik and bool(et.get("etiket")), str(et.get("etiket")))
+
+    # Özel aralık (from/to)
+    ozel = api.cagir("GET", "/api/restoran/rapor?range=custom&from=2026-01-01&to=2030-12-31", token=rest.token)
+    T.esit("özel aralık kapsamı", "custom", (ozel.get("aralik") or {}).get("kapsam"))
+    T.ok("özel aralık tüm paketleri kapsıyor", int((ozel.get("ozet") or {}).get("paket") or 0) >= 1,
+         str((ozel.get("ozet") or {}).get("paket")))
+
+    # Ödeme: Paket = Teslim (ödeme konusu), toplam_paket ayrı
+    od = api.cagir("GET", "/api/restoran/odemeler?range=all", token=rest.token)
+    oo = od.get("ozet") or {}
+    T.esit("ödeme: paket = teslim", int(oo.get("teslim") or 0), int(oo.get("paket") or 0))
+    T.ok("ödeme: toplam_paket var", "toplam_paket" in oo, str(oo.get("toplam_paket")))
+    T.ok("ödeme: aralık etiketi", bool((od.get("aralik") or {}).get("etiket")), str((od.get("aralik") or {}).get("etiket")))
+
+    # Kurye ödeme dökümü
+    kuryeler = od.get("kuryeler") or []
+    if kuryeler:
+        k = kuryeler[0]
+        d = api.cagir("GET", f"/api/restoran/odemeler/kurye?courier={k['courier']}&range=all", token=rest.token)
+        ko = d.get("ozet") or {}
+        T.ok("kurye dökümü: kurye adı", bool((d.get("kurye") or {}).get("name")), str((d.get("kurye") or {}).get("name")))
+        T.esit("kurye dökümü: paket = ödendi + ödenmedi", int(ko.get("paket") or 0),
+               int(ko.get("odenen") or 0) + int(ko.get("odenmeyen") or 0))
+        T.ok("kurye dökümü: toplam = ödenen + kalan",
+             abs(float(ko.get("toplam_tl") or 0) - (float(ko.get("odenen_tl") or 0) + float(ko.get("kalan_tl") or 0))) <= 1,
+             f"{ko.get('toplam_tl')} vs {ko.get('odenen_tl')}+{ko.get('kalan_tl')}")
+        T.esit("kurye dökümü: paket listesi uzunluğu", int(ko.get("paket") or 0), len(d.get("paketler") or []))
+        p0 = (d.get("paketler") or [{}])[0]
+        T.ok("kurye dökümü: paket alanları", all(x in p0 for x in ("label", "fee_tl", "delivered_at", "odendi")), str(p0)[:80])
+
+    yetki = api.cagir("GET", "/api/restoran/odemeler/kurye?courier=1", token=k1.token, bekle_hata=True)
+    T.esit("kurye ödeme dökümü yetkisiz → 403", 403, yetki.get("_status"))
 
 
 def senaryo_saha(api: Api, o: dict[str, Oturum]) -> None:
@@ -1093,7 +1137,7 @@ def senaryo_on_yuz(api: Api) -> None:
     T.esit("aynı fonksiyon iki kez tanımlı değil", [], cift)
 
     # menü / atama kodu akışının işaretleri
-    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "atamaDurum", "ak-okundu", "rp-card", "rpb-fill", "rp-eyebrow", "restoranRapor", "paketEkleSheet", "kg-tuslar", "hdr-plus", "satir.fee_tl", "act-row", "haritaUrl", "maplink", "rrow2", "r2-bolge", "pk-mbox", "pkHeader", "rp-guncelle", "odemeRaporu", "paketRaporu", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
+    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "atamaDurum", "ak-okundu", "rp-card", "rpb-fill", "rp-filtre", "restoranRapor", "paketEkleSheet", "kg-tuslar", "hdr-plus", "satir.fee_tl", "act-row", "haritaUrl", "maplink", "rrow2", "r2-bolge", "pk-mbox", "pkHeader", "rp-guncelle", "odemeRaporu", "paketRaporu", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
         T.ok(f"yüzeyde '{iz}' var", iz in js)
 
     with urllib.request.urlopen(f"{api.base}/admin.js", timeout=30) as y:
@@ -1108,7 +1152,10 @@ def senaryo_on_yuz(api: Api) -> None:
     T.ok("mini app menüde Destek", 'data-dt="destek"' in js and "function renderDestek" in js)
     T.ok("admin Profil 2 sekme", 'data-pf="yoneticiler"' in admin_js and 'data-pf="sifre"' in admin_js)
     T.ok("rapor: süre kartları kaldırıldı", "Toplam süre" not in js and "Paket / Süre" not in js)
-    T.ok("rapor: çubuk grafik + aralık", "rp-eyebrow" in js and "rpb-fill" in js and "data-rpr" in js)
+    T.ok("rapor: çubuk grafik", "rpb-fill" in js)
+    T.ok("rapor: filtre çubuğu + sheet", "rp-filtre" in js and "rpFiltreSheet" in js and "rp-sh-grid" in js)
+    T.ok("rapor: filtre aralıkları", all(x in js for x in ("Bu hafta", "Bu ay", "Aralık seç")))
+    T.ok("ödeme: kurye döküm sayfası", "kuryeOdemeSheet" in js and "data-odf" in js and "restoranKuryeOdeme" in js)
     T.ok("admin menü: sayfa ızgarası + alt aksiyonlar", "nav-foot" in admin_js and "adm-refresh" in admin_js)
     with urllib.request.urlopen(f"{api.base}/admin", timeout=30) as y:
         admin_html = y.read().decode()
@@ -1136,6 +1183,7 @@ def main() -> int:
     senaryo_durum_yetki(api, oturumlar, baglam)
     senaryo_bolge_senkron(api, oturumlar)
     senaryo_destek(api, oturumlar)
+    senaryo_rapor_filtre(api, oturumlar)
     senaryo_saha(api, oturumlar)
     senaryo_restoran_konum(api, oturumlar, baglam)
     senaryo_restoran_rapor(api, oturumlar, baglam)

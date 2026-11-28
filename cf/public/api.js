@@ -434,9 +434,12 @@
     iptaller: function () { return req('GET', '/api/kurye/iptaller'); },
     iptalTamam: function (noticeId) { return req('POST', '/api/kurye/iptal-tamam', { notice_id: noticeId }); },
     iptalOnizleme: function (paketId) { return req('GET', '/api/restoran/iptal-onizleme?paket=' + encodeURIComponent(paketId)); },
-    restoranRapor: function (range) { return req('GET', '/api/restoran/rapor?range=' + encodeURIComponent(range || 'today')); },
+    restoranRapor: function (aralik) { return req('GET', '/api/restoran/rapor' + aralikQs(aralik)); },
     destek: function () { return req('GET', '/api/destek'); },
-    restoranOdemeler: function (range) { return req('GET', '/api/restoran/odemeler?range=' + encodeURIComponent(range || 'today')); },
+    restoranOdemeler: function (aralik) { return req('GET', '/api/restoran/odemeler' + aralikQs(aralik)); },
+    restoranKuryeOdeme: function (courier, aralik) {
+      return req('GET', '/api/restoran/odemeler/kurye?courier=' + encodeURIComponent(courier) + aralikQs(aralik).replace('?', '&'));
+    },
     paketlerimRestoran: function (filter) { return req('GET', '/api/restoran/paketlerim?filter=' + encodeURIComponent(filter || 'all')); },
     profil: function (data) { return req('PATCH', '/api/profil', data); },
     durum: function (status, reason) { return req('POST', '/api/durum', { status: status, reason: reason || null }); },
@@ -494,6 +497,15 @@
     }
   };
 
+  /** Aralık parametresi → query string. Nesne: {range, from, to} · string: range adı. */
+  function aralikQs(aralik) {
+    var a = typeof aralik === 'string' ? { range: aralik } : (aralik || { range: 'today' });
+    var q = '?range=' + encodeURIComponent(a.range || 'today');
+    if (a.from) q += '&from=' + encodeURIComponent(a.from);
+    if (a.to) q += '&to=' + encodeURIComponent(a.to);
+    return q;
+  }
+
   /* =======================  SEÇİM  ======================= */
   var mock = new Mock();
   var mode = 'mock';
@@ -540,7 +552,7 @@
     }
   };
   ['oturum', 'havuz', 'kabul', 'atamaKarar', 'notEkle', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
-    'kazanc', 'talepVer', 'kuryeTalep', 'restoranKuryeler', 'atamalar', 'atamaAc', 'atamaDurum', 'atamaIptal', 'atamaTeklif', 'atamaAl', 'iptaller', 'iptalTamam', 'iptalOnizleme', 'restoranRapor', 'restoranOdemeler', 'destek', 'paketlerimRestoran', 'profil', 'durum', 'durumOzet', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'girisKullanicilar', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
+    'kazanc', 'talepVer', 'kuryeTalep', 'restoranKuryeler', 'atamalar', 'atamaAc', 'atamaDurum', 'atamaIptal', 'atamaTeklif', 'atamaAl', 'iptaller', 'iptalTamam', 'iptalOnizleme', 'restoranRapor', 'restoranOdemeler', 'restoranKuryeOdeme', 'destek', 'paketlerimRestoran', 'profil', 'durum', 'durumOzet', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'girisKullanicilar', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);
         var target = mode === 'real' ? real : mock;

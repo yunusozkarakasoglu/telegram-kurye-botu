@@ -3,6 +3,10 @@
 Sürüm numarası = `cf/public/index.html` içindeki `app.js?v=N`.
 Her yayından sonra tek satır eklenir (bkz. `docs/Yayin-Proseduru.md`).
 
+## v211 — 28.11.2026
+- **Rapor filtreleri**: `⚙ Filtre` çubuğu (seçili aralık + ✕ + ↻) · filtre sheet: **Bugün / Bu hafta / Bu ay / Tüm zamanlar / Aralık seç** · `range=week|month|custom` (`from`/`to`).
+- **Ödeme sekmesi**: kurye satırları kart oldu (ad · `x/y ödendi` · `N ödenmedi · TL`) · satıra dokun → **kurye ödeme dökümü** (kartlar + Ödenmeyen/Tümü + paket listesi) · `GET /restoran/odemeler/kurye`.
+
 ## v209 — 28.11.2026
 - Ödeme tipi **“Ödendi” → “Online”** (canlı veri migrate edildi).
 - **Paket/Km** artık **toplam km / toplam paket** (km girilmemiş paketler de paydaya dahil).

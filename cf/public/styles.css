@@ -1010,3 +1010,52 @@ a.pk-map:active{filter:brightness(.94)}
 .rp-note b{color:var(--tx)}
 .od-tutar{font-size:13px;font-weight:800;text-align:right;color:var(--tx);white-space:nowrap}
 .od-row .od-meta{grid-column:1/-1}
+
+/* ---------- Rapor: filtre çubuğu (v210) ---------- */
+.rp-toolbar{display:flex;align-items:center;gap:8px;margin:0 0 10px}
+.rp-filtre{flex:1;display:flex;align-items:center;gap:8px;min-height:38px;padding:8px 12px;border-radius:10px;
+  border:1px solid var(--ln);background:var(--el);color:var(--tx);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.rp-filtre i{font-style:normal;font-size:14px;opacity:.85}
+.rp-filtre .rp-range{margin-left:auto;font-size:12px;font-weight:600;color:var(--t2)}
+.rp-filtre:active{background:var(--el2)}
+.rp-clear{color:#ff8a8e;border-color:rgba(229,72,77,.4)}
+
+/* Filtre sheet (Zaman) */
+.rp-sh-title{text-align:center;font-size:15px;margin:2px 0 12px}
+.rp-sh-label{font-size:11px;font-weight:800;letter-spacing:.8px;color:var(--t2);margin:0 2px 8px}
+.rp-sh-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.rp-sh-grid button{min-height:40px;border-radius:10px;border:1px solid var(--ln);background:var(--card);
+  color:var(--tx);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.rp-sh-grid button.on{border-color:#3b82f6;color:#7cb2ff}
+.rp-sh-range{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.rp-uygula{width:100%;margin-top:14px}
+
+/* Ödeme: kurye satırı (kart) */
+.od-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 8px;
+  width:100%;text-align:left;font:inherit;cursor:pointer}
+.od-row .od-name{font-size:14.5px;font-weight:800;grid-column:1}
+.od-row .od-chev{grid-column:2;grid-row:1/3;font-style:normal;font-size:18px;color:var(--t2);align-self:center}
+.od-row .od-state{grid-column:1;justify-self:start;font-size:12.5px;font-weight:700;color:#e5484d}
+.od-row.ok .od-state{color:#25a35a}
+.od-row .od-meta{grid-column:1;justify-self:start;font-size:11.5px;color:var(--t2)}
+.od-row .od-meta.ok-t{color:#25a35a}
+.rp-h + .od-list{margin-top:0}
+
+/* Kurye ödeme detay sayfası */
+.od-head{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+.od-head h2{font-size:17px;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* .sh button{width:100%} kuralını ez: geri butonu küçük kalsın */
+.sh .od-back{width:34px;min-width:34px;height:34px;min-height:34px;flex:none;margin:0;border-radius:9px;
+  border:1px solid var(--ln);background:var(--el);color:var(--tx);font-size:16px;display:inline-flex;
+  align-items:center;justify-content:center;cursor:pointer;padding:0}
+.odp{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);
+  border:1px solid var(--ln);border-radius:10px;padding:11px 12px;margin-bottom:7px}
+.odp.no{border-color:rgba(229,72,77,.35)}
+.odp.ok{border-color:rgba(34,197,94,.35)}
+.odp-l{min-width:0;display:flex;flex-direction:column;gap:2px}
+.odp-l b{font-size:13.5px}
+.odp-l small{font-size:11px;color:var(--t2)}
+.odp-r{text-align:right;display:flex;flex-direction:column;gap:2px;flex:none}
+.odp-r b{font-size:13.5px}
+.odp-r em{font-style:normal;font-size:11px;font-weight:700;color:#e5484d}
+.odp.ok .odp-r em{color:#25a35a}

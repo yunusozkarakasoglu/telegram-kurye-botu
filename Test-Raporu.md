@@ -1084,3 +1084,18 @@ Bu yüzden ekran artık **iki tutarlı satır** gösteriyor: `34 = teslim 23 + i
 | Ödeme tiplerinde **Online** var / Ödendi yok | ✔ |
 
 **e2e:** 259/259 PASS · deploy `1d7253a2` (v209) · canlı migrasyon: 9 paket `Ödendi → Online`
+
+### Rapor filtreleri + kurye ödeme dökümü (28.11.2026, v210–v211)
+
+| Kontrol | Sonuç |
+|---|---|
+| Filtre çubuğu | ✔ `⚙ Filtre` + seçili aralık (`Tüm zamanlar`) + **✕** (filtre varsa) + **↻** |
+| Filtre sheet | ✔ başlık **Filtre · Paket / Ödeme**, **ZAMAN** etiketi, 5 seçenek, **Uygula** |
+| Aralıklar | ✔ Bugün · Bu hafta (pazartesi) · Bu ay · Tüm zamanlar · **Aralık seç** (from/to) |
+| Sunucu | ✔ `aralikCoz` TR gün sınırları · yanıtta `aralik.etiket` |
+| Ödeme kartları | ✔ Paket(=teslim) 88 · Ödendi 1 · Ödenmedi 87 · Toplam 24.200 TL · Kalan 24.010 TL |
+| Kurye kartı | ✔ `Boş Kurye › 0/25 ödendi · 25 ödenmedi · 4.930 TL` |
+| Kurye dökümü | ✔ kartlar (25/0/25 · 4.930 TL · 4.930 TL) + **Ödenmeyen (25) / Tümü (25)** + paket listesi (`#910227-5 · 28/11 16:22 · 840 TL · Ödenmedi`) |
+| Yetki | ✔ kurye → **403** |
+
+**e2e:** 277/277 PASS (RAPOR FİLTRE senaryosu: 18 test) · cron 9/9 · tutarlılık TEMİZ · deploy `39645022` (v211)

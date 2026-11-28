@@ -27,6 +27,7 @@
 - [ ] **PackOn Express Faz 2 — Süper Admin paneli** (`~/Masaüstü/Kurye-Flow-Mobil`; `~/.pi/packone-d1-token` hazır).
 
 ## Son tamamlananlar
+- [x] **v210-211 — Rapor filtreleri**: `⚙ Filtre` çubuğu + sheet (**Bugün · Bu hafta · Bu ay · Tüm zamanlar · Aralık seç**) · `range=week|month|custom&from&to` · Ödeme sekmesinde kurye **kart** satırı (paket · ödenmedi · TL) + **kurye ödeme döküm sayfası** (Ödenmeyen/Tümü, paket listesi) · e2e 277/277.
 - [x] **v208-209 — hesap tutarlılığı**: ödeme tipi **Online** (canlıda 9 kayıt migrate) · **Paket/Km = toplam km / toplam paket** · ödeme kartları **Paket = Teslim + İptal (+Açık)** ve **Ödendi + Ödenmedi = Teslim** · kurye satırında **paket + tutar + Alacak TL** · e2e'ye 8 tutarlılık testi (259/259).
 - [x] **v206-207 — Saha ekranı**: **Anasayfa → Saha** (2 sekme) · **Canlı saha** (kurye on/meşgul/off, havuz, geciken, ödenmeyen, bugünkü paket/teslim/iptal/hakediş; geciken+havuz+kurye listeleri; satıra dokun → sipariş kartı) · **Gün sonu** (manuel: tarih → Özet al; kartlar + kurye bazlı tablo + bölge dağılımı + Telegram'a gönder) · e2e **SAHA** senaryosu (20 test).
 - [x] **v205 — yayın prosedürü**: **staging** ortamı (Worker + D1 `kurye-db-staging`, cron kapalı) · `tools/yayin.sh` (5 adım: ön kontrol → kalite kapısı → şema uyarısı → staging smoke → canlı smoke) · `--geri-al` + **rollback provası yapıldı** · `docs/Yayin-Proseduru.md` · `CHANGELOG.md`.
