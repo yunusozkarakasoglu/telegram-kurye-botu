@@ -1866,6 +1866,29 @@
     nav(curRole() === 'restoran' ? restaurantTabs() : courierTabs(), {});
   }
 
+  function renderDestek() {
+    setHeader('Destek', 'Yöneticiler · Yardım');
+    var main = $('mn');
+    main.innerHTML = '<div class="dst-hint">Sorun, iptal, ödeme veya hesap konusunda yöneticiye ulaşın.</div>' +
+      '<div id="dst-list"><div class="empty">Yükleniyor…</div></div>';
+    $('cta').innerHTML = '';
+    nav(curRole() === 'restoran' ? restaurantTabs() : courierTabs(), {});
+    API.destek().then(function (d) {
+      var items = (d && d.items) || [];
+      $('dst-list').innerHTML = items.length ? items.map(function (y) {
+        var harf = esc(String(y.name || '?').trim().charAt(0).toUpperCase());
+        return '<div class="ycard"><div class="yava">' + harf + '</div>' +
+          '<div class="ymeta"><b>' + esc(y.name) + '</b>' +
+          '<small>' + esc(y.phone || 'Telefon yok') + '</small></div>' +
+          '<div class="yacts">' + (y.phone
+            ? '<a class="ycall" href="tel:' + esc(y.phone) + '">📞 Ara</a>'
+            : '') + '</div></div>';
+      }).join('') : '<div class="empty">Yönetici tanımlı değil</div>';
+    }).catch(function (e) {
+      $('dst-list').innerHTML = '<div class="empty"><b>Liste alınamadı</b>' + esc(e.message || '') + '</div>';
+    });
+  }
+
   function renderSistem() {
     setHeader('Sistem', 'Fiyatlandırma · Kurallar · Bölgeler');
     var main = $('mn');
@@ -2314,6 +2337,7 @@
     h += '<div class="dw-bottom">' +
       '<button data-dt="sistem"><i>⚙</i><span>Sistem</span></button>' +
       '<button data-dt="profil"><i>👤</i><span>Profil</span></button>' +
+      '<button data-dt="destek"><i>☎</i><span>Destek</span></button>' +
       '<button data-da="refresh"><i>↻</i><span>Yenile</span></button>' +
       '<button data-da="logout" class="dw-exit"><i>⏻</i><span>Çıkış</span></button>' +
       '</div>';
@@ -2381,6 +2405,7 @@
       if (S.tab === 'talep') renderTalep();
       else if (S.tab === 'rapor') renderRestRapor();
       else if (S.tab === 'sistem') renderSistem();
+      else if (S.tab === 'destek') renderDestek();
       else if (S.tab === 'kurallar') renderKurallar();
     else if (S.tab === 'profil') renderProfil();
       else renderRestPaketlerim();
@@ -2389,6 +2414,7 @@
     }
     if (S.tab === 'loglar') renderLogs();
     else if (S.tab === 'sistem') renderSistem();
+    else if (S.tab === 'destek') renderDestek();
     else if (S.tab === 'kurallar') renderKurallar();
     else if (S.tab === 'profil') renderProfil();
     else if (S.tab === 'paketlerim') renderPaketlerim();

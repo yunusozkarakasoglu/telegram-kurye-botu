@@ -887,6 +887,7 @@ a.pk-map:active{filter:brightness(.94)}
   .adm-fab{transition:opacity .15s ease}
 
   .nav-pages button{min-height:40px;font-size:12.5px;padding:6px 8px;border-radius:9px}
+  #adm-body{padding-bottom:84px}   /* FAB son kartın üstüne binmesin */
   .nav-foot{grid-column:auto;display:grid;grid-template-columns:1fr 1fr;gap:7px;
     margin-top:9px;padding-top:9px;border-top:1px solid var(--ln)}
   .nav-foot button{min-height:56px;display:flex;flex-direction:column;align-items:center;
@@ -943,3 +944,23 @@ a.pk-map:active{filter:brightness(.94)}
 /* Sistem sekmeleri: 5 sekmeye kadar tek satır */
 .seg.ayar-5{grid-template-columns:repeat(5,minmax(0,1fr))}
 @media (max-width:900px){.seg.ayar-5 button{font-size:10.5px;padding:4px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+
+/* Profil → Yöneticiler kartları */
+.ycard{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--ln);
+  border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.yava{width:42px;height:42px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:17px;font-weight:800;color:#0b1220;background:linear-gradient(135deg,#60a5fa,#34d399)}
+.ymeta{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px}
+.ymeta b{font-size:14.5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ymeta small{font-size:12px;color:var(--t2)}
+.ybadge{font-style:normal;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;
+  padding:2px 6px;border-radius:6px;background:rgba(52,211,153,.18);color:#34d399}
+.ybadge.off{background:rgba(148,163,184,.2);color:#94a3b8}
+.yacts{display:flex;align-items:center;gap:6px;flex:none}
+.ycall{display:inline-flex;align-items:center;gap:5px;padding:7px 11px;border-radius:9px;
+  border:1px solid rgba(52,211,153,.45);background:rgba(52,211,153,.12);color:#34d399;
+  font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap}
+.ycall:active{background:rgba(52,211,153,.22)}
+.yacts .sm.d{min-height:34px;height:34px;padding:0 10px}
+/* Destek sayfası (restoran/kurye) */
+.dst-hint{font-size:12.5px;color:var(--t2);margin:2px 2px 10px}

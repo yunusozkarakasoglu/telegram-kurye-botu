@@ -877,3 +877,18 @@ Doğrulama: kart açılıyor (`SİPARİŞ KARTI` + çipler) · konsolda hata yok
 | **Silme onayı** | v197 | **“Bölgeyi sil — <ad> silinsin mi?” · Hayır / Evet, sil** |
 | Rapor | v194 | **Paket / Ödeme** sekmeleri · ödeme analizi (kurye bazlı + ödenmeyenler) · `↻ Raporu güncelle` |
 | **Toplam kalite** | — | ruff ✅ · Python **382/382** ✅ · tsc ✅ · e2e **196/196** ✅ · canlı `06463ba7` (v197) |
+
+### Destek + yönetici yönetimi (2026-11-27, v199)
+
+| Kontrol | Sonuç |
+|---|---|
+| Profil sekmeleri | ✔ **Yöneticiler** · **Şifre** |
+| Yönetici ekle | ✔ ad soyad + telefon → kart + 4 haneli PIN bildirimi |
+| Kart listesi | ✔ avatar baş harf · ad · telefon · **📞 Ara** · ✕ (onaylı) · “siz” rozeti |
+| Mükerrer telefon | ✔ **409** (aynı numarayla ikinci yönetici yok) |
+| Yetki | ✔ restoran `POST /yonetim/yonetici` → **403** |
+| Kendini silme | ✔ **422** · son yönetici **409** |
+| Destek sayfası (restoran) | ✔ yönetici kartları + Ara · 403 yok |
+| Destek sayfası (kurye) | ✔ aynı liste |
+| Senkron | ✔ ekleme/silme anında iki panelde de yansır |
+| e2e | **208/208 PASS** · deploy `db377fd7` (v199) |

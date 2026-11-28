@@ -466,6 +466,13 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       });
     }
 
+    // Destek: restoran/kurye yöneticilere ulaşır (salt okunur kart listesi)
+    if (path === "/destek" && method === "GET") {
+      const rows = await bot.db.all<Account>(
+        "SELECT id,name,phone FROM accounts WHERE role='yonetici' AND deleted=0 AND active=1 ORDER BY name");
+      return json({ items: rows.map((r) => ({ id: r.id, name: r.name, phone: r.phone || null })) });
+    }
+
     if (path === "/aktarim/kuryeler" && method === "GET") {
       if (user.role !== "kurye") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
       return json({ couriers: (await apiCourier.eligibleTargets(bot, user.id)).map((c) => ({ id: c.id, name: c.name })) });

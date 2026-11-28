@@ -336,6 +336,57 @@ export async function adminRoutes(
     }
   }
 
+  // ---------- yöneticiler (destek kişileri) ----------
+  if (path === "/yonetim/yoneticiler" && method === "GET") {
+    const rows = await bot.db.all<Account>(
+      "SELECT id,name,phone,active,tg_chat_id FROM accounts WHERE role='yonetici' AND deleted=0 ORDER BY active DESC, name");
+    return json({
+      items: rows.map((r) => ({
+        id: r.id, name: r.name, phone: r.phone || null, active: !!r.active,
+        tg_linked: !!r.tg_chat_id, self: r.id === user.id,
+      })),
+    });
+  }
+
+  if (path === "/yonetim/yonetici" && method === "POST") {
+    const body = await readBody(request);
+    const name = String(body.name || "").trim();
+    if (name.length < 2 || name.length > 80) return fail("Ad soyad 2–80 karakter olmalı.", 422, "invalid");
+    const phone = String(body.phone || "").trim().replace(/[ ()\-]/g, "");
+    if (!validPhone(phone)) return fail("Telefon numarası geçersiz.", 422, "invalid");
+
+    const son10 = phone.replace(/\D/g, "").slice(-10);
+    const hepsi = await bot.db.all<Account>("SELECT id, phone FROM accounts WHERE deleted=0");
+    if (hepsi.some((a) => String(a.phone || "").replace(/\D/g, "").slice(-10) === son10)) {
+      return fail("Bu telefonla kayıtlı bir hesap var.", 409, "conflict");
+    }
+
+    const floor = await bot.db.first<{ value: number }>("SELECT value FROM settings WHERE key='accounts_id_floor'");
+    const max = await bot.db.first<{ n: number }>("SELECT coalesce(max(id),0) AS n FROM accounts WHERE id < 1000000");
+    const id = Math.max(max?.n ?? 0, floor?.value ?? 2000) + 1;
+    await bot.db.run("INSERT INTO settings(key,value) VALUES ('accounts_id_floor',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", id);
+
+    const pin = String(Math.floor(1000 + Math.random() * 9000));
+    const hash = await makePinHash(pin);
+    await bot.db.run(`INSERT INTO accounts(id,role,name,phone,pin_hash,pin_plain,pin_must_change,active,deleted)
+      VALUES (?,?,?,?,?,?,1,1,0)`, id, "yonetici", name, phone, hash, pin);
+    return json({ ok: true, id, name, phone, pin, pin_must_change: true });
+  }
+
+  if (path === "/yonetim/yonetici-sil" && method === "POST") {
+    const body = await readBody(request);
+    const id = Number(body.id);
+    if (!id) return fail("Yönetici seçilmedi.", 422, "invalid");
+    if (id === user.id) return fail("Kendi hesabınızı silemezsiniz.", 422, "invalid");
+    const row = await bot.db.first<Account>("SELECT * FROM accounts WHERE id=? AND role='yonetici' AND deleted=0", id);
+    if (!row) return fail("Yönetici bulunamadı.", 404, "not_found");
+    const kalan = await bot.db.first<{ n: number }>(
+      "SELECT count(*) AS n FROM accounts WHERE role='yonetici' AND deleted=0 AND active=1");
+    if ((kalan?.n ?? 0) <= 1) return fail("Son yönetici silinemez.", 409, "conflict");
+    await bot.db.run("UPDATE accounts SET deleted=1, active=0, online=0 WHERE id=?", id);
+    return json({ ok: true, deleted: true });
+  }
+
   if (path === "/yonetim/bolgeler" && method === "GET") {
     return json({ regions: await bot.regionList() });
   }

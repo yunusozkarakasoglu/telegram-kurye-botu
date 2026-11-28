@@ -435,6 +435,7 @@
     iptalTamam: function (noticeId) { return req('POST', '/api/kurye/iptal-tamam', { notice_id: noticeId }); },
     iptalOnizleme: function (paketId) { return req('GET', '/api/restoran/iptal-onizleme?paket=' + encodeURIComponent(paketId)); },
     restoranRapor: function (range) { return req('GET', '/api/restoran/rapor?range=' + encodeURIComponent(range || 'today')); },
+    destek: function () { return req('GET', '/api/destek'); },
     restoranOdemeler: function (range) { return req('GET', '/api/restoran/odemeler?range=' + encodeURIComponent(range || 'today')); },
     paketlerimRestoran: function (filter) { return req('GET', '/api/restoran/paketlerim?filter=' + encodeURIComponent(filter || 'all')); },
     profil: function (data) { return req('PATCH', '/api/profil', data); },
@@ -465,6 +466,8 @@
       if (what === 'loglar') return req('GET', '/api/yonetim/loglar' + (arg && arg.kaynak ? '?kaynak=' + encodeURIComponent(arg.kaynak) : ''));
       if (what === 'loglarTemizle') return req('POST', '/api/yonetim/loglar/temizle', arg || {});
       if (what === 'tarifeKaydet') return req('PUT', '/api/yonetim/tarife', arg || {});
+      if (what === 'yonetici') return req('POST', '/api/yonetim/yonetici', arg || {});
+      if (what === 'yoneticiSil') return req('POST', '/api/yonetim/yonetici-sil', arg || {});
       if (what === 'bolge') return req('POST', '/api/yonetim/bolge', arg || {});
       if (what === 'bolgeSirala') return req('POST', '/api/yonetim/bolge-sirala', arg || {});
       if (what === 'sontalepler') return req('GET', '/api/yonetim/sontalepler');
@@ -535,7 +538,7 @@
     }
   };
   ['oturum', 'havuz', 'kabul', 'atamaKarar', 'notEkle', 'kmGir', 'teslim', 'iptal', 'aktar', 'paketlerim', 'gecmis',
-    'kazanc', 'talepVer', 'kuryeTalep', 'restoranKuryeler', 'atamalar', 'atamaAc', 'atamaDurum', 'atamaIptal', 'atamaTeklif', 'atamaAl', 'iptaller', 'iptalTamam', 'iptalOnizleme', 'restoranRapor', 'restoranOdemeler', 'paketlerimRestoran', 'profil', 'durum', 'durumOzet', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'girisKullanicilar', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
+    'kazanc', 'talepVer', 'kuryeTalep', 'restoranKuryeler', 'atamalar', 'atamaAc', 'atamaDurum', 'atamaIptal', 'atamaTeklif', 'atamaAl', 'iptaller', 'iptalTamam', 'iptalOnizleme', 'restoranRapor', 'restoranOdemeler', 'destek', 'paketlerimRestoran', 'profil', 'durum', 'durumOzet', 'kayit', 'sistem', 'aktarimKuryeler', 'aktarimTeklifler', 'aktarimKarar', 'aktarTumu', 'bildirimler', 'bildirimOkundu', 'bildirimTemizle', 'odeme', 'giris', 'girisKullanicilar', 'pinDurum', 'pinOlustur', 'pinDogrula', 'pinDegistir', 'yonetim'].forEach(function (m) {
       Api[m] = function () {
         var a = Array.prototype.slice.call(arguments);
         var target = mode === 'real' ? real : mock;

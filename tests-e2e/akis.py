@@ -807,6 +807,41 @@ def senaryo_restoran_konum(api: Api, o: dict[str, Oturum], baglam: dict) -> None
          str(row2.get("latitude")))
 
 
+def senaryo_destek(api: Api, o: dict[str, Oturum]) -> None:
+    """Yönetici > Profil > Yöneticiler: ekle/listele/sil + restoran-kurye Destek senkronu."""
+    T.bolum("DESTEK · YÖNETİCİ EKLE ↔ RESTORAN/KURYE DESTEK SAYFASI")
+    admin, rest, k2 = o["admin"], o["rest"], o["k2"]
+    tel = "05554440011"
+    sql("DELETE FROM accounts WHERE role='yonetici' AND phone='05554440011'")   # önceki turdan kalıntı
+
+    yeni = api.cagir("POST", "/api/yonetim/yonetici", {"name": "Destek Test", "phone": tel}, token=admin.token)
+    T.ok("yönetici eklendi", bool(yeni.get("id")), str(yeni.get("id")))
+    T.ok("4 haneli PIN üretildi", len(str(yeni.get("pin") or "")) == 4, str(yeni.get("pin")))
+
+    liste = api.cagir("GET", "/api/yonetim/yoneticiler", token=admin.token)
+    idler = [y["id"] for y in (liste.get("items") or [])]
+    T.ok("yöneticiler listesinde", yeni["id"] in idler, str(idler))
+
+    dubl = api.cagir("POST", "/api/yonetim/yonetici", {"name": "Kopya", "phone": tel}, token=admin.token, bekle_hata=True)
+    T.esit("aynı telefonla ikinci yönetici yok", 409, dubl.get("_status"))
+
+    yasak = api.cagir("POST", "/api/yonetim/yonetici", {"name": "X Y", "phone": "05554440099"}, token=rest.token, bekle_hata=True)
+    T.esit("restoran yönetici ekleyemiyor", 403, yasak.get("_status"))
+
+    d_rest = api.cagir("GET", "/api/destek", token=rest.token)
+    T.ok("restoran yöneticileri görüyor", yeni["id"] in [y["id"] for y in (d_rest.get("items") or [])])
+    T.ok("destek kartında telefon var", any(y.get("phone") for y in (d_rest.get("items") or [])))
+    d_kur = api.cagir("GET", "/api/destek", token=k2.token)
+    T.ok("kurye yöneticileri görüyor", yeni["id"] in [y["id"] for y in (d_kur.get("items") or [])])
+
+    kendini = api.cagir("POST", "/api/yonetim/yonetici-sil", {"id": admin.kimlik}, token=admin.token, bekle_hata=True)
+    T.esit("kendi hesabını silemiyor", 422, kendini.get("_status"))
+
+    api.cagir("POST", "/api/yonetim/yonetici-sil", {"id": yeni["id"]}, token=admin.token)
+    son = api.cagir("GET", "/api/destek", token=rest.token)
+    T.ok("silinen yönetici destekten düştü", yeni["id"] not in [y["id"] for y in (son.get("items") or [])])
+
+
 def senaryo_bolge_senkron(api: Api, o: dict[str, Oturum]) -> None:
     """Yönetici bölge ekleyip siler; restoran/kurye listesi senkron mu?"""
     T.bolum("BÖLGELER · YÖNETİCİ ↔ RESTORAN/KURYE SENKRONU")
@@ -861,6 +896,8 @@ def senaryo_on_yuz(api: Api) -> None:
     T.ok("Bölgeler menüden çıktı", "KENAR = ['profil', 'ayarlar', 'bolgeler']" in admin_js)
     T.ok("bölge silme onayı var", "Bölgeyi sil" in admin_js and "bd-yes" in admin_js)
     T.ok("mini app Sistem'de Bölgeler (restoran/kurye)", "['bolge', 'Bölgeler']" in js)
+    T.ok("mini app menüde Destek", 'data-dt="destek"' in js and "function renderDestek" in js)
+    T.ok("admin Profil 2 sekme", 'data-pf="yoneticiler"' in admin_js and 'data-pf="sifre"' in admin_js)
     T.ok("admin menü: sayfa ızgarası + alt aksiyonlar", "nav-foot" in admin_js and "adm-refresh" in admin_js)
     with urllib.request.urlopen(f"{api.base}/admin", timeout=30) as y:
         admin_html = y.read().decode()
@@ -887,6 +924,7 @@ def main() -> int:
     senaryo_admin_kullanici_ekleme(api, oturumlar)
     senaryo_durum_yetki(api, oturumlar, baglam)
     senaryo_bolge_senkron(api, oturumlar)
+    senaryo_destek(api, oturumlar)
     senaryo_restoran_konum(api, oturumlar, baglam)
     senaryo_restoran_rapor(api, oturumlar, baglam)
     senaryo_qr_durum(api, oturumlar, baglam)

@@ -628,33 +628,122 @@
   }
 
   function viewProfil() {
-    head('Profil', 'Yönetici bilgileri ve PIN');
+    if (!S.profilTab) S.profilTab = 'yoneticiler';
+    head('Profil', 'Yöneticiler · Şifre');
+    panel('<div class="seg two" id="pf-seg">' +
+      '<button data-pf="yoneticiler" class="' + (S.profilTab === 'yoneticiler' ? 'on' : '') + '">Yöneticiler</button>' +
+      '<button data-pf="sifre" class="' + (S.profilTab === 'sifre' ? 'on' : '') + '">Şifre</button></div>' +
+      '<div id="pf-body"></div>');
+    Array.prototype.forEach.call($('pf-seg').children, function (b) {
+      b.onclick = function () { S.profilTab = b.getAttribute('data-pf'); viewProfil(); };
+    });
+    if (S.profilTab === 'sifre') drawSifre();
+    else drawYoneticiler();
+  }
+
+  function drawYoneticiler() {
+    var host = $('pf-body');
+    host.innerHTML = '<div class="card" style="padding:14px;margin-bottom:12px">' +
+      '<b style="display:block;margin-bottom:8px">Yönetici ekle</b>' +
+      '<div class="fld"><label>Adı Soyadı</label><input id="yn-name" placeholder="Ad Soyad"></div>' +
+      '<div class="fld"><label>Telefon</label><input id="yn-phone" inputmode="tel" placeholder="0546 208 99 00"></div>' +
+      '<div class="err" id="yn-err"></div>' +
+      '<button class="p" id="yn-add">Yönetici Ekle</button>' +
+      '<p class="note">Eklenen yönetici <b>Destek</b> sayfasında restoran ve kuryelere kart olarak görünür; ayrıca kendi telefonu ve PIN’i ile giriş yapabilir (ilk girişte PIN değiştirir).</p>' +
+      '</div>' +
+      '<div id="yn-list"><div class="empty">Yükleniyor…</div></div>';
+
+    $('yn-add').onclick = function () {
+      var err = $('yn-err'); err.textContent = '';
+      var ad = $('yn-name').value.trim(), tel = $('yn-phone').value.trim();
+      if (ad.length < 2) { err.textContent = 'Ad soyad girin.'; return; }
+      if (!/^\+?[0-9 ()\-]{10,20}$/.test(tel)) { err.textContent = 'Telefon geçersiz. Örnek: 05462089900'; return; }
+      var btn = $('yn-add'); btn.disabled = true;
+      API.yonetim('yonetici', { name: ad, phone: tel }).then(function (r) {
+        btn.disabled = false;
+        UI.toast('Yönetici eklendi', 'success');
+        UI.openSheet('<h2>Yönetici eklendi</h2>' +
+          '<p><b>' + esc(r.name) + '</b> · ' + esc(r.phone) + '</p>' +
+          '<p>Giriş PIN’i: <b style="font-size:20px;letter-spacing:4px">' + esc(r.pin) + '</b></p>' +
+          '<p class="note">Bu PIN’i yöneticiye iletin; ilk girişte değiştirmesi istenir.</p>' +
+          '<div class="acts" style="gap:8px"><button class="p" id="yo-tamam" style="flex:1">Tamam</button></div>');
+        var ts = document.querySelector('#yo-tamam');
+        if (ts) ts.onclick = function () { UI.closeSheet(); };
+        drawYoneticiler();
+      }).catch(function (e) {
+        btn.disabled = false;
+        err.textContent = e.message || 'Eklenemedi';
+      });
+    };
+
+    API.yonetim('yoneticiler').then(function (d) {
+      var items = (d && d.items) || [];
+      $('yn-list').innerHTML = items.length ? items.map(function (y) {
+        var harf = esc(String(y.name || '?').trim().charAt(0).toUpperCase());
+        return '<div class="ycard">' +
+          '<div class="yava">' + harf + '</div>' +
+          '<div class="ymeta"><b>' + esc(y.name) + (y.self ? ' <em class="ybadge">siz</em>' : '') +
+            (!y.active ? ' <em class="ybadge off">pasif</em>' : '') + '</b>' +
+            '<small>' + esc(y.phone || 'Telefon yok') + '</small></div>' +
+          '<div class="yacts">' +
+            (y.phone ? '<a class="ycall" href="tel:' + esc(y.phone) + '">📞 Ara</a>' : '') +
+            (y.self ? '' : '<button class="sm d" data-ydel="' + y.id + '" title="Sil">✕</button>') +
+          '</div></div>';
+      }).join('') : '<div class="empty">Henüz yönetici yok</div>';
+
+      Array.prototype.forEach.call($('yn-list').querySelectorAll('[data-ydel]'), function (b) {
+        b.onclick = function () {
+          var id = Number(b.getAttribute('data-ydel'));
+          var kart = b.closest('.ycard');
+          var ad = kart ? (kart.querySelector('b') || {}).textContent : '';
+          var sh = UI.openSheet('<h2>Yöneticiyi sil</h2>' +
+            '<p><b>' + esc(ad || '') + '</b> silinsin mi? Destek sayfasından kalkar ve girişi kapanır.</p>' +
+            '<div class="acts" style="gap:8px;flex-wrap:nowrap">' +
+              '<button class="g" id="yd-no" style="flex:1">Hayır</button>' +
+              '<button class="d" id="yd-yes" style="flex:1">Evet, sil</button></div>');
+          sh.querySelector('#yd-no').onclick = function () { UI.closeSheet(); };
+          sh.querySelector('#yd-yes').onclick = function () {
+            UI.closeSheet();
+            API.yonetim('yoneticiSil', { id: id }).then(function () {
+              UI.toast('Yönetici silindi', 'success'); drawYoneticiler();
+            }).catch(function (e) { UI.toast(e.message || 'Silinemedi', 'error'); });
+          };
+        };
+      });
+    }).catch(function (e) {
+      $('yn-list').innerHTML = '<div class="empty"><b>Liste alınamadı</b>' + esc(e.message || '') + '</div>';
+    });
+  }
+
+  function drawSifre() {
     var u = (S.session && S.session.user) || {};
     var kilit = UI.esc(u.pin || '');
-    panel('<div class="card" style="padding:14px;max-width:420px">' +
-      '<div class="fld"><label>Adı Soyadı</label><input id="pf-name" value="' + esc(u.name || '') + '"></div>' +
-      '<div class="fld"><label>Telefon</label><input id="pf-phone" inputmode="tel" value="' + esc(u.phone || '') + '" placeholder="0546 208 99 00"></div>' +
-      '<div class="err" id="pf-err"></div>' +
-      '<button class="p" id="pf-save">Bilgileri Kaydet</button>' +
-    '</div>' +
-    '<div class="card" style="padding:14px;max-width:420px;margin-top:12px">' +
-      '<b style="display:block;margin-bottom:8px">PIN değiştir</b>' +
-      '<div class="fld"><label>Mevcut PIN</label><div class="pinwrap"><input id="pf-old" type="password" inputmode="numeric" maxlength="4" value="' + kilit + '">' +
-        '<button type="button" class="eye" data-eye="pf-old">👁</button></div></div>' +
-      '<div class="fld"><label>Yeni PIN</label><div class="pinwrap"><input id="pf-new" type="password" inputmode="numeric" maxlength="4" placeholder="••••">' +
-        '<button type="button" class="eye" data-eye="pf-new">👁</button></div></div>' +
-      '<div class="fld"><label>Yeni PIN (tekrar)</label><div class="pinwrap"><input id="pf-new2" type="password" inputmode="numeric" maxlength="4" placeholder="••••">' +
-        '<button type="button" class="eye" data-eye="pf-new2">👁</button></div></div>' +
-      '<div class="err" id="pf-pinerr"></div>' +
-      '<button class="p" id="pf-pinsave">PIN\'i Güncelle</button>' +
-    '</div>');
+    $('pf-body').innerHTML =
+      '<div class="card" style="padding:14px;max-width:420px">' +
+        '<b style="display:block;margin-bottom:8px">Kendi bilgilerim</b>' +
+        '<div class="fld"><label>Adı Soyadı</label><input id="pf-name" value="' + esc(u.name || '') + '"></div>' +
+        '<div class="fld"><label>Telefon</label><input id="pf-phone" inputmode="tel" value="' + esc(u.phone || '') + '" placeholder="0546 208 99 00"></div>' +
+        '<div class="err" id="pf-err"></div>' +
+        '<button class="p" id="pf-save">Bilgileri Kaydet</button>' +
+      '</div>' +
+      '<div class="card" style="padding:14px;max-width:420px;margin-top:12px">' +
+        '<b style="display:block;margin-bottom:8px">PIN değiştir</b>' +
+        '<div class="fld"><label>Mevcut PIN</label><div class="pinwrap"><input id="pf-old" type="password" inputmode="numeric" maxlength="4" value="' + kilit + '">' +
+          '<button type="button" class="eye" data-eye="pf-old">👁</button></div></div>' +
+        '<div class="fld"><label>Yeni PIN</label><div class="pinwrap"><input id="pf-new" type="password" inputmode="numeric" maxlength="4" placeholder="••••">' +
+          '<button type="button" class="eye" data-eye="pf-new">👁</button></div></div>' +
+        '<div class="fld"><label>Yeni PIN (tekrar)</label><div class="pinwrap"><input id="pf-new2" type="password" inputmode="numeric" maxlength="4" placeholder="••••">' +
+          '<button type="button" class="eye" data-eye="pf-new2">👁</button></div></div>' +
+        '<div class="err" id="pf-pinerr"></div>' +
+        '<button class="p" id="pf-pinsave">PIN\'i Güncelle</button>' +
+      '</div>';
 
     $('pf-save').onclick = function () {
       var err = $('pf-err'); err.textContent = '';
       API.profil({ name: $('pf-name').value.trim(), phone: $('pf-phone').value.trim() }).then(function (r) {
         S.session.user = r.user;
         UI.toast('Bilgiler kaydedildi', 'success');
-        viewProfil();
+        drawSifre();
       }).catch(function (e) { err.textContent = e.message || 'Kaydedilemedi'; });
     };
     $('pf-pinsave').onclick = function () {
@@ -665,7 +754,7 @@
       if (n === o) { err.textContent = 'Yeni PIN eskisinden farklı olmalı'; return; }
       API.pinDegistir(o, n).then(function () {
         UI.toast('PIN güncellendi', 'success');
-        viewProfil();
+        drawSifre();
       }).catch(function (e) { err.textContent = e.message || 'Güncellenemedi'; });
     };
     Array.prototype.forEach.call(document.querySelectorAll('[data-eye]'), function (b) {

@@ -4,7 +4,7 @@
 
 | Konu | Durum |
 |---|---|
-| Canlı | `06463ba7` · asset **v197** · ana/admin/saglik 200 |
+| Canlı | `db377fd7` · asset **v199** · ana/admin/saglik 200 |
 | Arayüz | kurye: havuz/paketlerim/geçmiş + hamburger menü + **(+) Paket Ekle** (QR/Kod tuş takımı) · **sipariş kartı tek tema** (başlık + ÖDEME/BÖLGE çipleri) · restoran: sipariş ekle/**QR ile ekle**/paketlerim/rapor |
 | Plan | **Workers Paid ($5/ay)** — CPU 503'leri bitti, deploy açık |
 | Performans | **Faz A–E bitti** · kapasite ~1.290 kurye (hatasız), p95 ~170 ms → `docs/Kapasite-Raporu.md` |
