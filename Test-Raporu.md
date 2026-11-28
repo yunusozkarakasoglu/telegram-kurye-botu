@@ -1025,3 +1025,27 @@ Düzeltme: `assign.expireClaims()` → cron `tick` başında + `openClaim` baş�
 | `yayin.sh --hizli` (tam) | ✔ staging smoke → canlı deploy `9a678b16` → canlı smoke 2/2 200 |
 | "staging bozuksa canlıya çıkma" | ✔ kod: `dur "staging smoke başarısız — CANLIYA ÇIKILMADI"` |
 | Sürüm sigortası entegrasyonu | ✔ adım 0'da `surum-kontrol.py` (v205 mühürlü) |
+
+### Saha ekranı (28.11.2026, v206–v207)
+
+**Uçlar**
+
+| Uç | İçerik |
+|---|---|
+| `GET /api/yonetim/saha` | kurye on/meşgul/off · havuzda bekleyen · geciken · ödenmeyen (adet+TL) · bugün paket/teslim/iptal/hakediş · geciken/havuz/kurye listeleri |
+| `GET /api/yonetim/gun-sonu?date=` | manuel özet: paket, teslim, iptal, km, ort. süre, hakediş, ödenen, ödenmeyen + kurye bazlı + bölge |
+| `POST /api/yonetim/gun-sonu/gonder` | özeti Telegram'a gönderir (kuyruk üzerinden) |
+
+**Arayüz**
+
+| Kontrol | Sonuç |
+|---|---|
+| Menü adı | ✔ **Saha** (Anasayfa kaldırıldı) |
+| Sekmeler | ✔ **Canlı saha** · **Gün sonu** |
+| Canlı saha KPI'ları | ✔ `22 / 1 / 0` kurye · `90` havuz · `12` geciken · `25.280 TL` ödenmeyen · `170` paket · `96` teslim · `6` iptal · `25.810 TL` hakediş |
+| Listeler | ✔ GECİKEN (12) · HAVUZDA BEKLEYEN (90) · KURYE DURUMU (23) · satıra dokun → sipariş kartı |
+| Gün sonu | ✔ `Özet al` → 158 paket · 96 teslim · 443,5 km · 338 dk · 25.810 TL hakediş · 1.350 ödenen · 24.460 ödenmeyen · 11 kurye satırı · bölge dağılımı |
+| Yenileme | ✔ yalnız **↻** (otomatik yok) |
+| Yetki | ✔ restoran/kurye → **403** |
+
+**e2e:** SAHA senaryosu **20 test** · toplam **251/251 PASS** · cron 9/9 · tutarlılık TEMİZ · deploy `a521bafb` (v207)

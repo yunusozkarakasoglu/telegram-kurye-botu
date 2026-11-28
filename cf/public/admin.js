@@ -31,7 +31,7 @@
     var items = TABS.filter(function (t) { return KENAR.indexOf(t[0]) < 0 && GIZLI.indexOf(t[0]) < 0; });
     $('adm-nav').innerHTML =
       '<div class="nav-pages">' +
-        '<button class="' + (S.tab === 'anasayfa' ? 'on' : '') + '" data-t="anasayfa">Anasayfa</button>' +
+        '<button class="' + (S.tab === 'saha' || S.tab === 'anasayfa' ? 'on' : '') + '" data-t="saha">Saha</button>' +
         items.map(function (t) {
           return '<button class="' + (S.tab === t[0] ? 'on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</button>';
         }).join('') +
@@ -151,6 +151,156 @@
     };
   }
 
+  /** Saha sayfası içeriği: sekme çubuğu korunsun diye #saha-body'ye yazar. */
+  function panelSaha(html) {
+    var el = document.getElementById('saha-body') || document.getElementById('adm-body');
+    el.innerHTML = html;
+    return el;
+  }
+
+  /** SAHA — ana ekran. İki sekme: Canlı Saha · Gün sonu. */
+  function viewSaha() {
+    var alt = S.sahaTab === 'gunsonu' ? 'gunsonu' : 'canli';
+    head('Saha', alt === 'canli' ? 'Canlı saha · bugünkü durum' : 'Gün sonu · manuel özet');
+    panel(
+      '<div class="seg two" id="saha-seg">' +
+        '<button data-sh="canli" class="' + (alt === 'canli' ? 'on' : '') + '">Canlı saha</button>' +
+        '<button data-sh="gunsonu" class="' + (alt === 'gunsonu' ? 'on' : '') + '">Gün sonu</button>' +
+      '</div><div id="saha-body"></div>'
+    );
+    Array.prototype.forEach.call(document.querySelectorAll('[data-sh]'), function (b) {
+      b.onclick = function () { S.sahaTab = b.getAttribute('data-sh'); viewSaha(); };
+    });
+    if (alt === 'gunsonu') viewGunSonu();
+    else viewCanliSaha();
+  }
+
+  /** Canlı saha: kurye durumu + havuz + geciken + bugünkü ödeme özeti. */
+  function viewCanliSaha() {
+    API.yonetim('saha').then(function (d) {
+      var k = d.kurye || {}, s = d.sayac || {}, e = d.esikler || {};
+      var saat = new Date(d.at * 1000).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+      var kart = function (v, l, cls) {
+        return '<div class="kpi ' + (cls || '') + '"><div class="v">' + esc(v == null ? '—' : v) + '</div>' +
+          '<div class="l">' + esc(l) + '</div></div>';
+      };
+      var sure = function (dk) {
+        dk = Number(dk || 0);
+        return dk >= 60 ? Math.floor(dk / 60) + ' sa ' + (dk % 60) + ' dk' : dk + ' dk';
+      };
+
+      var kuryeSatir = (d.kuryeler || []).map(function (c) {
+        var durum = c.busy ? 'Meşgul' + (c.busy_reason ? ' (' + c.busy_reason + ')' : '') : c.online ? 'Online' : 'Offline';
+        var renk = c.busy ? 'busy' : c.online ? 'online' : 'offline';
+        return '<div class="srow"><div class="srow-l"><b>' + esc(c.name) + '</b>' +
+          '<small>' + c.aktif + ' paket üzerinde · limit ' + (k.limit || 3) +
+          (c.assign_lock_until && c.assign_lock_until * 1000 > Date.now() ? ' · 🔑 atama kilidi' : '') + '</small></div>' +
+          '<div class="srow-r"><span class="dot ' + renk + '"></span><em>' + esc(durum) + '</em></div></div>';
+      }).join('');
+
+      var gecikenSatir = (d.geciken || []).map(function (g) {
+        return '<div class="srow late" data-pkg="' + g.id + '">' +
+          '<div class="srow-l"><b>#' + g.batch + '-' + g.number + ' · ' + esc(g.restaurant) + '</b>' +
+          '<small>' + (g.tur === 'havuz' ? 'Havuzda bekliyor' : 'Kurye: ' + esc(g.courier_name || '—')) +
+          (g.region ? ' · ' + esc(g.region) : '') + '</small></div>' +
+          '<div class="srow-r"><span class="stg">' + sure(g.dk) + '</span></div></div>';
+      }).join('');
+
+      var havuzSatir = (d.havuz || []).map(function (h) {
+        return '<div class="srow waiting" data-pkg="' + h.id + '">' +
+          '<div class="srow-l"><b>#' + h.batch + '-' + h.number + ' · ' + esc(h.restaurant) + '</b>' +
+          '<small>' + (h.region ? esc(h.region) : '—') + (h.payment ? ' · ' + esc(h.payment) : '') + '</small></div>' +
+          '<div class="srow-r"><em>' + sure(h.dk) + '</em></div></div>';
+      }).join('');
+
+      panelSaha(
+        '<div class="ph-row"><div class="note">Saat ' + esc(saat) + ' · eşik: havuz ' + (e.havuz_dk || 10) +
+          ' dk · kuryede ' + (e.kurye_dk || 45) + ' dk</div>' +
+          '<div><span id="sh-ref" class="ph-ref" title="Yenile">↻</span></div></div>' +
+        '<div class="kpis k4">' +
+          kart(k.online + ' / ' + k.mesgul + ' / ' + k.offline, 'Kurye on/meşgul/off', 'k3col') +
+          kart(s.havuzda, 'Havuzda bekleyen') +
+          kart(s.geciken, 'Geciken') +
+          kart(s.odenmeyen_tl ? money(s.odenmeyen_tl) : '0 TL', 'Ödenmeyen (' + s.odenmeyen_adet + ')') +
+        '</div>' +
+        '<div class="kpis k4">' +
+          kart(s.paket, 'Bugün paket') + kart(s.teslim, 'Teslim') +
+          kart(s.iptal, 'İptal') + kart(money(s.hakedis_tl), 'Bugün hakediş') +
+        '</div>' +
+        '<div class="sh-title"><h3>GECİKEN <span>(' + (d.geciken || []).length + ')</span></h3></div>' +
+        '<div class="slist">' + (gecikenSatir || '<div class="empty">Geciken paket yok 🎉</div>') + '</div>' +
+        '<div class="sh-title"><h3>HAVUZDA BEKLEYEN <span>(' + s.havuzda + ')</span></h3></div>' +
+        '<div class="slist">' + (havuzSatir || '<div class="empty">Havuz boş</div>') + '</div>' +
+        '<div class="sh-title"><h3>KURYE DURUMU <span>(' + (d.kuryeler || []).length + ')</span></h3></div>' +
+        '<div class="slist">' + (kuryeSatir || '<div class="empty">Kurye yok</div>') + '</div>'
+      );
+
+      var rf = document.getElementById('sh-ref');
+      if (rf) rf.onclick = function () { viewCanliSaha(); UI.toast('Güncellendi', 'success'); };
+      Array.prototype.forEach.call(document.querySelectorAll('#saha-body [data-pkg]'), function (row) {
+        row.onclick = function () {
+          API.yonetim('siparisler', { from: null, to: null }).then(function (r) {
+            var p = (r.items || []).find(function (x) { return String(x.id) === row.getAttribute('data-pkg'); });
+            if (p) siparisSheet(p);
+          }).catch(showError);
+        };
+      });
+    }).catch(showError);
+  }
+
+  /** Gün sonu: MANUEL özet (tarih seç → Özet al). İsteğe bağlı Telegram'a gönder. */
+  function viewGunSonu() {
+    var tarih = S.gunSonuTarih || '';
+    panelSaha('<div class="filters"><label class="note">Tarih</label>' +
+      '<input type="date" id="gs-date" value="' + esc(tarih) + '">' +
+      '<button class="p sm" id="gs-al">Özet al</button>' +
+      '<button class="sm" id="gs-gonder">Telegram’a gönder</button></div>' +
+      '<div id="gs-body"><div class="empty">Tarih seçip “Özet al”a basın.</div></div>');
+    document.getElementById('gs-al').onclick = function () { gunSonuGetir(document.getElementById('gs-date').value); };
+    document.getElementById('gs-gonder').onclick = function () {
+      API.yonetim('gunSonuGonder', { date: S.gunSonuTarih || '' }).then(function () {
+        UI.toast('Gün sonu özeti Telegram’a gönderildi', 'success');
+      }).catch(function (e) { UI.toast(e.message || 'Gönderilemedi', 'error'); });
+    };
+    if (S.gunSonuTarih) gunSonuGetir(S.gunSonuTarih);
+  }
+
+  function gunSonuGetir(tarih) {
+    S.gunSonuTarih = tarih || '';
+    API.yonetim('gunSonu', { date: tarih }).then(function (d) {
+      var o = d.ozet || {};
+      var sure = function (sn) {
+        sn = Number(sn || 0);
+        return sn >= 60 ? Math.round(sn / 60) + ' dk' : sn + ' sn';
+      };
+      var kart = function (v, l) { return '<div class="kpi"><div class="v">' + esc(v) + '</div><div class="l">' + esc(l) + '</div></div>'; };
+      var satirlar = (d.kuryeler || []).map(function (k) {
+        var kapali = k.odenmeyen_tl === 0;
+        return '<tr><td>' + esc(k.name) + '</td><td class="num">' + k.paket + '</td>' +
+          '<td class="num">' + kmf(k.km) + '</td><td class="num">' + money(k.tl) + '</td>' +
+          '<td class="num">' + (kapali ? '✔' : money(k.odenmeyen_tl)) + '</td></tr>';
+      }).join('');
+      var bolge = (d.bolgeler || []).slice(0, 12).map(function (b) {
+        return '<div class="gs-bolge"><span>' + esc(b.ad) + '</span><b>' + b.adet + '</b></div>';
+      }).join('');
+      document.getElementById('gs-body').innerHTML =
+        '<div class="kpis k4">' +
+          kart(o.paket, 'Paket') + kart(o.teslim, 'Teslim') +
+          kart(o.iptal, 'İptal') + kart(kmf(o.km), 'Toplam km') +
+        '</div>' +
+        '<div class="kpis k4">' +
+          kart(sure(o.sure_sn), 'Ort. süre') + kart(money(o.hakedis_tl), 'Hakediş') +
+          kart(money(o.odenen_tl), 'Ödenen') + kart(money(o.odenmeyen_tl), 'Ödenmeyen') +
+        '</div>' +
+        '<div class="sh-title"><h3>KURYE BAZLI <span>(' + esc(d.date) + ')</span></h3></div>' +
+        '<table class="tbl"><thead><tr><th>Kurye</th><th class="num">Paket</th><th class="num">Km</th>' +
+          '<th class="num">Hakediş</th><th class="num">Ödenmeyen</th></tr></thead><tbody>' +
+          (satirlar || '<tr><td colspan="5">Kayıt yok</td></tr>') + '</tbody></table>' +
+        '<div class="sh-title"><h3>BÖLGE DAĞILIMI</h3></div>' +
+        '<div class="gs-bolgeler">' + (bolge || '<div class="empty">Kayıt yok</div>') + '</div>';
+    }).catch(showError);
+  }
+
   function viewOzet() {
     head('Canlı Saha', 'Sistem durumu');
     if (!S.ozetFilter) S.ozetFilter = { preset: 'today', from: null, to: null, status: '', pay: '', grup: '' };
@@ -209,7 +359,7 @@
         var fbtn = (aktifFiltre ? '<button class="fclear" id="oz-clear" title="Filtreleri temizle">✕</button>' : '') +
           '<button class="fbtn" id="oz-filter">⚙ Filtre' + (aktifFiltre ? ' (' + aktifFiltre + ')' : '') + '</button>';
 
-        panel(
+        panelSaha(
           '<div class="ph-row"><div><span id="oz-ref" class="ph-ref" title="Yenile">↻</span></div></div>' +
           '<div class="kpis">' +
             kpiKart(kpi.restaurants, 'Aktif restoran') +
@@ -1200,9 +1350,9 @@
   function render() {
     renderTabs();
     nav();
-    var view = S.tab === 'anasayfa' ? 'ozet' : S.tab;
+    var view = (S.tab === 'saha' || S.tab === 'anasayfa') ? 'saha' : S.tab;
     ({
-      ozet: viewOzet, havuz: viewHavuz, kuryeler: viewKuryeler, restoranlar: viewRestoranlar,
+      saha: viewSaha, ozet: viewOzet, havuz: viewHavuz, kuryeler: viewKuryeler, restoranlar: viewRestoranlar,
       bolgeler: viewBolgeler, rapor: viewRapor, iptaller: viewIptaller, ayarlar: viewAyarlar, profil: viewProfil,
       sontalepler: viewSonTalepler, kuryedurum: viewKuryeDurum, mesaj: viewMesaj, odemeler: viewOdemeler
     })[view]();

@@ -3,6 +3,9 @@
 Sürüm numarası = `cf/public/index.html` içindeki `app.js?v=N`.
 Her yayından sonra tek satır eklenir (bkz. `docs/Yayin-Proseduru.md`).
 
+## v207 — 28.11.2026
+- **Saha ekranı**: yönetici menüsünde **Anasayfa → Saha**; **Canlı saha** (kurye on/meşgul/off, havuz, geciken, ödenmeyen, günün paket/teslim/iptal/hakediş, 3 liste) + **Gün sonu** (manuel özet, kurye bazlı tablo, bölge dağılımı, Telegram'a gönder). Uçlar: `/api/yonetim/saha`, `/api/yonetim/gun-sonu`.
+
 ## v205 — 28.11.2026
 - Yayın prosedürü: **staging ortamı** (`telegram-kurye-botu-staging` + `kurye-db-staging`), `tools/yayin.sh` (kalite kapısı → staging smoke → canlı smoke), rollback provası yapıldı.
 

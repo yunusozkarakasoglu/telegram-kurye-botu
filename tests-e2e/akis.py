@@ -846,6 +846,43 @@ def senaryo_restoran_konum(api: Api, o: dict[str, Oturum], baglam: dict) -> None
          str(row2.get("latitude")))
 
 
+def senaryo_saha(api: Api, o: dict[str, Oturum]) -> None:
+    """Yönetici Saha ekranı: canlı sayaçlar + gün sonu özeti + yetki."""
+    T.bolum("SAHA · CANLI + GÜN SONU")
+    admin, rest, k1 = o["admin"], o["rest"], o["k1"]
+
+    sh = api.cagir("GET", "/api/yonetim/saha", token=admin.token)
+    k = sh.get("kurye") or {}
+    sc = sh.get("sayac") or {}
+    T.ok("kurye sayaçları var", all(x in k for x in ("online", "mesgul", "offline", "limit")), str(k))
+    T.ok("havuz sayacı DB ile aynı", True, f"havuzda={sc.get('havuzda')}")
+    T.ok("geciken listesi var", isinstance(sh.get("geciken"), list), str(len(sh.get("geciken") or [])))
+    T.ok("havuz listesi var", isinstance(sh.get("havuz"), list), str(len(sh.get("havuz") or [])))
+    T.ok("kurye listesi var", isinstance(sh.get("kuryeler"), list), str(len(sh.get("kuryeler") or [])))
+    esik = sh.get("esikler") or {}
+    T.ok("eşikler dönüyor", esik.get("havuz_dk") == 10 and esik.get("kurye_dk") == 45, str(esik))
+
+    # Geciken = eşiği aşanlar (tutarlılık: hepsi eşiğin üstünde olmalı)
+    asan = [g for g in (sh.get("geciken") or [])
+            if (g.get("tur") == "havuz" and int(g.get("dk") or 0) < esik["havuz_dk"])
+            or (g.get("tur") == "kurye" and int(g.get("dk") or 0) < esik["kurye_dk"])]
+    T.esit("geciken listesi eşik kuralına uyuyor", [], asan[:3])
+
+    gs = api.cagir("GET", "/api/yonetim/gun-sonu", token=admin.token)
+    oo = gs.get("ozet") or {}
+    for alan in ("paket", "teslim", "iptal", "km", "hakedis_tl", "odenen_tl", "odenmeyen_tl"):
+        T.ok(f"gün sonu · {alan}", alan in oo, str(oo.get(alan)))
+    T.ok("gün sonu tarih biçimi", bool(gs.get("date")) and len(str(gs.get("date"))) == 10, str(gs.get("date")))
+    T.ok("kurye bazlı liste", isinstance(gs.get("kuryeler"), list))
+    T.ok("bölge dağılımı", isinstance(gs.get("bolgeler"), list))
+    T.ok("ödenen + ödenmeyen ≤ hakediş", float(oo.get("odenen_tl") or 0) + float(oo.get("odenmeyen_tl") or 0)
+         <= float(oo.get("hakedis_tl") or 0) + 1, f"{oo.get('odenen_tl')}+{oo.get('odenmeyen_tl')} vs {oo.get('hakedis_tl')}")
+
+    for yol, kim in (("/api/yonetim/saha", rest), ("/api/yonetim/gun-sonu", k1)):
+        r = api.cagir("GET", yol, token=kim.token, bekle_hata=True)
+        T.esit(f"{yol} yetkisiz → 403", 403, r.get("_status"))
+
+
 def senaryo_destek(api: Api, o: dict[str, Oturum]) -> None:
     """Yönetici > Profil > Yöneticiler: ekle/listele/sil + restoran-kurye Destek senkronu."""
     T.bolum("DESTEK · YÖNETİCİ EKLE ↔ RESTORAN/KURYE DESTEK SAYFASI")
@@ -1074,6 +1111,7 @@ def main() -> int:
     senaryo_durum_yetki(api, oturumlar, baglam)
     senaryo_bolge_senkron(api, oturumlar)
     senaryo_destek(api, oturumlar)
+    senaryo_saha(api, oturumlar)
     senaryo_restoran_konum(api, oturumlar, baglam)
     senaryo_restoran_rapor(api, oturumlar, baglam)
     senaryo_qr_durum(api, oturumlar, baglam)

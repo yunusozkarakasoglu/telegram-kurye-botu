@@ -305,6 +305,107 @@ export async function adminRoutes(
     return json({ ok: true, count: rows.length, delivered });
   }
 
+  // ---------- Saha (canlı) — yönetici ana ekranı ----------
+  // Eşikler yalnız GÖRÜNTÜLEME içindir (bildirim gönderilmez): havuz 10 dk, kuryede 45 dk.
+  if (path === "/yonetim/saha" && method === "GET") {
+    const HAVUZ_DK = 10;
+    const KURYE_DK = 45;
+    const now = bot.now();
+    const gun = bot.now() - 86400;
+
+    const kurye = await bot.db.first<any>(
+      `SELECT
+         sum(CASE WHEN online=1 AND coalesce(busy,0)=0 THEN 1 ELSE 0 END) AS online,
+         sum(CASE WHEN online=1 AND coalesce(busy,0)=1 THEN 1 ELSE 0 END) AS mesgul,
+         sum(CASE WHEN coalesce(online,0)=0 THEN 1 ELSE 0 END) AS offline,
+         (SELECT value FROM settings WHERE key='active_limit') AS azami
+       FROM accounts WHERE role='kurye' AND active=1 AND deleted=0`);
+
+    const havuzToplam = await bot.db.first<{ n: number }>(
+      "SELECT count(*) AS n FROM packages WHERE courier IS NULL AND delivered_at IS NULL AND cancelled_at IS NULL");
+
+    const bekleyen = await bot.db.all<any>(
+      `SELECT p.id, p.batch, p.number, p.region, p.payment, b.created_at,
+              CAST((? - coalesce(b.created_at, ?)) / 60 AS INTEGER) AS dk, r.name AS restaurant
+       FROM packages p JOIN batches b ON b.id=p.batch JOIN accounts r ON r.id=b.owner
+       WHERE p.courier IS NULL AND p.delivered_at IS NULL AND p.cancelled_at IS NULL
+       ORDER BY b.created_at ASC LIMIT 12`, now, now);
+
+    const geciken = await bot.db.all<any>(
+      `SELECT p.id, p.batch, p.number, p.region, p.payment, p.courier,
+              c.name AS courier_name, r.name AS restaurant,
+              CASE WHEN p.courier IS NULL THEN 'havuz' ELSE 'kurye' END AS tur,
+              CAST((? - coalesce(p.accepted_at, b.created_at, ?)) / 60 AS INTEGER) AS dk
+       FROM packages p JOIN batches b ON b.id=p.batch JOIN accounts r ON r.id=b.owner
+       LEFT JOIN accounts c ON c.id=p.courier
+       WHERE p.delivered_at IS NULL AND p.cancelled_at IS NULL
+         AND ((p.courier IS NULL AND coalesce(b.created_at,0) <= ?)
+              OR (p.courier IS NOT NULL AND coalesce(p.accepted_at,0) <= ?))
+       ORDER BY dk DESC LIMIT 12`, now, now, now - HAVUZ_DK * 60, now - KURYE_DK * 60);
+
+    const bugun = await bot.db.first<any>(
+      `SELECT
+         (SELECT count(*) FROM packages p JOIN batches b ON b.id=p.batch WHERE b.created_at>=?) AS paket,
+         (SELECT count(*) FROM packages WHERE delivered_at>=?) AS teslim,
+         (SELECT count(*) FROM packages WHERE cancelled_at>=?) AS iptal,
+         (SELECT coalesce(sum(courier_fee),0) FROM packages WHERE delivered_at>=?) AS hakedis_tl,
+         (SELECT count(*) FROM packages WHERE delivered_at IS NOT NULL AND cancelled_at IS NULL
+            AND (payment_received IS NULL OR payment_received=0)) AS odenmeyen_adet,
+         (SELECT coalesce(sum(courier_fee),0) FROM packages WHERE delivered_at IS NOT NULL AND cancelled_at IS NULL
+            AND (payment_received IS NULL OR payment_received=0)) AS odenmeyen_tl`,
+      gun, gun, gun, gun);
+
+    const liste = await bot.db.all<any>(
+      `SELECT a.id, a.name, coalesce(a.online,0) AS online, coalesce(a.busy,0) AS busy, a.busy_reason,
+              coalesce(a.locked,0) AS locked, a.assign_lock_until,
+              (SELECT count(*) FROM packages p WHERE p.courier=a.id AND p.delivered_at IS NULL AND p.cancelled_at IS NULL) AS aktif
+       FROM accounts a WHERE a.role='kurye' AND a.active=1 AND a.deleted=0
+       ORDER BY coalesce(a.online,0) DESC, aktif DESC, a.name LIMIT 40`);
+
+    return json({
+      esikler: { havuz_dk: HAVUZ_DK, kurye_dk: KURYE_DK },
+      kurye: {
+        online: Number(kurye?.online ?? 0), mesgul: Number(kurye?.mesgul ?? 0),
+        offline: Number(kurye?.offline ?? 0), limit: Number(kurye?.azami ?? 3),
+      },
+      sayac: {
+        havuzda: Number(havuzToplam?.n ?? 0),
+        geciken: geciken.length,
+        paket: Number(bugun?.paket ?? 0), teslim: Number(bugun?.teslim ?? 0), iptal: Number(bugun?.iptal ?? 0),
+        hakedis_tl: Math.round(Number(bugun?.hakedis_tl ?? 0)),
+        odenmeyen_adet: Number(bugun?.odenmeyen_adet ?? 0),
+        odenmeyen_tl: Math.round(Number(bugun?.odenmeyen_tl ?? 0)),
+      },
+      havuz: bekleyen.map((b) => ({ ...b, dk: Math.max(0, Number(b.dk)) })),
+      geciken: geciken.map((g) => ({ ...g, dk: Math.max(0, Number(g.dk)) })),
+      kuryeler: liste,
+      at: now,
+    });
+  }
+
+  // ---------- Gün sonu (manuel özet) ----------
+  if (path === "/yonetim/gun-sonu" && method === "GET") {
+    return json(await gunSonuVerisi(bot, url.searchParams.get("date") || ""));
+  }
+
+  if (path === "/yonetim/gun-sonu/gonder" && method === "POST") {
+    const body = await readBody(request);
+    const gun = await gunSonuVerisi(bot, String(body.date || ""));
+    const satirlar = gun.kuryeler.filter((k: any) => k.paket > 0).map((k: any) =>
+      `• ${k.name}: ${k.paket} paket · ${k.tl} TL` + (k.odenmeyen_tl ? ` · ${k.odenmeyen_tl} TL ödenmedi` : " · ödendi"));
+    const metin = [
+      `📊 Gün sonu · ${gun.date}`,
+      `Paket: ${gun.ozet.paket} · Teslim: ${gun.ozet.teslim} · İptal: ${gun.ozet.iptal}`,
+      `Km: ${gun.ozet.km} · Hakediş: ${gun.ozet.hakedis_tl} TL`,
+      `Ödenen: ${gun.ozet.odenen_tl} TL · Ödenmeyen: ${gun.ozet.odenmeyen_tl} TL`,
+      "",
+      "Kurye bazlı:",
+      ...(satirlar.length ? satirlar : ["—"]),
+    ].join("\n");
+    await bot.send(user.id, metin);
+    return json({ ok: true, gonderildi: true, text: metin, date: gun.date });
+  }
+
   if (path === "/yonetim/odemeler" && method === "GET") {
     const rows = await bot.db.all<any>(
       `SELECT p.id, p.batch, p.number, p.region, p.courier_fee, p.delivered_at, p.payment_received,
@@ -591,4 +692,63 @@ export async function adminRoutes(
   }
 
   return null;
+}
+
+/** Gün sonu özeti (manuel) — tarih verilmezse bugün (TR). */
+async function gunSonuVerisi(bot: Bot, dateParam: string) {
+  const start = /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
+    ? Math.floor(Date.parse(dateParam + "T00:00:00+03:00") / 1000)
+    : Math.floor((bot.now() + 3 * 3600) / 86400) * 86400 - 3 * 3600;
+  const end = start + 86400;
+
+  const ozet = await bot.db.first<any>(
+    `SELECT
+       (SELECT count(*) FROM packages p JOIN batches b ON b.id=p.batch WHERE b.created_at>=? AND b.created_at<?) AS paket,
+       (SELECT count(*) FROM packages WHERE delivered_at>=? AND delivered_at<?) AS teslim,
+       (SELECT count(*) FROM packages WHERE cancelled_at>=? AND cancelled_at<?) AS iptal,
+       (SELECT coalesce(sum(distance_km),0) FROM packages WHERE delivered_at>=? AND delivered_at<?) AS km,
+       (SELECT coalesce(avg(delivered_at - coalesce(accepted_at, delivered_at)),0)
+          FROM packages WHERE delivered_at>=? AND delivered_at<?) AS sure_sn,
+       (SELECT coalesce(sum(courier_fee),0) FROM packages WHERE delivered_at>=? AND delivered_at<?) AS hakedis_tl,
+       (SELECT coalesce(sum(courier_fee),0) FROM packages WHERE delivered_at>=? AND delivered_at<?
+          AND payment_received=1) AS odenen_tl,
+       (SELECT coalesce(sum(courier_fee),0) FROM packages WHERE delivered_at>=? AND delivered_at<?
+          AND (payment_received IS NULL OR payment_received=0)) AS odenmeyen_tl`,
+    start, end, start, end, start, end, start, end, start, end, start, end, start, end, start, end);
+
+  const kuryeler = await bot.db.all<any>(
+    `SELECT c.id, c.name,
+            count(p.id) AS paket,
+            coalesce(sum(p.distance_km),0) AS km,
+            coalesce(sum(p.courier_fee),0) AS tl,
+            sum(CASE WHEN p.payment_received=1 THEN 1 ELSE 0 END) AS odenen_adet,
+            coalesce(sum(CASE WHEN p.payment_received=1 THEN p.courier_fee ELSE 0 END),0) AS odenen_tl,
+            coalesce(sum(CASE WHEN p.payment_received IS NULL OR p.payment_received=0 THEN p.courier_fee ELSE 0 END),0) AS odenmeyen_tl
+     FROM accounts c JOIN packages p ON p.courier=c.id
+     WHERE c.role='kurye' AND p.delivered_at>=? AND p.delivered_at<? AND p.cancelled_at IS NULL
+     GROUP BY c.id ORDER BY paket DESC, c.name`, start, end);
+
+  const bolgeler = await bot.db.all<any>(
+    `SELECT coalesce(region,'Belirtilmedi') AS ad, count(*) AS adet
+     FROM packages WHERE delivered_at>=? AND delivered_at<? AND cancelled_at IS NULL
+     GROUP BY region ORDER BY adet DESC`, start, end);
+
+  return {
+    date: new Date(start * 1000 + 3 * 3600 * 1000).toISOString().slice(0, 10),
+    ozet: {
+      paket: Number(ozet?.paket ?? 0), teslim: Number(ozet?.teslim ?? 0), iptal: Number(ozet?.iptal ?? 0),
+      km: Math.round(Number(ozet?.km ?? 0) * 10) / 10,
+      sure_sn: Math.round(Number(ozet?.sure_sn ?? 0)),
+      hakedis_tl: Math.round(Number(ozet?.hakedis_tl ?? 0)),
+      odenen_tl: Math.round(Number(ozet?.odenen_tl ?? 0)),
+      odenmeyen_tl: Math.round(Number(ozet?.odenmeyen_tl ?? 0)),
+    },
+    kuryeler: kuryeler.map((k) => ({
+      id: k.id, name: k.name, paket: Number(k.paket || 0),
+      km: Math.round(Number(k.km || 0) * 10) / 10, tl: Math.round(Number(k.tl || 0)),
+      odenen_adet: Number(k.odenen_adet || 0), odenen_tl: Math.round(Number(k.odenen_tl || 0)),
+      odenmeyen_tl: Math.round(Number(k.odenmeyen_tl || 0)),
+    })),
+    bolgeler: bolgeler.map((b) => ({ ad: b.ad, adet: Number(b.adet || 0) })),
+  };
 }

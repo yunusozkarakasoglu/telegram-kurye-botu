@@ -4,7 +4,7 @@
 > `~/Masaüstü/Kurye-Flow-Mobil/Roadmaps.md` (PackOn Express, Faz 2-6).
 > Burada yalnız acil düzeltmeler yapılır.
 >
-> **Durum (27.11 gece):** Performans (A–E) + arayüz turu + **QR/PIN ile atama** + Rapor (Paket/Ödeme + çubuk grafik) + **Destek/Bölgeler** + **sipariş kartı teması, konum & harita** kapandı; canlı `9a678b16` / asset **v205**, e2e **231/231** · cron 9/9 · yoğun 15/15 · staging + rollback provalı.
+> **Durum (27.11 gece):** Performans (A–E) + arayüz turu + **QR/PIN ile atama** + Rapor (Paket/Ödeme + çubuk grafik) + **Destek/Bölgeler** + **sipariş kartı teması, konum & harita** kapandı; canlı `a521bafb` / asset **v207**, e2e **251/251** · cron 9/9 · yoğun 15/15 · staging + rollback provalı.
 > **Sıradaki odak:** PackOn Express Faz 2 (Süper Admin paneli).
 
 1. **Tamamlandı — Yerel v2 çekirdek:** kabul/öncelik, aktarım + bildirim + onay, profil/harita/arama, medya yok sayma, durum etiketleri, komut menüleri, bölge/telefon/tarife yönetimi, kendi kendine kayıt, hesap aktif/pasif/sil, iptal akışı, havuz bölge gruplama. Kanıt: `Test-Raporu.md`.
@@ -39,10 +39,11 @@
    - **Kod boyutu:** `app.js` 145 KB → minify değerlendirmesi (build adımı) — önce kazanç ölçülür.
    - **Cron bütçesi:** her dakika `tick` → erken çıkış (aktif teklif/kuyruk yoksa tek hafif sorgu) doğrulanır.
 
-18. **Roadmap — Saha kontrol (tek kişi operasyonu, 70 restoran · 30 kurye · 700–1000 paket/gün):**
+18. **Tamamlandı — Saha kontrol (28.11, v207):** **Anasayfa → Saha** · iki sekme: **Canlı saha** (kurye on/meşgul/off · havuzda bekleyen · geciken · ödenmeyen + günün paket/teslim/iptal/hakediş · geciken/havuz/kurye listeleri · satır → sipariş kartı) ve **Gün sonu** (manuel: tarih → **Özet al** · kartlar · kurye bazlı tablo · bölge dağılımı · **Telegram'a gönder**). Geciken paket **Telegram bildirimi bilinçli olarak yapılmadı** (yönetici sahada kendisi takip ediyor). Kanıt: `Test-Raporu.md` (e2e SAHA 20 test).
+   <details><summary>eski plan notu</summary>
    - **Geciken paket uyarısı:** havuzda >10 dk / kuryede >30 dk → Telegram'a tek satır (sahadayken telefon).
    - **Gün sonu özeti (23:00):** günlük paket, km, kurye bazlı hakediş, **ödenmeyen** tutar.
    - **Tek ekran "Saha":** online/meşgul/offline kurye sayısı · havuzda bekleyen · geciken paket · açık ödeme.
-   - Ön koşul: 16–17 tamamlandıktan sonra (bildirim altyapısı + ölçüm hazır).
+   - Ön koşul: 16–17 tamamlandıktan sonra (bildirim altyapısı + ölçüm hazır).</details>
 
 19. **Planlanacak — Cloudflare tam parite:** gönderim kuyruğu/429, tek kart görünümü, transfer bildirimi düzeltmesi; medya ve kuyruk sözleşmesi korunarak taşıma.

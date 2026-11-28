@@ -479,6 +479,8 @@
         return req('GET', '/api/yonetim/siparisler' + (q.length ? '?' + q.join('&') : ''));
       }
       if (what === 'rapor') return req('GET', '/api/yonetim/rapor' + (arg && arg.date ? '?date=' + encodeURIComponent(arg.date) : ''));
+      if (what === 'gunSonu') return req('GET', '/api/yonetim/gun-sonu' + (arg && arg.date ? '?date=' + encodeURIComponent(arg.date) : ''));
+      if (what === 'gunSonuGonder') return req('POST', '/api/yonetim/gun-sonu/gonder', arg || {});
       if (what === 'mesaj') return req('POST', '/api/yonetim/mesaj', arg || {});
       if (what === 'mesajlar') return req('GET', '/api/yonetim/mesajlar');
       if (what === 'kuryePaketler') return req('GET', '/api/yonetim/kurye-paketler?courier=' + encodeURIComponent(arg && arg.courier || 0));

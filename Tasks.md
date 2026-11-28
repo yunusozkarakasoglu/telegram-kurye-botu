@@ -21,12 +21,13 @@
 ### Roadmap'te (detay: `Roadmaps.md` 16–18)
 - [ ] **Yedek sunucu / kesintisiz saha** — Time Travel + restore tatbikatı (RTO ≤ 15 dk) · `MAINTENANCE` modu · `Kesinti-Runbook`. **Proje sonunda.**
 - [ ] **Optimizasyonlar** — indeks denetimi · adaptif yoklama · kota raporu · `package_events` budama · minify. **En son.**
-- [ ] **Saha kontrol** — geciken paket uyarısı · 23:00 gün sonu özeti · tek ekran "Saha".
+- [x] ~~Saha kontrol~~ → **v207'de yapıldı** (geciken paket **bildirimi** bilinçli olarak yok; ekran + manuel gün sonu var).
 
 ### Yeni proje
 - [ ] **PackOn Express Faz 2 — Süper Admin paneli** (`~/Masaüstü/Kurye-Flow-Mobil`; `~/.pi/packone-d1-token` hazır).
 
 ## Son tamamlananlar
+- [x] **v206-207 — Saha ekranı**: **Anasayfa → Saha** (2 sekme) · **Canlı saha** (kurye on/meşgul/off, havuz, geciken, ödenmeyen, bugünkü paket/teslim/iptal/hakediş; geciken+havuz+kurye listeleri; satıra dokun → sipariş kartı) · **Gün sonu** (manuel: tarih → Özet al; kartlar + kurye bazlı tablo + bölge dağılımı + Telegram'a gönder) · e2e **SAHA** senaryosu (20 test).
 - [x] **v205 — yayın prosedürü**: **staging** ortamı (Worker + D1 `kurye-db-staging`, cron kapalı) · `tools/yayin.sh` (5 adım: ön kontrol → kalite kapısı → şema uyarısı → staging smoke → canlı smoke) · `--geri-al` + **rollback provası yapıldı** · `docs/Yayin-Proseduru.md` · `CHANGELOG.md`.
 - [x] **v204 test turu (2. blok) — 2 saha hatası bulundu ve düzeltildi:**
   - **Havuz 100+ pakette 500**: `statesFor` tek sorguda 100+ parametre → `D1_ERROR: too many SQL variables`. 90'lık parçalara bölündü. (Yoğun saatte havuz büyüyünce kurye ekranı çöküyordu.)
