@@ -50,6 +50,7 @@
 - [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
 
 ## Son tamamlananlar
+- [x] **v185-187**: yönetici menüsü **sağdan açılan panel** (FAB sağ altta; panel tam boy, 2×2 aksiyonlar en altta, FAB panel açıkken gizli).
 - [x] **v182-184**: yönetici menüsü **sağ alt FAB + yüzen kart** (2 sütun sayfalar + 2×2 aksiyon: Sistem·Profil·Yenile·Çıkış).
 - [x] **Kart teması turu (v163-181)**: QR geri sayım 5 sn · kurye header (+) → Paket Ekle (QR/Kod + tuş takımı) · bekleyen kodlar **benzersiz** · km sonrası anlık tutar · **sipariş kartı yeni tema** (başlık + çipler, kenarlıklı alt butonlar) · **restoran konumu** (admin alanı + mavi kutulu 📍 link) · `duzenlenebilir` ReferenceError düzeltmesi. e2e 174/174.
 - [x] **v181**: restoran paket kartı açılmıyordu (`duzenlenebilir` tanımsız) → düzeltildi; restoran/yönetici kartı yeni tema (başlık + çipler).

@@ -860,15 +860,18 @@ a.pk-map:active{filter:brightness(.94)}
     box-shadow:0 8px 20px rgba(0,0,0,.28);cursor:pointer}
   .adm-fab:active{filter:brightness(.94)}
 
-  /* menü: sağ altta yüzen kart */
-  body.admin .adm-nav{position:fixed;left:auto;top:auto;right:12px;
-    bottom:calc(78px + env(safe-area-inset-bottom));width:min(320px,86vw);max-height:70vh;
-    display:flex;flex-direction:column;gap:8px;height:auto;align-content:stretch;
-    border-radius:16px;border:1px solid var(--ln);padding:10px;
-    transform:translateY(10px) scale(.98);opacity:0;pointer-events:none;
-    transition:transform .16s ease, opacity .16s ease;overflow:auto;z-index:61;
-    background:var(--el);box-shadow:0 14px 40px rgba(0,0,0,.35)}
-  body.admin.nav-open .adm-nav,body.nav-open .adm-nav{transform:none;opacity:1;pointer-events:auto}
+  /* menü: SAĞDAN açılan panel */
+  body.admin .adm-nav{position:fixed;left:auto;top:0;right:0;bottom:0;
+    width:min(86vw,320px);max-height:none;height:100%;
+    border-radius:16px 0 0 16px;border:1px solid var(--ln);border-right:0;padding:14px 12px calc(14px + env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;gap:8px;align-content:stretch;
+    transform:translateX(105%);opacity:1;pointer-events:none;
+    transition:transform .22s ease;overflow:auto;z-index:61;
+    background:var(--el);box-shadow:-14px 0 40px rgba(0,0,0,.35)}
+  body.admin.nav-open .adm-nav,body.nav-open .adm-nav{transform:none;pointer-events:auto}
+  body.admin .adm-nav .nav-foot{margin-top:auto}   /* 2×2 aksiyonlar panelin en altında */
+  body.nav-open .adm-fab{opacity:0;pointer-events:none}
+  .adm-fab{transition:opacity .15s ease}
 
   .nav-pages button{min-height:40px;font-size:12.5px;padding:6px 8px;border-radius:9px}
   .nav-foot{grid-column:auto;display:grid;grid-template-columns:1fr 1fr;gap:7px;

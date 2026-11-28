@@ -794,3 +794,15 @@ Doğrulama: kart açılıyor (`SİPARİŞ KARTI` + çipler) · konsolda hata yok
 | İçerik | ✔ 2 sütun sayfalar + **2×2 aksiyon** (Sistem · Profil · Yenile · Çıkış) |
 | Masaüstü | ✔ sol sabit menü korunuyor (≥900px) |
 | e2e | **177/177 PASS** · deploy `20248750` (v184) |
+
+### Yönetici menüsü: sağdan panel (2026-11-27, v185–v187)
+
+| Kontrol | Sonuç |
+|---|---|
+| Panel konumu | ✔ sağ kenar (`panelGenislik=320`, `height=479` tam boy) |
+| Animasyon | ✔ `translateX(105%) → 0` (0,22 s) |
+| İçerik | ✔ 2 sütun sayfalar üstte, **2×2 aksiyonlar en altta** (`altAksiyonAlt=15px`) |
+| FAB | ✔ kapalıyken görünür (opaklık 1), açıkken **gizli** (0) |
+| Kapatma | ✔ scrim'e dokununca kapanır |
+| Masaüstü | ✔ sol sabit menü korunuyor |
+| e2e | **177/177 PASS** · deploy v187 |
