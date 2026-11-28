@@ -851,3 +851,19 @@ Doğrulama: kart açılıyor (`SİPARİŞ KARTI` + çipler) · konsolda hata yok
 | Kurye | ✔ aynı sekme |
 | Senkron | ✔ liste `settings.regions`'tan gelir (yönetici düzenlemesi anında yansır) |
 | e2e | **191/191 PASS** · deploy `ed980037` (v195) |
+
+### Bölgeler: otomatik kayıt + senkron testi (2026-11-27, v196)
+
+| İşlem | Davranış | Sunucu çağrısı |
+|---|---|---|
+| **Ekle** | anında kaydedilir | `POST /api/yonetim/bolge {action:add}` |
+| **✕ Sil** | anında kaydedilir | `POST … {action:del}` |
+| **▲▼ Sırala** | her taşımada kaydedilir | `POST /api/yonetim/bolge-sirala` |
+
+| Test | Sonuç |
+|---|---|
+| Bölge ekle → yönetici listesi | ✔ |
+| Restoran `Sistem` listesi | ✔ aynı bölgeyi görüyor |
+| Kurye `Sistem` listesi | ✔ |
+| Silme senkronu | ✔ her iki taraftan da düştü |
+| e2e | **195/195 PASS** · deploy v196 |

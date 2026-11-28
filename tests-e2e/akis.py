@@ -807,6 +807,26 @@ def senaryo_restoran_konum(api: Api, o: dict[str, Oturum], baglam: dict) -> None
          str(row2.get("latitude")))
 
 
+def senaryo_bolge_senkron(api: Api, o: dict[str, Oturum]) -> None:
+    """Yönetici bölge ekleyip siler; restoran/kurye listesi senkron mu?"""
+    T.bolum("BÖLGELER · YÖNETİCİ ↔ RESTORAN/KURYE SENKRONU")
+    admin, rest, k2 = o["admin"], o["rest"], o["k2"]
+    ad = "TestBölge"
+
+    api.cagir("POST", "/api/yonetim/bolge", {"action": "add", "name": ad}, token=admin.token)
+    liste = api.cagir("GET", "/api/yonetim/bolgeler", token=admin.token)
+    T.ok("bölge yönetici listesinde", ad in (liste.get("regions") or []), str(len(liste.get("regions") or [])))
+
+    rest_sis = api.cagir("GET", "/api/sistem", token=rest.token)
+    T.ok("restoran Sistem'de görüyor", ad in ((rest_sis.get("settings") or {}).get("regions") or []))
+    kurye_sis = api.cagir("GET", "/api/sistem", token=k2.token)
+    T.ok("kurye Sistem'de görüyor", ad in ((kurye_sis.get("settings") or {}).get("regions") or []))
+
+    api.cagir("POST", "/api/yonetim/bolge", {"action": "del", "name": ad}, token=admin.token)
+    rest2 = api.cagir("GET", "/api/sistem", token=rest.token)
+    T.ok("silme de senkron", ad not in ((rest2.get("settings") or {}).get("regions") or []))
+
+
 def senaryo_on_yuz(api: Api) -> None:
     """Statik yüzey testi: app.js'te kritik fonksiyonlar var ve tekil.
     Blok değiştirirken bir fonksiyonun silinmesi `node --check`ten kaçar; bu test yakalar."""
@@ -865,6 +885,7 @@ def main() -> int:
     senaryo_restoran_kuryeye_gonder(api, oturumlar, baglam)
     senaryo_admin_kullanici_ekleme(api, oturumlar)
     senaryo_durum_yetki(api, oturumlar, baglam)
+    senaryo_bolge_senkron(api, oturumlar)
     senaryo_restoran_konum(api, oturumlar, baglam)
     senaryo_restoran_rapor(api, oturumlar, baglam)
     senaryo_qr_durum(api, oturumlar, baglam)

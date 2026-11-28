@@ -565,7 +565,9 @@
               '<button class="sm d" data-del="' + esc(r) + '" title="Sil">✕</button>' +
             '</span></div>';
         }).join('') + '</div>' +
-        '<p class="note">Restoranın bölge seçimi bu listeden beslenir.</p>');
+        '<p class="note" style="margin:8px 0 2px"><b>Değişiklikler otomatik kaydedilir.</b> ' +
+          'Ekle · ✕ sil · ▲▼ sırala işlemleri anında sunucuya yazılır (ayrıca “Kaydet”e gerek yok).</p>' +
+        '<p class="note">Restoranın ve kuryenin bölge listesi buradan beslenir.</p>');
       $('add').onclick = function () {
         API.yonetim('bolge', { action: 'add', name: $('nr').value.trim() }).then(function () {
           UI.toast('Bölge eklendi', 'success'); render();
