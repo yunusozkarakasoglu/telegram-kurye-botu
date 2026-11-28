@@ -4,50 +4,22 @@
 
 - **Kural:** her faz sonunda hafıza + **commit + push**.
 
-- [x] **CI yedeği için token**: Packonexpress hesabı D1+Workers Scripts Write → secret eklendi, `yedek.yml` yeşil, Release'e yükleniyor (26.11).
-
-
-
-- [ ] GitHub secrets ekle (yedek + izleme workflow'ları için) — 4 secret.
-- [ ] VPS soğuk yedek: sunucu kurulumu → `Db` SQLite adaptörü → senkron timer → tatbikat (`docs/VPS-Yedek-Plani.md`).
-- [x] Workers Paid ($5/ay) alındı — deploy açıldı, 30/30 giriş 200 (26.11).
-- [ ] Yoklama 5 sn → 15 sn + tek toplu uç (istek ~%66 azalır).
-
-- [ ] **Cloudflare Workers API kesintisi** (26.11): deploy blokajda (`10001` / 504). Düzelince `commit b399385` yayınlanacak (v118): oturum 401 → giriş ekranı, CPU optimizasyonu.
-- [ ] **CPU/CPU limiti**: `Worker exceeded resource limits` (503) aralıklı görüldü. v118 sonrası ölç; sürerse ikinci tur (settings/tariff/regions tek sorgu, bildirimde ek sorguyu kaldırma, PIN hash maliyeti).
-- [ ] **Kota görünümü**: Workers/D1 kullanımı (istek, CPU, satır okuma) panelden haftalık kontrol; 5 sn'lik yoklamayı 15 sn'ye çekme planı.
-
-### Yarın (2026-11-26): performans + kota
-- [ ] **GET isteklerinde optimizasyon**: Mini App 5 sn'lik yoklama (3 istek) → 10-15 sn + tek toplu uç (`/api/durum` benzeri); ekran kapalıyken durdur.
-- [ ] Rapor/Canlı Saha sorgularına tarih zorunluluğu + indeks kontrolü.
-- [ ] Cloudflare/D1 kullanım ölçümü (istek, satır okuma) ve kota görünümü.
-- [ ] Birkaç arayüz düzenlemesi (kullanıcı istekleri).
-
-> **Yön:** Bu proje legacy. Yeni geliştirme `~/Masaüstü/Kurye-Flow-Mobil` (PackOn Express) altında sürüyor.
-- [ ] **GEÇİCİ TEST GİRİŞİ canlıda açık**: `GET /api/giris/kullanicilar` tüm hesapların PIN'ini **1234** yapar ve listeyi döner. Kaldırılmalı (Faz 4/5).
+### Güvenlik / temizlik (PackOn Faz 4'te kalkacak)
+- [ ] **GEÇİCİ TEST GİRİŞİ canlıda açık**: `GET /api/giris/kullanicilar` tüm hesapların PIN'ini **1234** yapar ve listeyi döner. Kaldırılmalı.
 - [ ] `pin_plain` (düz metin PIN) canlıda duruyor; yalnız maske/göz gösterimi için. Kaldırılmalı.
-- [ ] D1'de kalan tenant artıkları (`tenant_id`, `tenants/tenant_*`, `pin_plain`) — zararsız; yeni projeye geçişte kullanılacak.
-- [x] Cloudflare yerel E2E simülasyonu (restoran→kabul→km→teslim→aktarım→iptal) — geçti.
-- [x] Mini App yayını (`e1e02837…`): statik arayüz + `/api/*`, menü düğmesi "Kurye", initData 1 saat.
-- [x] Mini App menü düğmesi geçici olarak kapatıldı (`commands`); botu tam düzenleme turu başladı.
-- [x] Bot: havuz özeti (restoran/paket/kapasite), admin 3 sütun menü + alt satırlar, kabul sonrası kart yerine liste + `card:` düğmesi.
-- [x] Kayıt adı doğrulaması: kurye kaydında ad+soyad zorunlu (tek kelime/"Slm" reddedilir); CF + Python.
-- [x] Mini App: 4 gruplama (bölge/restoran/talep/sıra) + havuz özeti, tek-kabul listesi, liste/kart geçişi (hatırlanır), dokun→kart detay, profil düzenleme.
-- [x] Mini App admin: 12 sekmeli 3 sütun ızgara, Restoranlar filtreleri + Düzenle, Kuryeler/Kurye Durumu, Limit, Son Talepler, Tarife, Bölgeler.
-- [x] Mini App menü düğmesi yeniden açıldı; yönetici `/` → `/admin` yönlendirmesi.
-- [ ] Bot profilleri: kurye ad/telefon, restoran ad/yetkili/telefon düzenleme (bot içi).
-- [ ] Bot `Paketlerim`: liste/kart görünüm seçimi (kurye tercihi saklanır).
-- [ ] Python'a aynı değişikliklerin tam portu (kabul listesi, profiller, görünüm tercihi).
-- [ ] Mini App gerçek Telegram açılışı: kurye/restoran/yönetici ekranları (kullanıcı testi).
-- [ ] Bot menülerini "Uygulamayı Aç" + bildirim modeline indirgemek (tam Mini App geçişi).
-- [x] Bot görünen adı “Kurye Paket”; kullanıcı adı bilinçli olarak eski kalıyor (Telegram self-servis kaldırdı).
-- [x] `kurye.packonexpress.com` custom domain (proxy Worker + DNS + route), Telegram menü taşındı.
-- [ ] Cloudflare canlı doğrulama (gerçek restoran Telegram hesabı): restoran/kurye davet kabulü ve uçtan uca sipariş akışını gerçek Telegram hesaplarıyla tamamla.
-- [ ] Cloudflare paritesini kapat: gönderim kuyruğu/429, tek kart görünümü, kalan rapor/aktarım ayrıntıları.
-- [ ] Cloudflare yayın öncesi otomatik `d1 export` yedeğini scriptle ve rollback tatbikatı yap.
-- [ ] Canlı pilotu bitir (phase-5): bölge gruplama/10 paket, iptal akışları, kurye onaylı atama, Hesap listeleri, İptal Siparişler ve Havuz özetlerini telefonda doğrula.
-- [ ] Phase-4 (iki hesap kurye, 10 paket, limit 6) ile kurye–kurye aktarım ve 10/6/4 senaryosunu tamamla.
-- [ ] Cloudflare aşaması: test Worker + test D1, yayın öncesi `d1 export` yedeği, eklemeli migrasyon, sürüm/rollback prosedürü.
+- [ ] D1'de kalan tenant artıkları (`tenant_id`, `tenants/tenant_*`) — zararsız; yeni projeye geçişte kullanılacak.
+
+### Altyapı / yedek
+- [ ] VPS soğuk yedek: sunucu kurulumu → `Db` SQLite adaptörü → senkron timer → tatbikat (`docs/VPS-Yedek-Plani.md`).
+- [ ] Otomatik geri yükleme tatbikatı (`tools/geri-yukle.sh`, test D1) + yedek tazeliği uyarısı + şifreleme (age/gpg).
+
+### Legacy parite
+- [ ] Cloudflare tam parite: gönderim kuyruğu/429 kalanları, transfer bildirimi.
+- [ ] Gerçek Telegram hesaplarıyla **restoran tarafı** canlı doğrulama (kurye tarafı tamam).
+- [ ] Phase-4: iki kurye + 10 paket/limit 6 ile kurye–kurye aktarım ve 10/6/4 havuz senaryosu.
+
+### Yeni proje
+- [ ] **PackOn Express Faz 2 — Süper Admin paneli** (`~/Masaüstü/Kurye-Flow-Mobil`; `~/.pi/packone-d1-token` hazır).
 
 ## Son tamamlananlar
 - [x] **v200-203**: Rapor resimdeki tasarıma çevrildi — süre kartları kaldırıldı (3 kart), **bölge yatay çubuk grafik**, Genel'de **Son 30 gün / Tüm zamanlar**, ↻ ikon düğmesi.

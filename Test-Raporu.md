@@ -907,3 +907,15 @@ Doğrulama: kart açılıyor (`SİPARİŞ KARTI` + çipler) · konsolda hata yok
 | `range=30` | ✔ yeni kapsam; 30 gün ≤ tüm zamanlar |
 | **BUG** | `odenmeyenler` ↔ `odemmeyenler` yazım hatası (Ödeme sekmesi çöküyordu) → düzeltildi |
 | e2e | **216/216 PASS** · deploy `91b4d242` (v203) |
+
+### Hafıza kapanışı (27.11.2026)
+
+| Alan | Değer |
+|---|---|
+| Canlı sürüm | `91b4d242` · asset **v203** |
+| e2e | **216/216 PASS** (`python3 tests-e2e/akis.py`) |
+| Python | **382/382** (`python3 -m unittest discover -s tests`) |
+| Tip kontrolü | `cd cf && ./node_modules/.bin/tsc --noEmit` ✅ |
+| Lint | `ruff check .` ✅ |
+| Kapsam | Rapor tasarımı (Paket/Ödeme · Bugün/Genel · çubuk grafik) · Destek + yönetici ekleme · Bölgeler → Sistem · bölge silme onayı · kart teması |
+| Sıradaki | PackOn Express Faz 2 (Süper Admin paneli) |
