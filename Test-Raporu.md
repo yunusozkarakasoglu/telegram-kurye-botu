@@ -783,3 +783,14 @@ Doğrulama: kart açılıyor (`SİPARİŞ KARTI` + çipler) · konsolda hata yok
 | Harita/konum | v168-177 | konum alanı · `📍 Haritada aç` (saf https) · **Harita aç butonu kaldırıldı** (ERR_UNKNOWN_URL_SCHEME) · mavi kesikli kutu |
 | Kart teması | v178-181 | çerçeveli başlık + **ÖDEME/BÖLGE çipleri** · 3 sütun alt butonlar (kenarlıklı) · **`duzenlenebilir` hatası düzeltildi** |
 | **Toplam kalite** | — | ruff ✅ · Python **382/382** ✅ · tsc ✅ · e2e **174/174** ✅ · canlı `67de93a4` (v181) |
+
+### Yönetici menüsü sağ alt (2026-11-27, v182–v184)
+
+| Kontrol | Sonuç |
+|---|---|
+| Üstteki `☰` | ✔ kaldırıldı (mobil) |
+| FAB | ✔ sağ alt, 52 px yuvarlak, marka rengi |
+| Panel konumu | ✔ sağ alt (`sag:27px`, `alt:78px`), genişlik 320, yükseklik **içerik kadar** (218 px) |
+| İçerik | ✔ 2 sütun sayfalar + **2×2 aksiyon** (Sistem · Profil · Yenile · Çıkış) |
+| Masaüstü | ✔ sol sabit menü korunuyor (≥900px) |
+| e2e | **177/177 PASS** · deploy `20248750` (v184) |

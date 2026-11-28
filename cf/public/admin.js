@@ -30,18 +30,31 @@
     var GIZLI = ['ozet', 'havuz', 'sontalepler', 'iptaller'];
     var items = TABS.filter(function (t) { return KENAR.indexOf(t[0]) < 0 && GIZLI.indexOf(t[0]) < 0; });
     $('adm-nav').innerHTML =
-      '<button class="' + (S.tab === 'anasayfa' ? 'on' : '') + '" data-t="anasayfa">Anasayfa</button>' +
-      items.map(function (t) {
-        return '<button class="' + (S.tab === t[0] ? 'on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</button>';
-      }).join('') +
-      '<button class="nav-wide' + (S.tab === 'profil' ? ' on' : '') + '" data-t="profil" style="grid-column:1/-1">👤 Profil</button>' +
+      '<div class="nav-pages">' +
+        '<button class="' + (S.tab === 'anasayfa' ? 'on' : '') + '" data-t="anasayfa">Anasayfa</button>' +
+        items.map(function (t) {
+          return '<button class="' + (S.tab === t[0] ? 'on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</button>';
+        }).join('') +
+      '</div>' +
       '<div class="nav-foot">' +
-        '<button class="' + (S.tab === 'ayarlar' ? 'on' : '') + '" data-t="ayarlar">⚙ Sistem</button>' +
-        '<button id="adm-logout">⏻ Çıkış</button>' +
+        '<button class="' + (S.tab === 'ayarlar' ? 'on' : '') + '" data-t="ayarlar"><i>⚙</i><span>Sistem</span></button>' +
+        '<button class="' + (S.tab === 'profil' ? 'on' : '') + '" data-t="profil"><i>👤</i><span>Profil</span></button>' +
+        '<button id="adm-refresh"><i>↻</i><span>Yenile</span></button>' +
+        '<button id="adm-logout" class="exit"><i>⏻</i><span>Çıkış</span></button>' +
       '</div>';
     Array.prototype.forEach.call($('adm-nav').querySelectorAll('[data-t]'), function (b) {
-      b.onclick = function () { S.tab = b.getAttribute('data-t'); render(); };
+      b.onclick = function () {
+        S.tab = b.getAttribute('data-t');
+        document.body.classList.remove('nav-open');
+        render();
+      };
     });
+    var rf = document.getElementById('adm-refresh');
+    if (rf) rf.onclick = function () {
+      document.body.classList.remove('nav-open');
+      render();
+      UI.toast('Yenilendi', 'success');
+    };
     var lo = document.getElementById('adm-logout');
     if (lo) lo.onclick = function () {
       localStorage.removeItem('loginToken'); localStorage.removeItem('loginTokenUser');

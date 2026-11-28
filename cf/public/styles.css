@@ -846,3 +846,36 @@ a.pk-map:active{filter:brightness(.94)}
 .pk-chip b{font-size:15px;font-weight:800;line-height:1.15}
 .pk-chip.od{background:#f0a020;color:#20140a}
 .pk-chip.bol{background:#3ecf8e;color:#08251a}
+
+/* ---------- Yönetici: sağ alt hamburger (FAB) + açılır menü (v182) ---------- */
+.adm-fab{display:none}
+.nav-pages{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+
+@media (max-width: 900px){
+  /* üstteki burger yok; sağ altta yuvarlak buton */
+  .burger{display:none !important}
+  .adm-fab{display:flex;position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));
+    z-index:60;width:52px;height:52px;border-radius:50%;align-items:center;justify-content:center;
+    font-size:22px;line-height:1;border:1px solid var(--ac);background:var(--ac);color:var(--on);
+    box-shadow:0 8px 20px rgba(0,0,0,.28);cursor:pointer}
+  .adm-fab:active{filter:brightness(.94)}
+
+  /* menü: sağ altta yüzen kart */
+  body.admin .adm-nav{position:fixed;left:auto;top:auto;right:12px;
+    bottom:calc(78px + env(safe-area-inset-bottom));width:min(320px,86vw);max-height:70vh;
+    display:flex;flex-direction:column;gap:8px;height:auto;align-content:stretch;
+    border-radius:16px;border:1px solid var(--ln);padding:10px;
+    transform:translateY(10px) scale(.98);opacity:0;pointer-events:none;
+    transition:transform .16s ease, opacity .16s ease;overflow:auto;z-index:61;
+    background:var(--el);box-shadow:0 14px 40px rgba(0,0,0,.35)}
+  body.admin.nav-open .adm-nav,body.nav-open .adm-nav{transform:none;opacity:1;pointer-events:auto}
+
+  .nav-pages button{min-height:40px;font-size:12.5px;padding:6px 8px;border-radius:9px}
+  .nav-foot{grid-column:auto;display:grid;grid-template-columns:1fr 1fr;gap:7px;
+    margin-top:9px;padding-top:9px;border-top:1px solid var(--ln)}
+  .nav-foot button{min-height:56px;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:3px;font-size:11.5px;border-radius:11px}
+  .nav-foot button i{font-style:normal;font-size:17px;line-height:1}
+  .nav-foot .exit{color:#ff5b60;border-color:rgba(255,91,96,.35)}
+  .nav-foot button.on{background:var(--ac);color:var(--on)}
+}

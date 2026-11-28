@@ -819,6 +819,11 @@ def senaryo_on_yuz(api: Api) -> None:
         admin_js = y.read().decode()
     T.ok("admin.js servis ediliyor", len(admin_js) > 10000, f"{len(admin_js)} bayt")
     T.ok("admin kuyruk görünümü var", "kuyruk" in admin_js)
+    T.ok("admin menü: 2 sütun sayfalar", "nav-pages" in admin_js)
+    T.ok("admin menü: sayfa ızgarası + alt aksiyonlar", "nav-foot" in admin_js and "adm-refresh" in admin_js)
+    with urllib.request.urlopen(f"{api.base}/admin", timeout=30) as y:
+        admin_html = y.read().decode()
+    T.ok("admin HTML'de FAB var", "adm-fab" in admin_html and "adm-burger" in admin_html)
 
 
 def main() -> int:
