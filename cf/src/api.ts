@@ -708,8 +708,9 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
           km_adet: kmAdet,
           sure_sn: sure,
           sure_adet: sureAdet,
-          paket_km: kmAdet ? Math.round((km / kmAdet) * 10) / 10 : null,
-          paket_sure_sn: sureAdet ? Math.round(sure / sureAdet) : null,
+          // Paket/Km = TOPLAM km / TOPLAM paket (km girilmemiş paketler de paydaya dahil).
+          paket_km: paket ? Math.round((km / paket) * 10) / 10 : null,
+          paket_sure_sn: paket ? Math.round(sure / paket) : null,
           ciro_tl: Math.round(ciro),
         },
         // Çubuk grafik: adet büyükten küçüğe; eşitlikte ayarlardaki sıra korunur.
@@ -751,10 +752,19 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const kuryeMap = new Map<number, any>();
       for (const r of teslim) {
         const k = Number(r.courier || 0);
-        const kayit = kuryeMap.get(k) || { courier: k, ad: r.courier_name || "Kurye atanmadı", paket: 0, tutar: 0, odenen: 0, odenen_tutar: 0 };
+        const kayit = kuryeMap.get(k) || {
+          courier: k, ad: r.courier_name || "Kurye atanmadı",
+          paket: 0, tutar: 0, odenen: 0, odenen_tutar: 0, odenmeyen: 0, kalan_tutar: 0,
+        };
         kayit.paket += 1;
         kayit.tutar += tutar(r);
-        if (r.payment_received === 1) { kayit.odenen += 1; kayit.odenen_tutar += tutar(r); }
+        if (r.payment_received === 1) {
+          kayit.odenen += 1;
+          kayit.odenen_tutar += tutar(r);
+        } else {
+          kayit.odenmeyen += 1;
+          kayit.kalan_tutar += tutar(r);
+        }
         kuryeMap.set(k, kayit);
       }
       return json({
@@ -770,8 +780,13 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
           kalan_tl: Math.round(toplamTutar - odenenTutar),
         },
         kuryeler: [...kuryeMap.values()]
-          .map((k) => ({ ...k, tutar: Math.round(k.tutar), odenen_tutar: Math.round(k.odenen_tutar) }))
-          .sort((a, b) => b.tutar - a.tutar),
+          .map((k) => ({
+            ...k,
+            tutar: Math.round(k.tutar),
+            odenen_tutar: Math.round(k.odenen_tutar),
+            kalan_tutar: Math.round(k.kalan_tutar),
+          }))
+          .sort((a, b) => b.kalan_tutar - a.kalan_tutar || b.tutar - a.tutar),
         odenmeyenler: odenmeyen.slice(0, 100).map((r) => ({
           id: r.id, label: `#${r.batch}-${r.number}`, courier_name: r.courier_name || "—",
           fee_tl: r.courier_fee == null ? null : Math.round(tutar(r)), delivered_at: r.delivered_at,

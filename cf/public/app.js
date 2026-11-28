@@ -21,7 +21,7 @@
     '</svg>';
 
   var MESGUL_SEBEPLERI = ['Mola', 'Arıza', 'Kaza', 'Diğer'];
-  var ODemeTipleri = ['Nakit', 'Kart', 'Ödendi', 'Yemek Çeki', 'Cihaz hatası (ödemesiz)'];
+  var ODemeTipleri = ['Nakit', 'Kart', 'Online', 'Yemek Çeki', 'Cihaz hatası (ödemesiz)'];
 
   var S = {
     role: 'courier',
@@ -1281,7 +1281,9 @@
       '<div class="rp-card"><b>' + (o.paket || 0) + '</b><small>Toplam paket</small></div>' +
       '<div class="rp-card"><b>' + (o.km ? kmf(o.km) : '—') + '</b><small>Toplam Km</small></div>' +
       '<div class="rp-card"><b>' + (o.paket_km == null ? '—' : kmf(o.paket_km)) + '</b><small>Paket / Km</small></div>' +
-      '</div>';
+      '</div>' +
+      '<div class="rp-note">Teslim <b>' + (o.teslim || 0) + '</b> · İptal <b>' + (o.iptal || 0) +
+      '</b> · Km girilmiş <b>' + (o.km_adet || 0) + '</b> paket</div>';
   }
 
   // Bölge dağılımı: yatay çubuk grafik (ilk sıra yeşil, kalanlar mavi)
@@ -1334,20 +1336,31 @@
       host.innerHTML = rpBaslik(aralik) +
         '<div class="rp-grid three">' +
           kart('Paket', o.paket || 0) +
+          kart('Teslim', o.teslim || 0) +
+          kart('İptal', o.iptal || 0) +
+        '</div>' +
+        '<div class="rp-grid three">' +
           kart('Ödendi', o.odenen_adet || 0) +
           kart('Ödenmedi', o.odenmeyen_adet || 0) +
+          kart('Kalan', o.kalan_tl ? money(o.kalan_tl) : '0 TL') +
         '</div>' +
-        '<div class="rp-grid two">' +
-          kart('Toplam tutar', o.toplam_tl ? money(o.toplam_tl) : '—') +
-          kart('Kalan', o.kalan_tl ? money(o.kalan_tl) : '—') +
-        '</div>' +
+        '<div class="rp-note">Toplam hakediş <b>' + money(o.toplam_tl || 0) + '</b> · Ödenen <b>' +
+          money(o.odenen_tl || 0) + '</b><br>Paket <b>' + (o.paket || 0) + '</b> = teslim <b>' + (o.teslim || 0) +
+          '</b> + iptal <b>' + (o.iptal || 0) + '</b>' +
+          ((o.paket || 0) - (o.teslim || 0) - (o.iptal || 0) > 0
+            ? ' + açık <b>' + ((o.paket || 0) - (o.teslim || 0) - (o.iptal || 0)) + '</b>' : '') +
+          ' · Ödenen + ödenmedi = teslim</div>' +
         '<h3 class="rp-h">Kurye bazlı</h3>' +
         (kuryeler.length ? '<div class="od-list">' + kuryeler.map(function (k) {
-          var kapali = k.odenen === k.paket;
+          var kalan = Number(k.kalan_tutar || 0);
+          var kapali = kalan <= 0;
           return '<div class="od-row ' + (kapali ? 'ok' : 'no') + '">' +
             '<span class="od-name">' + esc(k.ad) + '</span>' +
-            '<span class="od-meta">' + k.paket + ' paket · ' + money(k.tutar) + '</span>' +
-            '<span class="od-state">' + (kapali ? '✔ Ödendi' : (k.odenen + '/' + k.paket + ' ödendi')) + '</span></div>';
+            '<span class="od-tutar">' + money(k.tutar) + '</span>' +
+            '<span class="od-meta">' + k.paket + ' paket' +
+              (k.odenmeyen ? ' · ' + k.odenmeyen + ' ödenmedi' : '') +
+              (k.odenen ? ' · ' + k.odenen + ' ödendi' : '') + '</span>' +
+            '<span class="od-state">' + (kapali ? '✔ Tamam' : 'Alacak ' + money(kalan)) + '</span></div>';
         }).join('') + '</div>' : '<div class="empty">Bu dönemde teslim edilmiş paket yok</div>') +
         '<h3 class="rp-h">Ödenmeyen paketler' + (odenmeyenler.length ? ' (' + (o.odenmeyen_adet || odenmeyenler.length) + ')' : '') + '</h3>' +
         (odenmeyenler.length ? '<div class="od-list">' + odenmeyenler.map(function (p) {

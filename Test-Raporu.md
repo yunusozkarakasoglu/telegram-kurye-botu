@@ -1049,3 +1049,38 @@ Düzeltme: `assign.expireClaims()` → cron `tick` başında + `openClaim` baş�
 | Yetki | ✔ restoran/kurye → **403** |
 
 **e2e:** SAHA senaryosu **20 test** · toplam **251/251 PASS** · cron 9/9 · tutarlılık TEMİZ · deploy `a521bafb` (v207)
+
+### Hesap tutarlılığı (28.11.2026, v209)
+
+**Kullanıcının bildirdiği tutarsızlık (canlı veri, restoran 7002)**
+
+| Kart | Önce görünen | Gerçek | Açıklama |
+|---|---|---|---|
+| Paket | 34 | 34 | ✔ toplam paket |
+| Ödendi | 19 | 19 | ✔ |
+| Ödenmedi | 4 | 4 | ✔ (**teslim edilmiş** ama ödenmemiş) |
+| Kalan TL | — | **670 TL** | 4 paketin hakedişi |
+
+34 − 19 = **15 paket** geri kalan, ama bunların **11'i iptal** edilmiş → ödeme doğurmaz.
+Bu yüzden ekran artık **iki tutarlı satır** gösteriyor: `34 = teslim 23 + iptal 11` ve `19 + 4 = teslim 23`.
+
+**Paket/Km hatası (düzeltildi)**
+
+| | Formül | Sonuç (7002) |
+|---|---|---|
+| Eski | toplam km ÷ **km girilmiş** paket (25) | 8,7 km ❌ |
+| Yeni | toplam km ÷ **toplam** paket (34) | **6,4 km** ✔ |
+
+**e2e (8 yeni tutarlılık testi)**
+
+| Test | Sonuç |
+|---|---|
+| `paket_km = toplam km / toplam paket` | ✔ |
+| `ödenen + ödenmedi = teslim` | ✔ |
+| `teslim + iptal ≤ paket` | ✔ |
+| `kalan TL = toplam − ödenen` | ✔ |
+| `kurye kalan toplamı = kalan TL` | ✔ |
+| `kurye tutar toplamı = toplam TL` | ✔ |
+| Ödeme tiplerinde **Online** var / Ödendi yok | ✔ |
+
+**e2e:** 259/259 PASS · deploy `1d7253a2` (v209) · canlı migrasyon: 9 paket `Ödendi → Online`

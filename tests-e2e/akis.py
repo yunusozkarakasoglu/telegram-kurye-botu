@@ -757,7 +757,11 @@ def senaryo_restoran_rapor(api: Api, o: dict[str, Oturum], baglam: dict) -> None
     o1 = bugun.get("ozet") or {}
     T.ok("rapor ozeti geliyor", "paket" in o1 and int(o1.get("paket") or 0) >= 1, str(o1.get("paket")))
     T.ok("toplam km sayısal", "km" in o1)
-    T.ok("paket/km ortalaması var", o1.get("paket_km") is None or float(o1["paket_km"]) >= 0, str(o1.get("paket_km")))
+    # Paket/Km = TOPLAM km / TOPLAM paket (km girilmemişler de paydaya dahil)
+    beklenen_pk = round(float(o1.get("km") or 0) / max(1, int(o1.get("paket") or 0)), 1)
+    T.ok("paket/km = toplam km / toplam paket",
+         o1.get("paket_km") is None or abs(float(o1["paket_km"]) - beklenen_pk) <= 0.11,
+         f"api={o1.get('paket_km')} beklenen={beklenen_pk}")
     T.ok("bölge listesi dolu", len(bugun.get("bolgeler") or []) >= 1, f"{len(bugun.get('bolgeler') or [])} bölge")
     toplam_bolge = sum(int(x.get("adet") or 0) for x in (bugun.get("bolgeler") or []))
     T.esit("bölge adetleri paket toplamına eşit", int(o1.get("paket") or 0), toplam_bolge)
@@ -797,6 +801,27 @@ def senaryo_restoran_rapor(api: Api, o: dict[str, Oturum], baglam: dict) -> None
     T.ok("ödenen + ödenmeyen = teslim", int(oo.get("odenen_adet") or 0) + int(oo.get("odenmeyen_adet") or 0) == int(oo.get("teslim") or 0),
          f"{oo.get('odenen_adet')}+{oo.get('odenmeyen_adet')} vs {oo.get('teslim')}")
     T.ok("kurye bazlı gruplama var", isinstance(od.get("kuryeler"), list))
+    T.esit("ödenen + ödenmedi = teslim", int(oo.get("teslim") or 0),
+           int(oo.get("odenen_adet") or 0) + int(oo.get("odenmeyen_adet") or 0))
+    T.ok("teslim + iptal <= paket", int(oo.get("teslim") or 0) + int(oo.get("iptal") or 0)
+         <= int(oo.get("paket") or 0), f"{oo.get('teslim')}+{oo.get('iptal')} <= {oo.get('paket')}")
+    T.ok("kalan TL = toplam - ödenen",
+         abs(float(oo.get("kalan_tl") or 0) - (float(oo.get("toplam_tl") or 0) - float(oo.get("odenen_tl") or 0))) <= 1,
+         f"{oo.get('kalan_tl')} vs {oo.get('toplam_tl')}-{oo.get('odenen_tl')}")
+    ky = od.get("kuryeler") or []
+    T.ok("kurye satırlarında kalan_tutar var", all("kalan_tutar" in k for k in ky), str(ky[:1]))
+    T.ok("kurye kalan toplamı = kalan TL",
+         abs(sum(float(k.get("kalan_tutar") or 0) for k in ky) - float(oo.get("kalan_tl") or 0)) <= 1,
+         f"{sum(float(k.get('kalan_tutar') or 0) for k in ky)} vs {oo.get('kalan_tl')}")
+    T.ok("kurye tutar toplamı = toplam TL",
+         abs(sum(float(k.get("tutar") or 0) for k in ky) - float(oo.get("toplam_tl") or 0)) <= 1,
+         f"{sum(float(k.get('tutar') or 0) for k in ky)} vs {oo.get('toplam_tl')}")
+
+    # Ödeme tipi listesi: 'Ödendi' yerine 'Online'
+    sis = api.cagir("GET", "/api/sistem", token=rest.token)
+    odeme_tipleri = (sis.get("settings") or {}).get("payments") or []
+    T.ok("ödeme tiplerinde Online var", "Online" in odeme_tipleri, str(odeme_tipleri))
+    T.ok("ödeme tiplerinde Ödendi yok", "Ödendi" not in odeme_tipleri, str(odeme_tipleri))
     T.ok("ödenmeyen listesi var", isinstance(od.get("odenmeyenler"), list))
     yasak2 = api.cagir("GET", "/api/restoran/odemeler", token=o["k1"].token, bekle_hata=True)
     T.esit("kurye ödeme raporunu göremiyor", 403, yasak2.get("_status"))

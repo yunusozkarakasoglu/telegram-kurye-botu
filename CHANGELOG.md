@@ -3,6 +3,12 @@
 Sürüm numarası = `cf/public/index.html` içindeki `app.js?v=N`.
 Her yayından sonra tek satır eklenir (bkz. `docs/Yayin-Proseduru.md`).
 
+## v209 — 28.11.2026
+- Ödeme tipi **“Ödendi” → “Online”** (canlı veri migrate edildi).
+- **Paket/Km** artık **toplam km / toplam paket** (km girilmemiş paketler de paydaya dahil).
+- Ödeme raporu: **Paket = Teslim + İptal (+Açık)** ve **Ödendi + Ödenmedi = Teslim**; kurye satırında **kaç paket + toplam tutar + “Alacak X TL”**.
+- `/api/restoran/odemeler` → kurye başına `kalan_tutar`, `odenmeyen` alanları.
+
 ## v207 — 28.11.2026
 - **Saha ekranı**: yönetici menüsünde **Anasayfa → Saha**; **Canlı saha** (kurye on/meşgul/off, havuz, geciken, ödenmeyen, günün paket/teslim/iptal/hakediş, 3 liste) + **Gün sonu** (manuel özet, kurye bazlı tablo, bölge dağılımı, Telegram'a gönder). Uçlar: `/api/yonetim/saha`, `/api/yonetim/gun-sonu`.
 

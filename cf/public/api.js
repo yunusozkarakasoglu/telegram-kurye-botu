@@ -41,7 +41,7 @@
       tariff_intervals: ['0–3', '>3–4', '>4–5', '>5–6', '>6–7', '>7–8', '>8–9', '>9–10', '>10'],
       limit: 3,
       regions: ['Kadıköy', 'Üsküdar', 'Ataşehir'],
-      payments: ['Nakit', 'Kart', 'Ödendi', 'Yemek Çeki', 'Cihaz hatası (ödemesiz)'],
+      payments: ['Nakit', 'Kart', 'Online', 'Yemek Çeki', 'Cihaz hatası (ödemesiz)'],
       reasons: ['Müşteri iptal etti', 'Adres yanlış', 'Restoran kapandı', 'Gecikme', 'Paket hasarlı', 'Ambalaj yetersiz/patladı', '30 dk teslim süresi aşıldı', 'Müşteriye ulaşılamadı', 'Diğer'],
       max_packages: 10,
       priority_seconds: 10
