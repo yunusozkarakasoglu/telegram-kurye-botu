@@ -662,7 +662,10 @@
       '<div class="big"><span>Toplam hakediş</span><div>' + money(e.total_tl) + '</div></div>' +
       '<div class="big"><span>Teslim paket</span><div>' + (e.count || 0) + '</div></div>' +
       '<div class="big"><span>Toplam km</span><div>' + (Math.round((e.total_km || 0) * 10) / 10) + '</div></div>' +
-    '</div>';
+    '</div>' +
+    ((e.iptal_adet || 0) > 0
+      ? '<div class="rp-note" style="margin-top:6px">İptal hakedişi <b>' + e.iptal_adet +
+        '</b> paket · <b>' + money(e.iptal_tl || 0) + '</b></div>' : '');
 
     var bar = '<div class="filterbar" style="margin-top:10px"><button id="kf-open">⚙ Filtre' + (aktif ? ' (' + aktif + ')' : '') + '</button>' +
       (aktif ? '<button id="kf-clear">✕ Temizle</button>' : '') + '</div>';
@@ -674,7 +677,8 @@
     });
     var listHtml = items.length ? '<div class="card">' + items.map(function (p) {
       return '<button class="prow" data-kopen="' + p.id + '"><span><b>#' + p.batch + '-' + p.number + ' · ' + esc(p.restaurant) + '</b>' +
-        '<small>' + esc(p.region || '') + ' · ' + dt(p.delivered_at) + ' · ' +
+        '<small>' + esc(p.region || '') + ' · ' + dt(p.delivered_at || p.cancelled_at) +
+        (p.delivered_at ? '' : ' · iptal hakedişi') + ' · ' +
         (p.payment_received === true ? 'ödeme alındı' : p.payment_received === false ? 'ödeme alınmadı' : 'ödeme —') + '</small></span>' +
         '<em>' + (p.fee_tl == null ? '' : money(p.fee_tl)) + '</em></button>';
     }).join('') + '</div>' : '<div class="empty">Bu dönemde paket yok.</div>';
@@ -1371,6 +1375,9 @@
           kart('Toplam tutar', o.toplam_tl ? money(o.toplam_tl) : '0 TL') +
           kart('Kalan', o.kalan_tl ? money(o.kalan_tl) : '0 TL') +
         '</div>' +
+        ((o.iptal_hakedis || 0) > 0
+          ? '<div class="rp-note">İptal hakedişi <b>' + (o.iptal_hakedis || 0) + '</b> paket · <b>' +
+            money(o.iptal_hakedis_tl || 0) + '</b> (ödemeye dahil)</div>' : '') +
         '<h3 class="rp-h">Kurye bazlı</h3>' +
         (kuryeler.length ? '<div class="od-list">' + kuryeler.map(function (k) {
           var kalan = Number(k.kalan_tutar || 0);
@@ -1401,9 +1408,12 @@
       var kart = function (etiket, deger) {
         return '<div class="rp-card"><b>' + deger + '</b><small>' + etiket + '</small></div>';
       };
+      var iptalAdet = paketler.filter(function (p) { return p.tur === 'iptal'; }).length;
       var sh = UI.openSheet(
         '<div class="od-head"><button class="od-back" id="od-back">←</button>' +
           '<h2>' + esc(k.name || 'Kurye') + '</h2></div>' +
+        '<div class="rp-note" style="margin:0 0 10px">Yalnız <b>bu restoranın</b> paketleri' +
+          (iptalAdet ? ' · ' + iptalAdet + ' iptal hakedişi' : '') + '</div>' +
         '<div class="rp-grid three">' +
           kart('Paket', o.paket || 0) + kart('Ödendi', o.odenen || 0) + kart('Ödenmedi', o.odenmeyen || 0) +
         '</div>' +
@@ -1423,7 +1433,8 @@
         sh.querySelector('#od-list').innerHTML = items.length ? items.map(function (p) {
           return '<div class="odp ' + (p.odendi ? 'ok' : 'no') + '">' +
             '<div class="odp-l"><b>' + esc(p.label) + '</b>' +
-              '<small>' + (p.delivered_at ? dt(p.delivered_at) : '—') + '</small></div>' +
+              '<small>' + dt(p.at || p.delivered_at) +
+                (p.tur === 'iptal' ? ' · <em class="odp-iptal">İptal hakedişi</em>' : '') + '</small></div>' +
             '<div class="odp-r"><b>' + money(p.fee_tl) + '</b>' +
               '<em>' + (p.odendi ? 'Ödendi' : 'Ödenmedi') + '</em></div></div>';
         }).join('') : '<div class="empty">Kayıt yok</div>';

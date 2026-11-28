@@ -114,7 +114,7 @@ class Api:
             try:
                 return self._cagir(method, path, body, token, dev, bekle_hata)
             except HttpHatasi as e:
-                if e.code == 429 and deneme < 2:
+                if e.status == 429 and deneme < 2:
                     time.sleep(2.2)
                     continue
                 raise
@@ -798,10 +798,11 @@ def senaryo_restoran_rapor(api: Api, o: dict[str, Oturum], baglam: dict) -> None
     od = api.cagir("GET", "/api/restoran/odemeler?range=all", token=rest.token)
     oo = od.get("ozet") or {}
     T.ok("ödeme özeti geliyor", "paket" in oo and "odenen_adet" in oo, str(list(oo.keys())))
-    T.ok("ödenen + ödenmeyen = teslim", int(oo.get("odenen_adet") or 0) + int(oo.get("odenmeyen_adet") or 0) == int(oo.get("teslim") or 0),
-         f"{oo.get('odenen_adet')}+{oo.get('odenmeyen_adet')} vs {oo.get('teslim')}")
+    T.ok("ödenen + ödenmeyen = ödeme konusu paket",
+         int(oo.get("odenen_adet") or 0) + int(oo.get("odenmeyen_adet") or 0) == int(oo.get("paket") or 0),
+         f"{oo.get('odenen_adet')}+{oo.get('odenmeyen_adet')} vs {oo.get('paket')}")
     T.ok("kurye bazlı gruplama var", isinstance(od.get("kuryeler"), list))
-    T.esit("ödenen + ödenmedi = teslim", int(oo.get("teslim") or 0),
+    T.esit("ödenen + ödenmedi = ödeme konusu paket", int(oo.get("paket") or 0),
            int(oo.get("odenen_adet") or 0) + int(oo.get("odenmeyen_adet") or 0))
     T.ok("teslim + iptal <= toplam paket", int(oo.get("teslim") or 0) + int(oo.get("iptal") or 0)
          <= int(oo.get("toplam_paket") or oo.get("paket") or 0),
@@ -872,6 +873,41 @@ def senaryo_restoran_konum(api: Api, o: dict[str, Oturum], baglam: dict) -> None
          str(row2.get("latitude")))
 
 
+def senaryo_iptal_hakedis(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
+    """İptal hakedişi ödeme tabanına dahil mi? (kurye kendi iptal ederse tam ücret)"""
+    T.bolum("İPTAL HAKEDİŞİ · ÖDEME TABANI")
+    rest, k1 = o["rest"], o["k1"]
+
+    # Kuryeyi boşalt
+    for p_ in paketlerim(api, k1):
+        if not p_.get("picked_up_at"):
+            api.cagir("POST", f"/api/paket/{p_['id']}/km", {"km": "2"}, token=k1.token)
+        api.cagir("POST", f"/api/paket/{p_['id']}/teslim", {"paid": False}, token=k1.token)
+    sql(f"UPDATE accounts SET locked=0 WHERE id={K1}")
+
+    talep = siparis_ver(api, rest, baglam["bolge"], adet=1)
+    pk = [p_ for p_ in restoran_paketleri(api, rest) if p_["batch"] == talep["req_no"]][0]
+    api.cagir("POST", "/api/kabul", {"ids": [pk["id"]]}, token=k1.token)
+    api.cagir("POST", f"/api/paket/{pk['id']}/km", {"km": "4"}, token=k1.token)
+    # Kurye kendi iptal eder → tam ücret hakedişi
+    api.cagir("POST", f"/api/paket/{pk['id']}/iptal", {"reason": "Müşteri iptal etti"}, token=k1.token)
+
+    fee = json.loads(sql_json(f"SELECT courier_fee, delivered_at, cancelled_at FROM packages WHERE id={pk['id']}"))[0]
+    T.ok("iptal hakedişi oluştu", fee.get("cancelled_at") and float(fee.get("courier_fee") or 0) > 0, str(fee))
+
+    od = api.cagir("GET", "/api/restoran/odemeler?range=all", token=rest.token)
+    oo = od.get("ozet") or {}
+    T.ok("iptal hakedişi ödeme özetinde", int(oo.get("iptal_hakedis") or 0) >= 1, str(oo.get("iptal_hakedis")))
+    T.ok("iptal hakediş tutarı > 0", float(oo.get("iptal_hakedis_tl") or 0) > 0, str(oo.get("iptal_hakedis_tl")))
+    T.ok("iptal hakedişi ödenmeyenler listesinde",
+         any((x.get("tur") == "iptal") for x in (od.get("odenmeyenler") or [])),
+         str([x.get("tur") for x in (od.get("odenmeyenler") or [])][:5]))
+
+    kz = api.cagir("GET", "/api/kazanc?range=all", token=k1.token)
+    T.ok("kurye kazancında iptal hakedişi sayılıyor", int(kz.get("iptal_adet") or 0) >= 1, str(kz.get("iptal_adet")))
+    T.ok("kurye kazancında iptal tutarı > 0", float(kz.get("iptal_tl") or 0) > 0, str(kz.get("iptal_tl")))
+
+
 def senaryo_rapor_filtre(api: Api, o: dict[str, Oturum]) -> None:
     """Rapor filtre aralıkları (Bugün/Bu hafta/Bu ay/Tüm/Aralık) + kurye ödeme dökümü."""
     T.bolum("RAPOR · FİLTRE ARALIKLARI + KURYE ÖDEME DÖKÜMÜ")
@@ -891,7 +927,9 @@ def senaryo_rapor_filtre(api: Api, o: dict[str, Oturum]) -> None:
     # Ödeme: Paket = Teslim (ödeme konusu), toplam_paket ayrı
     od = api.cagir("GET", "/api/restoran/odemeler?range=all", token=rest.token)
     oo = od.get("ozet") or {}
-    T.esit("ödeme: paket = teslim", int(oo.get("teslim") or 0), int(oo.get("paket") or 0))
+    T.esit("ödeme: paket = teslim + iptal hakediş", int(oo.get("teslim") or 0) + int(oo.get("iptal_hakedis") or 0),
+           int(oo.get("paket") or 0))
+    T.ok("ödeme: iptal hakediş alanları", "iptal_hakedis" in oo and "iptal_hakedis_tl" in oo, str(oo.get("iptal_hakedis")))
     T.ok("ödeme: toplam_paket var", "toplam_paket" in oo, str(oo.get("toplam_paket")))
     T.ok("ödeme: aralık etiketi", bool((od.get("aralik") or {}).get("etiket")), str((od.get("aralik") or {}).get("etiket")))
 
@@ -1039,9 +1077,11 @@ def senaryo_mutabakat(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
 
     # 1) DB gerçeği
     # Restoranın TÜM teslim edilmiş paketleri (rapor/ödeme uçları da tümünü toplar)
+    # Ödeme konusu = teslim edilenler + iptal hakedişleri (v212)
     db = json.loads(sql_json(
         f"SELECT count(*) AS adet, coalesce(sum(courier_fee),0) AS tl FROM packages "
-        f"WHERE batch IN (SELECT id FROM batches WHERE owner={REST}) AND delivered_at IS NOT NULL"))
+        f"WHERE batch IN (SELECT id FROM batches WHERE owner={REST}) "
+        f"AND (delivered_at IS NOT NULL OR (cancelled_at IS NOT NULL AND coalesce(courier_fee,0)>0))"))
     db_tl = float((db or [{}])[0].get("tl") or 0)
     db_adet = int((db or [{}])[0].get("adet") or 0)
     T.ok("DB: teslim edilen paket sayısı arttı", db_adet >= adet, f"{db_adet} ≥ {adet}")
@@ -1055,8 +1095,10 @@ def senaryo_mutabakat(api: Api, o: dict[str, Oturum], baglam: dict) -> None:
     T.ok("kurye bazlı toplam = genel toplam",
          abs(sum(float(k.get("tutar") or 0) for k in (od.get("kuryeler") or [])) - float(oo.get("toplam_tl") or 0)) <= 1,
          f"kuryeler={sum(float(k.get('tutar') or 0) for k in (od.get('kuryeler') or []))} genel={oo.get('toplam_tl')}")
-    T.esit("ödenen + ödenmeyen = teslim", int(oo.get("teslim") or 0),
+    T.esit("ödenen + ödenmeyen = ödeme konusu paket", int(oo.get("paket") or 0),
            int(oo.get("odenen_adet") or 0) + int(oo.get("odenmeyen_adet") or 0))
+    T.esit("paket = teslim + iptal hakediş", int(oo.get("paket") or 0),
+           int(oo.get("teslim") or 0) + int(oo.get("iptal_hakedis") or 0))
 
     # 3) Rapor ucu (ciro)
     rp = api.cagir("GET", "/api/restoran/rapor?range=all", token=rest.token)
@@ -1183,6 +1225,7 @@ def main() -> int:
     senaryo_durum_yetki(api, oturumlar, baglam)
     senaryo_bolge_senkron(api, oturumlar)
     senaryo_destek(api, oturumlar)
+    senaryo_iptal_hakedis(api, oturumlar, baglam)
     senaryo_rapor_filtre(api, oturumlar)
     senaryo_saha(api, oturumlar)
     senaryo_restoran_konum(api, oturumlar, baglam)

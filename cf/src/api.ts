@@ -591,19 +591,30 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         start = range === "yesterday" ? dayStart - 86400 : dayStart;
         end = start + 86400;
       }
-      const cond = start != null ? " AND delivered_at>=? AND delivered_at<?" : "";
+      // Hakediş doğuran işler: teslim edilenler + iptal olup ücreti olanlar
+      const hak = "(delivered_at IS NOT NULL OR (cancelled_at IS NOT NULL AND coalesce(courier_fee,0) > 0))";
+      const cond = start != null ? " AND coalesce(delivered_at, cancelled_at)>=? AND coalesce(delivered_at, cancelled_at)<?" : "";
       const params: unknown[] = start != null ? [user.id, start, end] : [user.id];
       const row = await bot.db.first<{ total: number | null; count: number; km: number | null }>(
-        `SELECT sum(courier_fee) AS total, count(*) AS count, sum(CAST(distance_km AS REAL)) AS km
-         FROM packages WHERE courier=? AND delivered_at IS NOT NULL${cond}`, ...params);
-      const pcond = start != null ? "p.courier=? AND p.delivered_at>=? AND p.delivered_at<?" : "p.courier=? AND p.delivered_at IS NOT NULL";
+        `SELECT sum(courier_fee) AS total,
+                sum(CASE WHEN delivered_at IS NOT NULL THEN 1 ELSE 0 END) AS count,
+                sum(CASE WHEN delivered_at IS NULL THEN 1 ELSE 0 END) AS iptal_adet,
+                sum(CASE WHEN delivered_at IS NULL THEN coalesce(courier_fee,0) ELSE 0 END) AS iptal_tl,
+                sum(CAST(distance_km AS REAL)) AS km
+         FROM packages WHERE courier=? AND ${hak}${cond}`, ...params);
+      // DİKKAT: bot.packages() kendi ORDER BY'ını ekler → buraya ORDER BY yazılmaz.
+      const pcond = start != null
+        ? `p.courier=? AND ${hak} AND coalesce(p.delivered_at, p.cancelled_at)>=? AND coalesce(p.delivered_at, p.cancelled_at)<?`
+        : `p.courier=? AND ${hak}`;
       const pparams: unknown[] = start != null ? [user.id, start, end] : [user.id];
       const pkgs = await bot.packages(pcond, pparams);
       return json({
         total_tl: row?.total ?? 0,
         count: row?.count ?? 0,
+        iptal_adet: (row as any)?.iptal_adet ?? 0,
+        iptal_tl: (row as any)?.iptal_tl ?? 0,
         total_km: Math.round((row?.km ?? 0) * 10) / 10,
-        items: pkgs.map((p) => pkgDto(p, "Teslim edildi")),
+        items: pkgs.map((p) => pkgDto(p, p.delivered_at ? "Teslim edildi" : "İptal (hakediş)")),
       });
     }
 
@@ -731,7 +742,10 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         dagilim[bolge] = (dagilim[bolge] || 0) + 1;
         if (p.distance_km != null) { km += Number(p.distance_km); kmAdet++; }
         if (p.delivered_at && p.created_at) { sure += Math.max(0, Number(p.delivered_at) - Number(p.created_at)); sureAdet++; }
-        if (p.delivered_at && p.courier_fee != null) ciro += Number(p.courier_fee);
+        // Ciro = ödeme doğuran işler (teslim + iptal hakedişi) — ödeme ucuyla aynı taban.
+        if ((p.delivered_at || (p.cancelled_at && p.courier_fee != null)) && p.courier_fee != null) {
+          ciro += Number(p.courier_fee);
+        }
       }
       const teslim = rows.filter((p) => !!p.delivered_at).length;
       return json({
@@ -766,30 +780,38 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const aralik = aralikCoz(url, bot.now());
       const kapsam = aralik.kapsam;
       // Ödeme aralığı: teslim tarihine göre (ödeme teslimden doğar)
+      // Ödeme doğuran paketler: TESLİM edilenler + İPTAL olup hakedişi olanlar
       const rows = await bot.db.all<any>(
         `SELECT p.id, p.batch, p.number, p.courier, p.courier_fee, p.payment_received,
                 p.delivered_at, p.cancelled_at, b.created_at, c.name AS courier_name
          FROM packages p JOIN batches b ON b.id=p.batch
          LEFT JOIN accounts c ON c.id=p.courier
-         WHERE b.owner=? AND coalesce(p.delivered_at, b.created_at)>=? AND coalesce(p.delivered_at, b.created_at)<?
+         WHERE b.owner=?
+           AND (p.delivered_at IS NOT NULL OR (p.cancelled_at IS NOT NULL AND coalesce(p.courier_fee,0) > 0))
+           AND coalesce(p.delivered_at, p.cancelled_at, b.created_at)>=?
+           AND coalesce(p.delivered_at, p.cancelled_at, b.created_at)<?
          ORDER BY p.id DESC`, user.id, aralik.start, aralik.end);
 
-      const teslim = rows.filter((r) => !!r.delivered_at);
-      const toplam = rows.length;
       const tutar = (r: any) => Number(r.courier_fee || 0);
-      const odenen = teslim.filter((r) => r.payment_received === 1);
-      const odenmeyen = teslim.filter((r) => r.payment_received !== 1);
-      const toplamTutar = teslim.reduce((a, r) => a + tutar(r), 0);
+      const teslim = rows.filter((r) => !!r.delivered_at);
+      const iptalHakedis = rows.filter((r) => !r.delivered_at && !!r.cancelled_at);
+      const odenecek = rows;                      // ödeme konusu olan tüm paketler
+      const toplam = rows.length;
+      const odenen = odenecek.filter((r) => r.payment_received === 1);
+      const odenmeyen = odenecek.filter((r) => r.payment_received !== 1);
+      const toplamTutar = odenecek.reduce((a, r) => a + tutar(r), 0);
       const odenenTutar = odenen.reduce((a, r) => a + tutar(r), 0);
 
       const kuryeMap = new Map<number, any>();
-      for (const r of teslim) {
+      for (const r of odenecek) {
         const k = Number(r.courier || 0);
         const kayit = kuryeMap.get(k) || {
           courier: k, ad: r.courier_name || "Kurye atanmadı",
           paket: 0, tutar: 0, odenen: 0, odenen_tutar: 0, odenmeyen: 0, kalan_tutar: 0,
+          teslim: 0, iptal: 0,
         };
         kayit.paket += 1;
+        if (r.delivered_at) kayit.teslim += 1; else kayit.iptal += 1;
         kayit.tutar += tutar(r);
         if (r.payment_received === 1) {
           kayit.odenen += 1;
@@ -804,10 +826,13 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         range: kapsam,
         aralik: { kapsam, etiket: aralik.etiket, from: aralik.from, to: aralik.to },
         ozet: {
-          paket: teslim.length,          // ödeme konusu olan paket = teslim edilen
+          // Ödeme konusu paketler = teslim edilenler + iptal hakedişleri
+          paket: odenecek.length,
           toplam_paket: toplam,
           teslim: teslim.length,
           iptal: rows.filter((r) => !!r.cancelled_at).length,
+          iptal_hakedis: iptalHakedis.length,
+          iptal_hakedis_tl: Math.round(iptalHakedis.reduce((a, r) => a + tutar(r), 0)),
           odenen_adet: odenen.length,
           odenmeyen_adet: odenmeyen.length,
           toplam_tl: Math.round(toplamTutar),
@@ -824,7 +849,9 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
           .sort((a, b) => b.kalan_tutar - a.kalan_tutar || b.tutar - a.tutar),
         odenmeyenler: odenmeyen.slice(0, 100).map((r) => ({
           id: r.id, label: `#${r.batch}-${r.number}`, courier_name: r.courier_name || "—",
-          fee_tl: r.courier_fee == null ? null : Math.round(tutar(r)), delivered_at: r.delivered_at,
+          fee_tl: r.courier_fee == null ? null : Math.round(tutar(r)),
+          delivered_at: r.delivered_at, at: r.delivered_at || r.cancelled_at,
+          tur: r.delivered_at ? "teslim" : "iptal",
         })),
       });
     }
@@ -835,10 +862,13 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const kuryeId = Number(url.searchParams.get("courier") || 0);
       const aralik = aralikCoz(url, bot.now());
       const rows = await bot.db.all<any>(
-        `SELECT p.id, p.batch, p.number, p.region, p.courier_fee, p.payment_received, p.delivered_at
+        `SELECT p.id, p.batch, p.number, p.region, p.courier_fee, p.payment_received,
+                p.delivered_at, p.cancelled_at
          FROM packages p JOIN batches b ON b.id=p.batch
-         WHERE b.owner=? AND p.courier=? AND p.delivered_at>=? AND p.delivered_at<? AND p.cancelled_at IS NULL
-         ORDER BY p.delivered_at DESC`, user.id, kuryeId, aralik.start, aralik.end);
+         WHERE b.owner=? AND p.courier=?
+           AND (p.delivered_at IS NOT NULL OR (p.cancelled_at IS NOT NULL AND coalesce(p.courier_fee,0) > 0))
+           AND coalesce(p.delivered_at, p.cancelled_at)>=? AND coalesce(p.delivered_at, p.cancelled_at)<?
+         ORDER BY coalesce(p.delivered_at, p.cancelled_at) DESC`, user.id, kuryeId, aralik.start, aralik.end);
       const kurye = await bot.db.first<Account>("SELECT id, name, phone FROM accounts WHERE id=?", kuryeId);
       const tutar = (r: any) => Number(r.courier_fee || 0);
       const odenen = rows.filter((r) => r.payment_received === 1);
@@ -857,6 +887,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         paketler: rows.map((r) => ({
           id: r.id, label: `#${r.batch}-${r.number}`, region: r.region || null,
           fee_tl: Math.round(tutar(r)), delivered_at: r.delivered_at,
+          at: r.delivered_at || r.cancelled_at, tur: r.delivered_at ? "teslim" : "iptal",
           odendi: r.payment_received === 1,
         })),
       });

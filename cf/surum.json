@@ -1,33 +1,33 @@
 {
-  "surum": 211,
+  "surum": 212,
   "dosyalar": {
     "app.js": {
-      "v": 211,
-      "sha256": "51046a3a53f91d6583b4854e3dfa90b5bba79d4362c0642199ee20408f62ac96"
+      "v": 212,
+      "sha256": "f2bae05b9d3d4ece973d42822b7cdd7038b4399e9fd39d45a02cbb922b6e4908"
     },
     "admin.js": {
-      "v": 211,
+      "v": 212,
       "sha256": "0672295b4f3c86d7017241183087faa556d5d7d2355cb3ac215e6303b6bc90a4"
     },
     "api.js": {
-      "v": 211,
+      "v": 212,
       "sha256": "6c983141d0047e2c6f26502e6250e7edc4210c3cebb328ef1b0f7ea0a051a7ff"
     },
     "ui.js": {
-      "v": 211,
+      "v": 212,
       "sha256": "9fdf950060406d7a35ed70b290d9181f0117c1da834b9fb3b7f4d6b1831a92bd"
     },
     "theme.js": {
-      "v": 211,
+      "v": 212,
       "sha256": "199843e5a619e09cf7bda4f433dff7118219b904a38948b92d7689ee3b229f26"
     },
     "kurallar.js": {
-      "v": 211,
+      "v": 212,
       "sha256": "fe1a3b8c015216c77d40e2b945619b648e6c0677ed638ca462f5df965ee294a5"
     },
     "styles.css": {
-      "v": 211,
-      "sha256": "0b80c240e5098608ca6d8bea3d46743bb9b8a5fb7b620cdb90fb3893a7aa16b7"
+      "v": 212,
+      "sha256": "37fa2455d9aefd2082267ec172960e1c429f7fe75a247cf24384c4f8fad9ddda"
     },
     "vendor/qrcode.min.js": {
       "v": 1,

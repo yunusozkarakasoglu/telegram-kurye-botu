@@ -1099,3 +1099,26 @@ Bu yüzden ekran artık **iki tutarlı satır** gösteriyor: `34 = teslim 23 + i
 | Yetki | ✔ kurye → **403** |
 
 **e2e:** 277/277 PASS (RAPOR FİLTRE senaryosu: 18 test) · cron 9/9 · tutarlılık TEMİZ · deploy `39645022` (v211)
+
+### İptal hakedişi + kapsam farkı (28.11.2026, v212)
+
+**Kullanıcının bildirdiği tutarsızlık:** kurye panelinde 5 ödenmeyen, restoran raporunda aynı kurye için 3.
+
+| Kontrol | Sonuç |
+|---|---|
+| Kurye 9268711533 · ödenmemiş (teslim) | Burger House **3** + Pilot **1** + Pizza Locale **1** = **5** ✔ |
+| Restoran (Burger House) raporu | **3** ✔ (yalnız kendi paketleri) |
+| Teşhis | hesap hatası **değil**, **kapsam farkı** (global vs restoran bazlı) → döküm sayfasına “Yalnız bu restoranın paketleri” notu eklendi |
+
+**Bulunan gerçek para açığı:** iptal olup hakedişi olan paketler (`courier_fee>0`, `delivered_at IS NULL`) **hiçbir ödeme ekranında yoktu** (canlıda 2 paket / 240 TL).
+
+| Düzeltme | Etki |
+|---|---|
+| `/restoran/odemeler` | teslim + **iptal hakedişi** = ödeme tabanı · `iptal_hakedis`, `iptal_hakedis_tl`, `odenmeyenler.tur` |
+| `/restoran/odemeler/kurye` | iptal hakedişleri listede (`tur: iptal`) |
+| `/kazanc` | `iptal_adet`, `iptal_tl` + liste (durum: “İptal (hakediş)”) |
+| `/restoran/rapor` | `ciro_tl` ödeme tabanıyla aynı |
+
+**e2e (6 yeni test):** iptal hakedişi oluşuyor · ödeme özetinde · tutar > 0 · ödenmeyenler listesinde (`tur=iptal`) · kurye kazancında adet/tutar.
+
+**Toplam:** e2e **285/285** · cron 9/9 · tutarlılık TEMİZ · deploy `fbc457dc` (v212)
