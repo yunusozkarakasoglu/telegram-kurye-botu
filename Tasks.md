@@ -22,6 +22,7 @@
 - [ ] **PackOn Express Faz 2 — Süper Admin paneli** (`~/Masaüstü/Kurye-Flow-Mobil`; `~/.pi/packone-d1-token` hazır).
 
 ## Son tamamlananlar
+- [x] **v205 — yayın prosedürü**: **staging** ortamı (Worker + D1 `kurye-db-staging`, cron kapalı) · `tools/yayin.sh` (5 adım: ön kontrol → kalite kapısı → şema uyarısı → staging smoke → canlı smoke) · `--geri-al` + **rollback provası yapıldı** · `docs/Yayin-Proseduru.md` · `CHANGELOG.md`.
 - [x] **v204 test turu (2. blok) — 2 saha hatası bulundu ve düzeltildi:**
   - **Havuz 100+ pakette 500**: `statesFor` tek sorguda 100+ parametre → `D1_ERROR: too many SQL variables`. 90'lık parçalara bölündü. (Yoğun saatte havuz büyüyünce kurye ekranı çöküyordu.)
   - **Toplu kabulde boş dönme**: adaylar kesilmeden önce boşta olanlar süzülmüyordu → ilk N paket başkasındaysa kurye "paket yok" görüyordu. `accept.takePackages` düzeltildi.

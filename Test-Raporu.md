@@ -1011,3 +1011,17 @@ Düzeltme: `assign.expireClaims()` → cron `tick` başında + `openClaim` baş�
    *Düzeltme:* kesmeden önce `courier IS NULL …` süzgeci; atomik `UPDATE … WHERE courier IS NULL` korundu.
 
 **Doğrulama zinciri:** e2e 231/231 · cron 9/9 · yoğun 15/15 · tutarlılık (yerel + canlı) TEMİZ · deploy `ff9b90f0`
+
+### Yayın prosedürü + staging (28.11.2026, v205)
+
+| Kontrol | Sonuç |
+|---|---|
+| Staging D1 oluşturma | ✔ `kurye-db-staging` · `824a5a25-1a3a-41d9-bbd1-0a240069d80b` |
+| Staging şema | ✔ `schema.sql` uygulandı |
+| Staging deploy | ✔ `telegram-kurye-botu-staging.packonexpress.workers.dev` |
+| Staging smoke | ✔ `/`, `/admin`, `/saglik` = 200 · HTML `no-store` · asset `immutable` |
+| **Rollback provası (staging)** | ✔ `21cffbec…` sürümüne dönüş → `/saglik` 200 |
+| `yayin.sh --staging` | ✔ 5 adım, "BİTTİ (yalnız staging)" |
+| `yayin.sh --hizli` (tam) | ✔ staging smoke → canlı deploy `9a678b16` → canlı smoke 2/2 200 |
+| "staging bozuksa canlıya çıkma" | ✔ kod: `dur "staging smoke başarısız — CANLIYA ÇIKILMADI"` |
+| Sürüm sigortası entegrasyonu | ✔ adım 0'da `surum-kontrol.py` (v205 mühürlü) |

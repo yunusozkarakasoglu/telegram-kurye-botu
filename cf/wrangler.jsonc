@@ -13,4 +13,19 @@
     { "binding": "DB", "database_name": "kurye-db", "database_id": "10d3a231-84d0-48e6-9ac1-50791afc55ab" }
   ],
   "triggers": { "crons": ["*/1 * * * *"] }
+,
+  "env": {
+    "staging": {
+      "name": "telegram-kurye-botu-staging",
+      "assets": {
+        "directory": "./public",
+        "binding": "ASSETS",
+        "run_worker_first": ["/api/*", "/webhook", "/saglik", "/", "/index.html", "/admin", "/admin.html", "/app", "/app/"]
+      },
+      "d1_databases": [
+        { "binding": "DB", "database_name": "kurye-db-staging", "database_id": "824a5a25-1a3a-41d9-bbd1-0a240069d80b" }
+      ],
+      "triggers": { "crons": [] }
+    }
+  }
 }

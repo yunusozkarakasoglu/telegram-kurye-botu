@@ -29,7 +29,7 @@ Global kurallar (`~/.pi/agent/AGENTS.md`) geçerlidir; burada yalnız bu projeye
 
 ## Kalite kapısı (commit öncesi)
 
-Cloudflare tarafı (canlı): `cd cf && ./node_modules/.bin/tsc --noEmit && npx wrangler deploy` + `python3 tests-e2e/akis.py` (223/223 beklenir).
+Cloudflare tarafı (canlı): **`./tools/yayin.sh`** (kalite kapısı → staging smoke → canlı smoke; `--staging` yalnız staging, `--geri-al <id>` rollback). Tek tek: `cd cf && ./node_modules/.bin/tsc --noEmit && npx wrangler deploy` + `python3 tests-e2e/akis.py` (231/231 beklenir). Ayrıntı: `docs/Yayin-Proseduru.md`.
 
 Cron + tutarlılık + yoğun saat (yerel): `python3 tests-e2e/cron.py` (9/9) · `python3 tests-e2e/yogun.py` (14/14) · `python3 tools/tutarlilik.py` (temiz). Dev sunucu **`--test-scheduled`** ile başlatılmalı, yoksa `/__scheduled` 404 döner.
 
