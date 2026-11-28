@@ -672,12 +672,14 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     if (path === "/restoran/rapor" && method === "GET") {
       if (user.role !== "restoran") return fail("Bu işlem kullanılamıyor.", 403, "forbidden");
       const istenen = url.searchParams.get("range") || "today";
-      // today · 90 (varsayılan "Genel" = son 90 gün) · all (tüm zamanlar, bilinçli tıklama)
-      const kapsam = istenen === "all" ? "all" : istenen === "90" ? "90" : "today";
+      // today · 30 (Genel varsayılanı) · 90 (eski istemciler) · all (tüm zamanlar)
+      const kapsam = istenen === "all" ? "all" : istenen === "30" ? "30" : istenen === "90" ? "90" : "today";
       let start = 0;
       if (kapsam === "today") {
         const n = bot.now();
         start = Math.floor((n + 3 * 3600) / 86400) * 86400 - 3 * 3600;
+      } else if (kapsam === "30") {
+        start = bot.now() - 30 * 86400;
       } else if (kapsam === "90") {
         start = bot.now() - 90 * 86400;
       }
@@ -710,13 +712,15 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
           paket_sure_sn: sureAdet ? Math.round(sure / sureAdet) : null,
           ciro_tl: Math.round(ciro),
         },
-        // Sıra: tanımlı bölgeler (ayarlardaki sıra) → sonra "Belirtilmedi" gibi diğerleri.
-        // 0 adetli bölgeler GÖSTERİLMEZ.
+        // Çubuk grafik: adet büyükten küçüğe; eşitlikte ayarlardaki sıra korunur.
+        // 0 adetli bölgeler de döner (grafikte boş çubuk olarak görünür).
         bolgeler: [
           ...bolgeler.map((ad) => ({ ad, adet: dagilim[ad] || 0 })),
           ...Object.keys(dagilim).filter((ad) => !bolgeler.includes(ad))
             .map((ad) => ({ ad, adet: dagilim[ad] })),
-        ].filter((x) => x.adet > 0),
+        ].map((x, i) => ({ ...x, i }))
+          .sort((a, b) => b.adet - a.adet || a.i - b.i)
+          .map(({ ad, adet }) => ({ ad, adet })),
       });
     }
 

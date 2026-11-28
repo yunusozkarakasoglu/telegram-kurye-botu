@@ -4,7 +4,7 @@
 > `~/Masaüstü/Kurye-Flow-Mobil/Roadmaps.md` (PackOn Express, Faz 2-6).
 > Burada yalnız acil düzeltmeler yapılır.
 >
-> **Durum (27.11 gece):** Performans (A–E) + arayüz turu + **QR/PIN ile atama** + Rapor/kota + **sipariş kartı teması, konum & harita** kapandı; canlı `db377fd7` / asset **v199**, e2e **208/208**.
+> **Durum (27.11 gece):** Performans (A–E) + arayüz turu + **QR/PIN ile atama** + Rapor/kota + **sipariş kartı teması, konum & harita** kapandı; canlı `91b4d242` / asset **v203**, e2e **216/216**.
 > **Sıradaki odak:** PackOn Express Faz 2 (Süper Admin paneli).
 
 1. **Tamamlandı — Yerel v2 çekirdek:** kabul/öncelik, aktarım + bildirim + onay, profil/harita/arama, medya yok sayma, durum etiketleri, komut menüleri, bölge/telefon/tarife yönetimi, kendi kendine kayıt, hesap aktif/pasif/sil, iptal akışı, havuz bölge gruplama. Kanıt: `Test-Raporu.md`.
@@ -12,9 +12,10 @@
 3. **Planlanacak — phase-4:** iki kurye + 10 paket/limit 6 ile kurye–kurye aktarım ve 10/6/4 havuz senaryosu.
 4. **Sürüyor — Cloudflare (bot + Mini App): yönetici paneli tamam; kurye modülü iyileştirmeleri sürüyor:** Worker + D1 yayında (`telegram-kurye-botu.packonexpress.workers.dev`), webhook aktif, yönetici akışları canlı doğrulandı; restoran/kurye canlı testi ve parite eksikleri sürüyor. Çalıştırma: `cf/README.md`.
 5. **Tamamlandı — Sipariş kartı teması · konum & harita (27.11):** kurye/restoran/yönetici kartı tek tema (çerçeveli başlık + **ÖDEME/BÖLGE** çipleri) · alan listesi sadeleşti · **Restoran konumu** mavi kesikli kutu + `📍 Haritada aç` (saf https bağlantı) · admin **restoran konum alanı** (Maps linki veya `lat,lng` → `parseKonum`) · kart butonları: `Km gir`/`Teslim ettim` (mavi tam) · `Restoranı Ara · ⇄ Aktar · Paketi iptal et` (3 sütun, kenarlıklı) · `Çıkış`. Harita “aç” butonu **kaldırıldı** (`ERR_UNKNOWN_URL_SCHEME`). Kanıt: `Test-Raporu.md` (v163–v181).
-6. **Tamamlandı — Destek + yönetici yönetimi (27.11):** yönetici Profil iki sekme (**Yöneticiler** ekle/listele/sil · **Şifre**); restoran/kurye menüsünde **Destek** sayfası (yönetici kartları + Ara) senkron.
-7. **Tamamlandı — Bölgeler → Sistem sekmesi (27.11):** yönetici **Sistem → Bölgeler** (ekle/sil/sırala **otomatik kayıt** + **silme onayı**); restoran/kurye **Sistem → Bölgeler** salt okunur ve yönetici ile senkron. Ayrıca Rapor **Paket/Ödeme** sekmeleri + `↻ Raporu güncelle`.
-8. **Tamamlandı — Rapor yenilendi + kota koruması (27.11):** Bugün/Genel sekmeleri · 5 kart (Toplam paket · Toplam Km · Toplam süre · Paket/Km · Paket/Süre) · bölge istatistikleri (0 adetli bölge gizli) · **↻ Yenile** düğmesi, sessiz 15 sn yoklaması kaldırıldı · Genel = son 90 gün, tüm zamanlar ayrı. Uç: `GET /api/restoran/rapor?range=today|90|all`. Kanıt: `Test-Raporu.md` (v160–v162).
+6. **Tamamlandı — Rapor tasarımı (27.11):** süre kartları kaldırıldı · 3 kart · **bölge çubuk grafiği** · Genel = **Son 30 gün / Tüm zamanlar** · ↻ ikon.
+7. **Tamamlandı — Destek + yönetici yönetimi (27.11):** yönetici Profil iki sekme (**Yöneticiler** ekle/listele/sil · **Şifre**); restoran/kurye menüsünde **Destek** sayfası (yönetici kartları + Ara) senkron.
+8. **Tamamlandı — Bölgeler → Sistem sekmesi (27.11):** yönetici **Sistem → Bölgeler** (ekle/sil/sırala **otomatik kayıt** + **silme onayı**); restoran/kurye **Sistem → Bölgeler** salt okunur ve yönetici ile senkron. Ayrıca Rapor **Paket/Ödeme** sekmeleri + `↻ Raporu güncelle`.
+9. **Tamamlandı — Rapor yenilendi + kota koruması (27.11):** Bugün/Genel sekmeleri · 5 kart (Toplam paket · Toplam Km · Toplam süre · Paket/Km · Paket/Süre) · bölge istatistikleri (0 adetli bölge gizli) · **↻ Yenile** düğmesi, sessiz 15 sn yoklaması kaldırıldı · Genel = son 90 gün, tüm zamanlar ayrı. Uç: `GET /api/restoran/rapor?range=today|90|all`. Kanıt: `Test-Raporu.md` (v160–v162).
 6. **Tamamlandı — QR/PIN ile kurye atama (27.11):** kurye seçimi kaldırıldı; restoranda **“QR ile Ekle”** sekmesi (Bölge+Ödeme → QR oluştur) · kurye QR okutur / kodu girer → paket **atomik** olarak ona geçer · restoran QR ekranında **yeşil “kurye kabul etti” + 10 sn geri sayım** · iptalde kuryeye **TAMAM'a kadar sabit bildirim** (süre + hakediş: 0–10 dk 0, 10+ taban, kurye iptali tam) · header’da SVG QR ikonu. Kanıt: `Test-Raporu.md` (v147–v159).
 6. **Tamamlandı — Arayüz turu (27.11):** restoran UX (Yemek Çeki · satır popup'ı · paketlerim Tümü/Açık/Kapalı), header ikon düzeni, hamburger menü tasarımı, meşgul sebep akışı; kritik yoklama düzeltmesi (v141). Kanıt: `Test-Raporu.md`.
 6. **Sürüyor — Performans / kuyruk:** `docs/Optimizasyon-ve-Kuyruk-Plani.md`.

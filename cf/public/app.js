@@ -1237,20 +1237,20 @@
     setHeader('Rapor', '');
     var main = $('mn');
     var dis = S.raporDis === 'odeme' ? 'odeme' : 'paket';       // üst sekme: Paket | Ödeme
-    var ic = S.raporKapsam === 'all' ? 'all' : 'today';          // iç sekme: Bugün | Genel
-    S.raporDis = dis; S.raporKapsam = ic;
+    var ic = S.raporKapsam === 'genel' ? 'genel' : 'today';      // iç sekme: Bugün | Genel
+    var genelAralik = S.raporGenel === 'all' ? 'all' : '30';     // Genel içi: Son 30 gün | Tüm zamanlar
+    S.raporDis = dis; S.raporKapsam = ic; S.raporGenel = genelAralik;
+    var aralik = ic === 'today' ? 'today' : genelAralik;
 
     var icSekme = '<div class="seg two" style="margin-bottom:10px">' +
       '<button data-rp2="today" class="' + (ic === 'today' ? 'on' : '') + '">Bugün</button>' +
-      '<button data-rp2="all" class="' + (ic === 'today' ? '' : 'on') + '">Genel</button></div>';
+      '<button data-rp2="genel" class="' + (ic === 'genel' ? 'on' : '') + '">Genel</button></div>';
 
     main.innerHTML =
       '<div class="seg two" style="margin-bottom:8px">' +
         '<button data-rpd="paket" class="' + (dis === 'paket' ? 'on' : '') + '">Paket</button>' +
         '<button data-rpd="odeme" class="' + (dis === 'odeme' ? 'on' : '') + '">Ödeme</button></div>' +
       icSekme +
-      '<div class="rp-top"><span></span>' +
-        '<button class="rp-guncelle" id="rp-guncelle" title="Raporu güncelle">↻ Raporu güncelle</button></div>' +
       '<div id="rp-icerik"><div class="empty">Yükleniyor…</div></div>';
 
     Array.prototype.forEach.call(main.querySelectorAll('[data-rpd]'), function (b) {
@@ -1259,65 +1259,86 @@
     Array.prototype.forEach.call(main.querySelectorAll('[data-rp2]'), function (b) {
       b.onclick = function () { S.raporKapsam = b.getAttribute('data-rp2'); renderRestRapor(); };
     });
-    var gy = $('rp-guncelle');
-    if (gy) gy.onclick = function () { renderRestRapor(); UI.toast('Rapor güncellendi', 'success'); };
 
     var host = $('rp-icerik');
-    if (dis === 'paket') paketRaporu(host, ic);
-    else odemeRaporu(host, ic);
+    if (dis === 'paket') paketRaporu(host, ic, aralik);
+    else odemeRaporu(host, aralik);
 
     $('cta').innerHTML = '';
     nav(restaurantTabs(), {});
   }
 
-  function paketRaporu(host, kapsam) {
-    var hm = function (sn) {
-      if (sn == null) return '—';
-      var dk = Math.round(sn / 60), sa = Math.floor(dk / 60);
-      return sa ? (sa + ' sa ' + (dk % 60) + ' dk') : (dk + ' dk');
-    };
-    API.restoranRapor(kapsam).then(function (r) {
+  var RP_ETIKET = { today: 'Bugün', '30': 'Son 30 gün', '90': 'Son 90 gün', all: 'Tüm zamanlar' };
+
+  function rpBaslik(aralik) {
+    return '<div class="rp-bar">' +
+      '<span class="rp-eyebrow">' + esc(RP_ETIKET[aralik] || 'Bugün') + '</span>' +
+      '<button class="rp-ico" id="rp-guncelle" title="Raporu güncelle" aria-label="Raporu güncelle">↻</button></div>';
+  }
+
+  function rpKartlar(o) {
+    return '<div class="rp-grid three">' +
+      '<div class="rp-card"><b>' + (o.paket || 0) + '</b><small>Toplam paket</small></div>' +
+      '<div class="rp-card"><b>' + (o.km ? kmf(o.km) : '—') + '</b><small>Toplam Km</small></div>' +
+      '<div class="rp-card"><b>' + (o.paket_km == null ? '—' : kmf(o.paket_km)) + '</b><small>Paket / Km</small></div>' +
+      '</div>';
+  }
+
+  // Bölge dağılımı: yatay çubuk grafik (ilk sıra yeşil, kalanlar mavi)
+  function rpCubuklar(bolgeler) {
+    var liste = bolgeler || [];
+    var enBuyuk = liste.reduce(function (m, b) { return Math.max(m, b.adet || 0); }, 0);
+    if (!liste.length) return '<div class="empty">Bölge tanımlı değil</div>';
+    return '<div class="rpb">' + liste.map(function (b, i) {
+      var adet = b.adet || 0;
+      var oran = enBuyuk ? Math.max(adet ? 4 : 0, Math.round((adet / enBuyuk) * 100)) : 0;
+      var sinif = i === 0 && adet > 0 ? ' top' : '';
+      return '<div class="rpb-row">' +
+        '<span class="rpb-name">' + esc(b.ad) + '</span>' +
+        '<span class="rpb-track"><i class="rpb-fill' + sinif + '" style="width:' + oran + '%"></i></span>' +
+        '<b class="rpb-val' + (adet ? '' : ' sifir') + '">' + adet + '</b></div>';
+    }).join('') + '</div>';
+  }
+
+  function paketRaporu(host, ic, aralik) {
+    API.restoranRapor(aralik).then(function (r) {
       var o = (r && r.ozet) || {};
-      var kart = function (etiket, deger) {
-        return '<div class="rp-card"><b>' + deger + '</b><small>' + etiket + '</small></div>';
-      };
-      var bolgeler = ((r && r.bolgeler) || []).filter(function (b) { return b.adet > 0; });
-      var html =
-        '<div class="rp-grid two">' +
-          kart('Toplam paket', o.paket || 0) +
-          kart('Toplam Km', o.km ? kmf(o.km) : '—') +
-        '</div>' +
-        '<div class="rp-grid three">' +
-          kart('Toplam süre', o.sure_sn ? hm(o.sure_sn) : '—') +
-          kart('Paket / Km', o.paket_km == null ? '—' : kmf(o.paket_km)) +
-          kart('Paket / Süre', o.paket_sure_sn == null ? '—' : hm(o.paket_sure_sn)) +
-        '</div>' +
-        '<h3 class="rp-h">Bölge istatistikleri</h3>' +
-        '<div class="rp-bolge">' + (bolgeler.length ? bolgeler.map(function (b) {
-          return '<div class="rp-bchip"><span>' + esc(b.ad) + '</span><b>' + b.adet + '</b></div>';
-        }).join('') : '<div class="empty">Bu dönemde paket yok</div>') + '</div>';
+      var html = rpBaslik(aralik) + rpKartlar(o);
+      if (ic === 'genel') {
+        html += '<div class="seg two rp-aralik">' +
+          '<button data-rpr="30" class="' + (aralik === '30' ? 'on' : '') + '">Son 30 gün</button>' +
+          '<button data-rpr="all" class="' + (aralik === 'all' ? 'on' : '') + '">Tüm zamanlar</button></div>';
+      }
+      html += '<h3 class="rp-h">Bölge istatistikleri</h3>' + rpCubuklar((r && r.bolgeler) || []);
       host.innerHTML = html;
+      Array.prototype.forEach.call(host.querySelectorAll('[data-rpr]'), function (b) {
+        b.onclick = function () { S.raporGenel = b.getAttribute('data-rpr'); renderRestRapor(); };
+      });
+      var gy = $('rp-guncelle');
+      if (gy) gy.onclick = function () { renderRestRapor(); UI.toast('Rapor güncellendi', 'success'); };
     }).catch(function (e) {
-      host.innerHTML = '<div class="empty"><b>Rapor alınamadı</b>' + esc(e.message || '') + '</div>';
+      host.innerHTML = rpBaslik(aralik) + '<div class="empty"><b>Rapor alınamadı</b>' + esc(e.message || '') + '</div>';
+      var gy = $('rp-guncelle');
+      if (gy) gy.onclick = function () { renderRestRapor(); };
     });
   }
 
-  function odemeRaporu(host, kapsam) {
-    API.restoranOdemeler(kapsam).then(function (r) {
+  function odemeRaporu(host, aralik) {
+    API.restoranOdemeler(aralik === 'today' ? 'today' : 'all').then(function (r) {
       var o = (r && r.ozet) || {};
       var kart = function (etiket, deger) {
         return '<div class="rp-card"><b>' + deger + '</b><small>' + etiket + '</small></div>';
       };
       var kuryeler = (r && r.kuryeler) || [];
-      var odemmeyenler = (r && r.odenmeyenler) || [];
-      var html =
-        '<div class="rp-grid two">' +
-          kart('Paket', o.paket || 0) +
-          kart('Toplam tutar', o.toplam_tl ? money(o.toplam_tl) : '—') +
-        '</div>' +
+      var odenmeyenler = (r && r.odenmeyenler) || [];
+      host.innerHTML = rpBaslik(aralik) +
         '<div class="rp-grid three">' +
+          kart('Paket', o.paket || 0) +
           kart('Ödendi', o.odenen_adet || 0) +
           kart('Ödenmedi', o.odenmeyen_adet || 0) +
+        '</div>' +
+        '<div class="rp-grid two">' +
+          kart('Toplam tutar', o.toplam_tl ? money(o.toplam_tl) : '—') +
           kart('Kalan', o.kalan_tl ? money(o.kalan_tl) : '—') +
         '</div>' +
         '<h3 class="rp-h">Kurye bazlı</h3>' +
@@ -1328,15 +1349,18 @@
             '<span class="od-meta">' + k.paket + ' paket · ' + money(k.tutar) + '</span>' +
             '<span class="od-state">' + (kapali ? '✔ Ödendi' : (k.odenen + '/' + k.paket + ' ödendi')) + '</span></div>';
         }).join('') + '</div>' : '<div class="empty">Bu dönemde teslim edilmiş paket yok</div>') +
-        '<h3 class="rp-h">Ödenmeyen paketler' + (odemmeyenler.length ? ' (' + (o.odenmeyen_adet || odemmeyenler.length) + ')' : '') + '</h3>' +
-        (odemmeyenler.length ? '<div class="od-list">' + odemmeyenler.map(function (p) {
+        '<h3 class="rp-h">Ödenmeyen paketler' + (odenmeyenler.length ? ' (' + (o.odenmeyen_adet || odenmeyenler.length) + ')' : '') + '</h3>' +
+        (odenmeyenler.length ? '<div class="od-list">' + odenmeyenler.map(function (p) {
           return '<div class="od-row no"><span class="od-name">' + esc(p.label) + '</span>' +
             '<span class="od-meta">' + esc(p.courier_name) + ' · ' + (p.delivered_at ? dt(p.delivered_at) : '—') + '</span>' +
             '<span class="od-state">' + (p.fee_tl == null ? '—' : money(p.fee_tl)) + '</span></div>';
         }).join('') + '</div>' : '<div class="empty">Ödenmeyen paket yok 🎉</div>');
-      host.innerHTML = html;
+      var gy = $('rp-guncelle');
+      if (gy) gy.onclick = function () { renderRestRapor(); UI.toast('Rapor güncellendi', 'success'); };
     }).catch(function (e) {
-      host.innerHTML = '<div class="empty"><b>Ödeme raporu alınamadı</b>' + esc(e.message || '') + '</div>';
+      host.innerHTML = rpBaslik(aralik) + '<div class="empty"><b>Ödeme raporu alınamadı</b>' + esc(e.message || '') + '</div>';
+      var gy = $('rp-guncelle');
+      if (gy) gy.onclick = function () { renderRestRapor(); };
     });
   }
 

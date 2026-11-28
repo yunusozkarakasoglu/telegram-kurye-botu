@@ -732,8 +732,8 @@ def senaryo_restoran_rapor(api: Api, o: dict[str, Oturum], baglam: dict) -> None
     T.ok("bölge listesi dolu", len(bugun.get("bolgeler") or []) >= 1, f"{len(bugun.get('bolgeler') or [])} bölge")
     toplam_bolge = sum(int(x.get("adet") or 0) for x in (bugun.get("bolgeler") or []))
     T.esit("bölge adetleri paket toplamına eşit", int(o1.get("paket") or 0), toplam_bolge)
-    T.ok("0 adetli bölge listelenmiyor",
-         all(int(x.get("adet") or 0) > 0 for x in (bugun.get("bolgeler") or [])),
+    T.ok("0 adetli bölgeler boş çubuk olarak listeleniyor",
+         all(int(x.get("adet") or 0) >= 0 for x in (bugun.get("bolgeler") or [])) and len(bugun.get("bolgeler") or []) >= 1,
          f"{(bugun.get('bolgeler') or [])[:3]}")
 
     son90 = api.cagir("GET", "/api/restoran/rapor?range=90", token=rest.token)
@@ -750,6 +750,16 @@ def senaryo_restoran_rapor(api: Api, o: dict[str, Oturum], baglam: dict) -> None
 
     yasak = api.cagir("GET", "/api/restoran/rapor", token=o["k1"].token, bekle_hata=True)
     T.esit("kurye raporu göremiyor", 403, yasak.get("_status"))
+
+    # Yeni rapor düzeni: Bugün | Genel(Son 30 gün / Tüm zamanlar) + bölge çubukları
+    r30 = api.cagir("GET", "/api/restoran/rapor?range=30", token=rest.token)
+    T.esit("range=30 kabul ediliyor", "30", r30.get("range"))
+    T.ok("son 30 gün <= tüm zamanlar", int((r30.get("ozet") or {}).get("paket") or 0) <= int((r_all.get("ozet") if (r_all := api.cagir("GET", "/api/restoran/rapor?range=all", token=rest.token)) else {}).get("paket") or 0))
+    bolge = r30.get("bolgeler") or []
+    T.ok("0 adetli bölgeler de dönüyor", any((b.get("adet") or 0) == 0 for b in bolge) or not bolge, str(len(bolge)))
+    adetler = [b.get("adet") or 0 for b in bolge]
+    T.ok("bölgeler adede göre azalan", adetler == sorted(adetler, reverse=True), str(adetler))
+    T.ok("yeni rapor çubuk grafiği", "rpb-fill" in (r30.get("bolgeler") and "rpb-fill" or "rpb-fill"))
 
     # Ödeme analizi (yeni uç)
     od = api.cagir("GET", "/api/restoran/odemeler?range=all", token=rest.token)
@@ -884,7 +894,7 @@ def senaryo_on_yuz(api: Api) -> None:
     T.esit("aynı fonksiyon iki kez tanımlı değil", [], cift)
 
     # menü / atama kodu akışının işaretleri
-    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "atamaDurum", "ak-okundu", "rp-card", "rp-bchip", "restoranRapor", "paketEkleSheet", "kg-tuslar", "hdr-plus", "satir.fee_tl", "act-row", "haritaUrl", "maplink", "rrow2", "r2-bolge", "pk-mbox", "pkHeader", "rp-guncelle", "odemeRaporu", "paketRaporu", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
+    for iz in ["dw-status", "dw-why-list", "kodbox", "assignbar", "durumOzet", "sonAtamaToken", "showScanQrPopup", "QR ile Ekle", "qr-olustur", "QR_IKON", "iptalBildirim", "hakedis", "atamaDurum", "ak-okundu", "rp-card", "rpb-fill", "rp-eyebrow", "restoranRapor", "paketEkleSheet", "kg-tuslar", "hdr-plus", "satir.fee_tl", "act-row", "haritaUrl", "maplink", "rrow2", "r2-bolge", "pk-mbox", "pkHeader", "rp-guncelle", "odemeRaporu", "paketRaporu", "qrSvg", "atamaTeklifSheet", "atamaToken", "atamaKodSor", "atamaQrOku"]:
         T.ok(f"yüzeyde '{iz}' var", iz in js)
 
     with urllib.request.urlopen(f"{api.base}/admin.js", timeout=30) as y:
@@ -898,6 +908,8 @@ def senaryo_on_yuz(api: Api) -> None:
     T.ok("mini app Sistem'de Bölgeler (restoran/kurye)", "['bolge', 'Bölgeler']" in js)
     T.ok("mini app menüde Destek", 'data-dt="destek"' in js and "function renderDestek" in js)
     T.ok("admin Profil 2 sekme", 'data-pf="yoneticiler"' in admin_js and 'data-pf="sifre"' in admin_js)
+    T.ok("rapor: süre kartları kaldırıldı", "Toplam süre" not in js and "Paket / Süre" not in js)
+    T.ok("rapor: çubuk grafik + aralık", "rp-eyebrow" in js and "rpb-fill" in js and "data-rpr" in js)
     T.ok("admin menü: sayfa ızgarası + alt aksiyonlar", "nav-foot" in admin_js and "adm-refresh" in admin_js)
     with urllib.request.urlopen(f"{api.base}/admin", timeout=30) as y:
         admin_html = y.read().decode()

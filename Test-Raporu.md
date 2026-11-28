@@ -892,3 +892,18 @@ Doğrulama: kart açılıyor (`SİPARİŞ KARTI` + çipler) · konsolda hata yok
 | Destek sayfası (kurye) | ✔ aynı liste |
 | Senkron | ✔ ekleme/silme anında iki panelde de yansır |
 | e2e | **208/208 PASS** · deploy `db377fd7` (v199) |
+
+### Rapor tasarımı (2026-11-27, v200–v203)
+
+| Kontrol | Sonuç |
+|---|---|
+| Süre kartları | ✔ kaldırıldı (3 kart: paket · toplam km · paket/km) |
+| Dönem etiketi | ✔ `BUGÜN` / `SON 30 GÜN` / `TÜM ZAMANLAR` |
+| Yenile | ✔ ↻ ikon düğmesi (34×34) · otomatik yenileme yok |
+| Bugün | ✔ aralık filtresi **yok** |
+| Genel | ✔ **Son 30 gün** (varsayılan) / **Tüm zamanlar** |
+| Bölge grafiği | ✔ yatay çubuk: 1. sıra yeşil, kalanlar mavi, 0 adet boş çubuk |
+| Sıralama | ✔ adet azalan (`[35, 6, 3, 2, 0]`) |
+| `range=30` | ✔ yeni kapsam; 30 gün ≤ tüm zamanlar |
+| **BUG** | `odenmeyenler` ↔ `odemmeyenler` yazım hatası (Ödeme sekmesi çöküyordu) → düzeltildi |
+| e2e | **216/216 PASS** · deploy `91b4d242` (v203) |
