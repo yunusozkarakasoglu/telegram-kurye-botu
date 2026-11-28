@@ -806,3 +806,14 @@ Doğrulama: kart açılıyor (`SİPARİŞ KARTI` + çipler) · konsolda hata yok
 | Kapatma | ✔ scrim'e dokununca kapanır |
 | Masaüstü | ✔ sol sabit menü korunuyor |
 | e2e | **177/177 PASS** · deploy v187 |
+
+### Restoran Paketlerim kartı + kurye arama (2026-11-27, v188–v189)
+
+| Öğe | Sonuç |
+|---|---|
+| Satır düzeni | ✔ `[Bölge] … [Durum]` · ayırıcı · `[Ödeme] … [27.11.26 · 21:53 / 842 dk]` |
+| Talep no | ✔ satırdan kaldırıldı (kartta “Sipariş no” olarak duruyor) |
+| Oluşturma tarihi | ✔ `dd.MM.yy · HH:mm` (havuza düşme zamanı = `batch.created_at`) |
+| Kurye satırı | ✔ çerçeveli kutu + **☎ Ara** → `tel:05550001122` |
+| Kapsam | ✔ **Ara yalnız restoran panelinde** (kurye kartında düz metin) |
+| e2e | **180/180 PASS** · deploy `ab4b6c6a` (v189) |

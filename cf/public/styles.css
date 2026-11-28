@@ -882,3 +882,31 @@ a.pk-map:active{filter:brightness(.94)}
   .nav-foot .exit{color:#ff5b60;border-color:rgba(255,91,96,.35)}
   .nav-foot button.on{background:var(--ac);color:var(--on)}
 }
+
+/* ---------- Restoran Paketlerim: kart satırı (v188) ---------- */
+.rrow2{display:flex;flex-direction:column;align-items:stretch;gap:8px;width:100%;text-align:left;font:inherit;color:inherit;
+  background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:12px;margin-bottom:8px;cursor:pointer}
+.rrow2:active{background:var(--el)}
+.r2-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.r2-bolge{font-style:normal;font-size:13px;font-weight:700;padding:4px 10px;border-radius:8px;
+  background:rgba(90,170,240,.18);color:#8cc7ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r2-st{font-style:normal;font-size:11px;font-weight:700;padding:4px 9px;border-radius:8px;white-space:nowrap}
+.rrow2 .r2-st{background:rgba(128,128,128,.16);color:var(--t2)}
+.rrow2.accepted .r2-st{background:rgba(230,168,23,.18);color:#d99a1b}
+.rrow2.onway .r2-st{background:rgba(240,120,30,.18);color:#e07a2a}
+.rrow2.delivered .r2-st{background:rgba(31,168,85,.16);color:#25a35a}
+.rrow2.cancelled .r2-st{background:rgba(229,72,77,.16);color:#e5484d}
+.r2-div{height:1px;background:var(--ln);width:100%}
+.r2-bot{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.r2-od{font-style:normal;font-size:12px;padding:4px 9px;border-radius:8px;background:var(--el2);color:var(--t2)}
+.r2-sag{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.r2-sag small{font-size:11px;color:var(--t2)}
+.r2-sag .sure{font-style:normal;font-size:12px;font-weight:700}
+.r2-sag .sure.done{color:#25a35a}
+.r2-sag .ela{font-style:normal;font-size:12px;font-weight:700;color:var(--t2)}
+.r2-sag .ela.late{color:#e5484d}
+/* Kurye satırı: çerçeveli + Ara */
+.pk-fields dd .pk-courier{display:flex;align-items:center;gap:8px;width:100%;
+  border:1px dashed var(--ln);border-radius:7px;padding:2px 6px;min-height:26px}
+.pk-fields dd .pk-courier > span:first-child{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pk-courier .mini-edit{white-space:nowrap;text-decoration:none}

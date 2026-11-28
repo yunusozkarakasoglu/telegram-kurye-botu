@@ -1302,10 +1302,20 @@
       var st = String(p.status || '');
       var cls = /İptal/i.test(st) ? 'cancelled' : /Teslim/i.test(st) ? 'delivered' : /Yolda/i.test(st) ? 'onway'
         : /Kabul/i.test(st) ? 'accepted' : 'waiting';
-      return '<button class="rrow ' + cls + '" data-pkg="' + p.id + '">' +
-        '<span class="rl"><b>Talep #' + p.batch + '-' + p.number + '</b>' +
-          '<small>' + esc(p.region || 'Bölge yok') + ' · ' + esc(p.payment || 'Ödeme yok') + '</small></span>' +
-        '<span class="rr"><em class="stg">' + esc(st || '—') + '</em>' + restSure(p) + '</span></button>';
+      var tarih = '';
+      if (p.created_at) {
+        var d0 = new Date(p.created_at * 1000);
+        var gg = ('0' + d0.getDate()).slice(-2), aa = ('0' + (d0.getMonth() + 1)).slice(-2);
+        var ss = ('0' + d0.getHours()).slice(-2), dd = ('0' + d0.getMinutes()).slice(-2);
+        tarih = gg + '.' + aa + '.' + String(d0.getFullYear()).slice(-2) + ' · ' + ss + ':' + dd;
+      }
+      return '<button class="rrow2 ' + cls + '" data-pkg="' + p.id + '">' +
+        '<span class="r2-top"><em class="r2-bolge">' + esc(p.region || 'Bölge yok') + '</em>' +
+          '<em class="r2-st stg">' + esc(st || '—') + '</em></span>' +
+        '<span class="r2-div"></span>' +
+        '<span class="r2-bot"><em class="r2-od">' + esc(p.payment || 'Ödeme yok') + '</em>' +
+          '<span class="r2-sag">' + (tarih ? '<small>' + tarih + '</small>' : '') + restSure(p) + '</span></span>' +
+      '</button>';
       }).join('') : '<div class="empty"><b>Kayıt yok</b>Bu filtrede paket bulunmuyor.</div>';
     })();
     Array.prototype.forEach.call(main.querySelectorAll('button[data-f]'), function (b) {
@@ -1466,7 +1476,11 @@
           '<dt>Alım</dt><dd>' + dt(p.picked_up_at) + '</dd>' +
           '<dt>Teslim</dt><dd>' + dt(p.delivered_at) + '</dd>' +
           '<dt>İptal</dt><dd>' + dt(p.cancelled_at) + '</dd>' +
-          '<dt>Kurye</dt><dd>' + esc(p.courier_name || '—') + '</dd>' +
+          '<dt>Kurye</dt><dd>' + (p.courier_name
+            ? '<span class="pk-courier"><span>' + esc(p.courier_name) + '</span>' +
+              (p.courier_phone ? '<a class="mini-edit call" href="tel:' + esc(p.courier_phone) + '">☎ Ara</a>' : '') +
+              '</span>'
+            : '—') + '</dd>' +
           (!p.cancelled_at && !p.delivered_at
             ? '<dt>Restoran konumu</dt><dd><span class="pk-loc"><a class="maplink" href="' + esc(haritaUrl(p)) + '" target="_blank" rel="noopener">📍 Haritada aç</a></span></dd>'
             : '') +
